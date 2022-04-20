@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-	"scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entities"
 )
 
 type HandlerFunc = func(h *Handler, c *ext.Context, user *entities.User) error

@@ -7,6 +7,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/joeyave/scala-bot-v2/dto"
 	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
@@ -26,28 +27,47 @@ type BotController struct {
 	RoleService       *services.RoleService
 }
 
-func (h *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *BotController) Event(b *gotgbot.Bot, ctx *ext.Context) error {
 
-	replyMarkup := &gotgbot.ReplyKeyboardMarkup{
-		Keyboard: [][]gotgbot.KeyboardButton{
-			{
-				{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}},
-			},
-		},
-		ResizeKeyboard: true,
-	}
-
-	_, err := ctx.EffectiveChat.SendMessage(b, "Меню:", &gotgbot.SendMessageOpts{
-		ReplyMarkup: replyMarkup,
-	})
+	user, err := c.UserService.FindOneByID(ctx.EffectiveChat.Id)
 	if err != nil {
 		return err
+	}
+
+	event := ctx.Data["event"].(*entities.Event)
+
+	html := c.EventService.ToHtmlStringByEvent(*event)
+
+	markup := gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: helpers.GetEventActionsKeyboard(*user, *event),
+	}
+
+	if ctx.CallbackQuery != nil {
+		_, _, err := ctx.EffectiveMessage.EditText(b, html, &gotgbot.EditMessageTextOpts{
+			ReplyMarkup:           markup,
+			DisableWebPagePreview: true,
+			ParseMode:             "HTML",
+		})
+		if err != nil {
+			return err
+		}
+		ctx.CallbackQuery.Answer(b, nil)
+		return nil
+	} else {
+		_, err := ctx.EffectiveChat.SendMessage(b, html, &gotgbot.SendMessageOpts{
+			ReplyMarkup:           markup,
+			DisableWebPagePreview: true,
+			ParseMode:             "HTML",
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (h *BotController) CreateEvent(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *BotController) CreateEvent(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	var data *dto.CreateEventData
 	err := json.Unmarshal([]byte(ctx.EffectiveMessage.WebAppData.Data), &data)
@@ -55,7 +75,7 @@ func (h *BotController) CreateEvent(b *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	user, err := h.UserService.FindOneByID(ctx.EffectiveUser.Id)
+	user, err := c.UserService.FindOneByID(ctx.EffectiveUser.Id)
 	if err != nil {
 		return err
 	}
@@ -70,34 +90,18 @@ func (h *BotController) CreateEvent(b *gotgbot.Bot, ctx *ext.Context) error {
 		Name:   data.Event.Name,
 		BandID: user.BandID,
 	}
-	createdEvent, err := h.EventService.UpdateOne(event)
+	createdEvent, err := c.EventService.UpdateOne(event)
 	if err != nil {
 		return err
 	}
 
-	eventHTML := h.eventToHTML(createdEvent)
-
-	replyMarkup := &gotgbot.InlineKeyboardMarkup{
-		InlineKeyboard: [][]gotgbot.InlineKeyboardButton{
-			{
-				{Text: "🎶 Аккорды", CallbackData: fmt.Sprintf("eventChords:%s", createdEvent.ID.Hex())},
-				{Text: "︎✍️ Редактировать", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/edit-event/" + createdEvent.ID.Hex()}},
-			},
-		},
-	}
-
-	_, err = ctx.EffectiveChat.SendMessage(b, eventHTML, &gotgbot.SendMessageOpts{
-		ParseMode:   "HTML",
-		ReplyMarkup: replyMarkup,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	ctx.Data["event"] = createdEvent
+	return c.Event(b, ctx)
 }
 
-func (h *BotController) EventChords(b *gotgbot.Bot, ctx *ext.Context) error {
+// work in progress -----------------------------
+
+func (c *BotController) EventChords(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	hex := strings.TrimPrefix(ctx.CallbackQuery.Data, "eventChords:")
 	eventID, err := primitive.ObjectIDFromHex(hex)
@@ -105,7 +109,7 @@ func (h *BotController) EventChords(b *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	event, err := h.EventService.FindOneByID(eventID)
+	event, err := c.EventService.FindOneByID(eventID)
 	if err != nil {
 		return err
 	}
@@ -125,7 +129,7 @@ func (h *BotController) EventChords(b *gotgbot.Bot, ctx *ext.Context) error {
 		return nil
 	}
 
-	err = h.sendDriveFilesAlbum(b, ctx, driveFileIDs)
+	err = c.sendDriveFilesAlbum(b, ctx, driveFileIDs)
 	if err != nil {
 		return err
 	}
@@ -141,14 +145,14 @@ func (h *BotController) EventChords(b *gotgbot.Bot, ctx *ext.Context) error {
 }
 
 // todo
-func (h *BotController) Events(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *BotController) Events(b *gotgbot.Bot, ctx *ext.Context) error {
 
-	user, err := h.UserService.FindOneByID(ctx.EffectiveUser.Id)
+	user, err := c.UserService.FindOneByID(ctx.EffectiveUser.Id)
 	if err != nil {
 		return err
 	}
 
-	_, err = h.EventService.FindManyFromTodayByBandID(user.BandID)
+	_, err = c.EventService.FindManyFromTodayByBandID(user.BandID)
 	if err != nil {
 		return err
 	}
@@ -156,56 +160,7 @@ func (h *BotController) Events(b *gotgbot.Bot, ctx *ext.Context) error {
 	return nil
 }
 
-func (h *BotController) eventToHTML(event *entities.Event) string {
-	eventString := fmt.Sprintf("<b>%s</b>", event.Alias())
-
-	var currRoleID primitive.ObjectID
-	for _, membership := range event.Memberships {
-		if membership.User == nil {
-			continue
-		}
-
-		if currRoleID != membership.RoleID {
-			currRoleID = membership.RoleID
-			eventString = fmt.Sprintf("%s\n\n<b>%s:</b>", eventString, membership.Role.Name)
-		}
-
-		eventString = fmt.Sprintf("%s\n - <a href=\"tg://user?id=%d\">%s</a>", eventString, membership.User.ID, membership.User.Name)
-	}
-
-	if len(event.Songs) > 0 {
-		eventString = fmt.Sprintf("%s\n\n<b>📝 Список:</b>", eventString)
-
-		var waitGroup sync.WaitGroup
-		waitGroup.Add(len(event.Songs))
-		songNames := make([]string, len(event.Songs))
-		for i := range event.Songs {
-			go func(i int) {
-				defer waitGroup.Done()
-
-				driveFile, err := h.DriveFileService.FindOneByID(event.Songs[i].DriveFileID)
-				if err != nil {
-					return
-				}
-
-				songName := fmt.Sprintf("%d. <a href=\"%s\">%s</a>  (%s)",
-					i+1, driveFile.WebViewLink, driveFile.Name, event.Songs[i].Caption())
-				songNames[i] = songName
-			}(i)
-		}
-		waitGroup.Wait()
-
-		eventString += "\n" + strings.Join(songNames, "\n")
-	}
-
-	if event.Notes != "" {
-		eventString += "\n\n<b>✏️ Заметки:</b>\n" + event.Notes
-	}
-
-	return eventString
-}
-
-func (h *BotController) sendDriveFilesAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFileIDs []string) error {
+func (c *BotController) sendDriveFilesAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFileIDs []string) error {
 
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(len(driveFileIDs))
@@ -215,13 +170,13 @@ func (h *BotController) sendDriveFilesAlbum(bot *gotgbot.Bot, ctx *ext.Context, 
 		go func(i int) {
 			defer waitGroup.Done()
 
-			song, driveFile, err := h.SongService.FindOrCreateOneByDriveFileID(driveFileIDs[i])
+			song, driveFile, err := c.SongService.FindOrCreateOneByDriveFileID(driveFileIDs[i])
 			if err != nil {
 				return
 			}
 
 			if song.PDF.TgFileID == "" {
-				reader, err := h.DriveFileService.DownloadOneByID(driveFile.Id)
+				reader, err := c.DriveFileService.DownloadOneByID(driveFile.Id)
 				if err != nil {
 					return
 				}
@@ -259,4 +214,25 @@ func chunkAlbumBy(items []gotgbot.InputMedia, chunkSize int) (chunks [][]gotgbot
 	}
 
 	return append(chunks, items)
+}
+
+func (c *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
+
+	replyMarkup := &gotgbot.ReplyKeyboardMarkup{
+		Keyboard: [][]gotgbot.KeyboardButton{
+			{
+				{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}},
+			},
+		},
+		ResizeKeyboard: true,
+	}
+
+	_, err := ctx.EffectiveChat.SendMessage(b, "Меню:", &gotgbot.SendMessageOpts{
+		ReplyMarkup: replyMarkup,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

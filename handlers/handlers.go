@@ -15,6 +15,7 @@ import (
 	"google.golang.org/api/drive/v3"
 	"gopkg.in/telebot.v3"
 	"html"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -283,7 +284,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 		user.State.Context.WeekdayButtons = helpers.GetWeekdayButtons(events)
 		markup.Keyboard = append(markup.Keyboard, user.State.Context.WeekdayButtons)
-		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.CreateEvent}})
+		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 		for _, event := range events {
 			buttonText := helpers.EventButton(event, user, false)
@@ -360,7 +361,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 			}
 
 			markup.Keyboard = append(markup.Keyboard, buttons)
-			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.CreateEvent}})
+			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 			for i := range markup.Keyboard[0] {
 				if markup.Keyboard[0][i].Text == user.State.Context.QueryType || (markup.Keyboard[0][i].Text == text && user.State.Context.QueryType == helpers.Archive) ||
@@ -2743,7 +2744,7 @@ func transposeSongHandler() (int, []HandlerFunc) {
 		q.Set("key", key)
 		user.State.CallbackData.RawQuery = q.Encode()
 
-		markup := &gotgbot.InlineKeyboardMarkup{
+		markup := gotgbot.InlineKeyboardMarkup{
 			InlineKeyboard: [][]gotgbot.InlineKeyboardButton{
 				{
 					{Text: helpers.AppendSection, CallbackData: helpers.AggregateCallbackData(state, index+1, "-1")},
@@ -2765,11 +2766,11 @@ func transposeSongHandler() (int, []HandlerFunc) {
 			{Text: helpers.Cancel, CallbackData: helpers.AggregateCallbackData(helpers.SongActionsState, 0, "")},
 		})
 
-		c.EditCaption(helpers.AddCallbackData("Куда ты хочешь вставить новую тональность?", user.State.CallbackData.String()),
-			&gotgbot.EditMessageTextOpts{
-				ReplyMarkup: markup,
-				ParseMode:   "HTML",
-			})
+		c.EffectiveMessage.EditCaption(h.bot, &gotgbot.EditMessageCaptionOpts{
+			Caption:     helpers.AddCallbackData("Куда ты хочешь вставить новую тональность?", user.State.CallbackData.String()),
+			ReplyMarkup: markup,
+			ParseMode:   "HTML",
+		})
 
 		return nil
 	})
@@ -2897,8 +2898,10 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 				{{Text: helpers.Cancel}},
 			},
 		}
-		c.EffectiveChat.SendMessage(h.bot, "Введи новый темп:", &markup)
-		return c.CallbackQuery.Answer(h.bot, nil)
+		c.EffectiveChat.SendMessage(h.bot, "Введи новый темп:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		c.CallbackQuery.Answer(h.bot, nil)
+
+		return nil
 	})
 
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
@@ -2970,9 +2973,14 @@ func copySongHandler() (int, []HandlerFunc) {
 		q.Set("driveFileId", copiedSong.Id)
 		user.State.CallbackData.RawQuery = q.Encode()
 
-		c.EditCaption(helpers.AddCallbackData("Скопировано", user.State.CallbackData.String()), &gotgbot.InlineKeyboardMarkup{
+		markup := gotgbot.InlineKeyboardMarkup{
 			InlineKeyboard: helpers.GetSongInitKeyboard(user, song),
-		}, telebot.ModeHTML)
+		}
+		c.EffectiveMessage.EditCaption(h.bot, &gotgbot.EditMessageCaptionOpts{
+			Caption:     helpers.AddCallbackData("Скопировано", user.State.CallbackData.String()),
+			ParseMode:   "HTML",
+			ReplyMarkup: markup,
+		})
 		c.CallbackQuery.Answer(h.bot, nil)
 		return nil
 	})
@@ -2983,11 +2991,12 @@ func copySongHandler() (int, []HandlerFunc) {
 func createSongHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
+	markup := gotgbot.ReplyKeyboardMarkup{
+		Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
+		ResizeKeyboard: true,
+	}
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь название:", &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		})
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь название:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -2997,10 +3006,14 @@ func createSongHandler() (int, []HandlerFunc) {
 	})
 
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
-		user.State.Context.CreateSongPayload.Name = c.EffectiveMessage.Text
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь слова:", &gotgbot.ReplyKeyboardMarkup{
+		markup := &gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       helpers.CancelOrSkipKeyboard,
 			ResizeKeyboard: true,
+		}
+
+		user.State.Context.CreateSongPayload.Name = c.EffectiveMessage.Text
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь слова:", &gotgbot.SendMessageOpts{
+			ReplyMarkup: markup,
 		})
 		if err != nil {
 			return err
@@ -3017,10 +3030,11 @@ func createSongHandler() (int, []HandlerFunc) {
 			user.State.Context.CreateSongPayload.Lyrics = c.EffectiveMessage.Text
 		}
 
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Выбери или отправь тональность:", &gotgbot.ReplyKeyboardMarkup{
+		markup := gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       append(helpers.KeysKeyboard, helpers.CancelOrSkipKeyboard...),
 			ResizeKeyboard: true,
-		})
+		}
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Выбери или отправь тональность:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3036,10 +3050,11 @@ func createSongHandler() (int, []HandlerFunc) {
 			user.State.Context.CreateSongPayload.Key = c.EffectiveMessage.Text
 		}
 
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь темп:", &gotgbot.ReplyKeyboardMarkup{
+		markup := gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       helpers.CancelOrSkipKeyboard,
 			ResizeKeyboard: true,
-		})
+		}
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь темп:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3055,10 +3070,11 @@ func createSongHandler() (int, []HandlerFunc) {
 			user.State.Context.CreateSongPayload.BPM = c.EffectiveMessage.Text
 		}
 
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Выбери или отправь размер:", &gotgbot.ReplyKeyboardMarkup{
+		markup := gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       append(helpers.TimesKeyboard, helpers.CancelOrSkipKeyboard...),
 			ResizeKeyboard: true,
-		})
+		}
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Выбери или отправь размер:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3125,7 +3141,7 @@ func deleteSongHandler() (int, []HandlerFunc) {
 				return err
 			}
 
-			c.EditCaption("Удалено")
+			c.EffectiveMessage.EditCaption(h.bot, &gotgbot.EditMessageCaptionOpts{Caption: "Удалено"})
 		}
 
 		return nil
@@ -3147,10 +3163,14 @@ func getVoicesHandler() (int, []HandlerFunc) {
 		}
 
 		if song.Voices == nil || len(song.Voices) == 0 {
-			c.EditCaption(helpers.AddCallbackData("У этой песни нет партий. Чтобы добавить, отправь мне голосовое сообщение.",
-				user.State.CallbackData.String()), &gotgbot.InlineKeyboardMarkup{
+			markup := gotgbot.InlineKeyboardMarkup{
 				InlineKeyboard: helpers.GetSongActionsKeyboard(*user, *song, *driveFileID),
-			}, telebot.ModeHTML)
+			}
+			c.EffectiveMessage.EditCaption(h.bot, &gotgbot.EditMessageCaptionOpts{
+				Caption:     helpers.AddCallbackData("У этой песни нет партий. Чтобы добавить, отправь мне голосовое сообщение.", user.State.CallbackData.String()),
+				ParseMode:   "HTML",
+				ReplyMarkup: markup,
+			})
 			return nil
 		} else {
 			markup := gotgbot.InlineKeyboardMarkup{}
@@ -3166,17 +3186,13 @@ func getVoicesHandler() (int, []HandlerFunc) {
 				{Text: "➕ Добавить партию", CallbackData: helpers.AggregateCallbackData(helpers.UploadVoiceState, 4, "")},
 			})
 
-			h.bot.EditMedia(
-				c.EffectiveMessage,
-				&telebot.Document{
-					File:     telebot.File{FileID: song.PDF.TgFileID},
-					MIME:     "application/pdf",
-					FileName: fmt.Sprintf("%s.pdf", song.PDF.Name),
-					Caption:  helpers.AddCallbackData("Выбери партию:", user.State.CallbackData.String()),
-				}, &gotgbot.EditMessageTextOpts{
-					ReplyMarkup: markup,
-					ParseMode:   "HTML",
-				})
+			c.EffectiveMessage.EditMedia(h.bot, &gotgbot.InputMediaDocument{
+				Media:     song.PDF.TgFileID,
+				Caption:   helpers.AddCallbackData("Выбери партию:", user.State.CallbackData.String()),
+				ParseMode: "HTML",
+			}, &gotgbot.EditMessageMediaOpts{
+				ReplyMarkup: markup,
+			})
 
 			return nil
 		}
@@ -3196,7 +3212,7 @@ func getVoicesHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		markup := &gotgbot.InlineKeyboardMarkup{
+		markup := gotgbot.InlineKeyboardMarkup{
 			InlineKeyboard: [][]gotgbot.InlineKeyboardButton{
 				{
 					{Text: helpers.Back, CallbackData: helpers.AggregateCallbackData(state, index-1, "")},
@@ -3222,41 +3238,49 @@ func getVoicesHandler() (int, []HandlerFunc) {
 		}
 
 		if voice.AudioFileID == "" {
-			file, err := h.bot.File(&telebot.File{FileID: voice.FileID})
+			f, err := h.bot.GetFile(voice.FileID)
 			if err != nil {
 				return err
 			}
 
-			msg, err := h.bot.EditMedia(
-				c.CallbackQuery.Message,
-				&telebot.Audio{
-					File:      telebot.FromReader(file),
-					Title:     voice.Name,
-					Performer: getPerformer(),
-					Caption:   helpers.AddCallbackData(getCaption(), user.State.CallbackData.String()),
-				},
-				&gotgbot.EditMessageTextOpts{
-					ReplyMarkup: markup,
-					ParseMode:   "HTML",
-				})
+			reader, err := helpers.File(h.bot, f)
 			if err != nil {
-				return c.CallbackQuery.Answer(h.bot, nil)
+				return err
 			}
-			voice.AudioFileID = msg.Audio.FileID
+
+			msg, _, err := c.EffectiveMessage.EditMedia(h.bot, &gotgbot.InputMediaAudio{
+				Media: gotgbot.NamedFile{
+					File:     reader,
+					FileName: voice.Name,
+				},
+				Caption:   helpers.AddCallbackData(getCaption(), user.State.CallbackData.String()),
+				ParseMode: "HTML",
+				Performer: getPerformer(),
+				Title:     voice.Name,
+			}, &gotgbot.EditMessageMediaOpts{
+				ReplyMarkup: markup,
+			})
+			if err != nil {
+				return err
+			}
+
+			if err != nil {
+				c.CallbackQuery.Answer(h.bot, nil)
+				return err
+			}
+			voice.AudioFileID = msg.Audio.FileId
 			h.voiceService.UpdateOne(*voice)
 		} else {
-			h.bot.EditMedia(
-				c.CallbackQuery.Message,
-				&telebot.Audio{
-					File:      telebot.File{FileID: voice.AudioFileID},
-					Title:     voice.Name,
-					Performer: getPerformer(),
-					Caption:   helpers.AddCallbackData(getCaption(), user.State.CallbackData.String()),
-				},
-				&gotgbot.EditMessageTextOpts{
-					ReplyMarkup: markup,
-					ParseMode:   "HTML",
-				})
+
+			c.EffectiveMessage.EditMedia(h.bot, &gotgbot.InputMediaAudio{
+				Media:     voice.AudioFileID, // todo
+				Caption:   helpers.AddCallbackData(getCaption(), user.State.CallbackData.String()),
+				ParseMode: "HTML",
+				Performer: getPerformer(),
+				Title:     voice.Name,
+			}, &gotgbot.EditMessageMediaOpts{
+				ReplyMarkup: markup,
+			})
 		}
 
 		c.CallbackQuery.Answer(h.bot, nil)
@@ -3272,7 +3296,8 @@ func getVoicesHandler() (int, []HandlerFunc) {
 			// TODO: handle delete
 			return nil
 		default:
-			return c.EffectiveChat.SendMessage(h.bot, "Я тебя не понимаю. Нажми на кнопку.")
+			_, err := c.EffectiveChat.SendMessage(h.bot, "Я тебя не понимаю. Нажми на кнопку.", nil)
+			return err
 		}
 	})
 
@@ -3282,11 +3307,14 @@ func getVoicesHandler() (int, []HandlerFunc) {
 func uploadVoiceHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
+	markup := &gotgbot.ReplyKeyboardMarkup{
+		Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
+		ResizeKeyboard: true,
+	}
+
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Введи название песни, к которой ты хочешь прикрепить эту партию:", &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		})
+
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Введи название песни, к которой ты хочешь прикрепить эту партию:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3305,10 +3333,8 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		}
 
 		if len(driveFiles) == 0 {
-			return c.EffectiveChat.SendMessage(h.bot, "Ничего не найдено. Попробуй другое название.", &gotgbot.ReplyKeyboardMarkup{
-				Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-				ResizeKeyboard: true,
-			})
+			_, err := c.EffectiveChat.SendMessage(h.bot, "Ничего не найдено. Попробуй другое название.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+			return err
 		}
 
 		markup := &gotgbot.ReplyKeyboardMarkup{
@@ -3321,7 +3347,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		}
 		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Cancel}})
 
-		err = c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		_, err = c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3347,10 +3373,8 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 
 		user.State.Context.DriveFileID = song.DriveFileID
 
-		err = c.EffectiveChat.SendMessage(h.bot, "Отправь мне название этой партии:", &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		})
+		markup := markup
+		_, err = c.EffectiveChat.SendMessage(h.bot, "Отправь мне название этой партии:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3375,7 +3399,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.")
+		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.", nil)
 
 		user.State = &entities.State{
 			Name: helpers.SongActionsState,
@@ -3395,10 +3419,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 			Context: entities.Context{DriveFileID: user.State.CallbackData.Query().Get("driveFileId")},
 		}
 
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь мне аудио или голосовое сообщение:", &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		})
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь мне аудио или голосовое сообщение:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3411,12 +3432,13 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
-		user.State.Context.Voice = &entities.Voice{FileID: c.EffectiveMessage.Media().MediaFile().FileID}
+		fileID := c.EffectiveMessage.Voice.FileId
+		if fileID == "" {
+			fileID = c.EffectiveMessage.Audio.FileId
+		}
+		user.State.Context.Voice = &entities.Voice{FileID: fileID}
 
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь мне название этой партии:", &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		})
+		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь мне название этой партии:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3441,7 +3463,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.")
+		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.", nil)
 
 		user.State = &entities.State{
 			Name: helpers.SongActionsState,
@@ -3471,11 +3493,13 @@ func deleteVoiceHandler() (int, []HandlerFunc) {
 			},
 		}
 
-		return c.EditCaption(helpers.AddCallbackData("Ты уверен, что хочешь удалить эту партию?", user.State.CallbackData.String()),
-			&gotgbot.EditMessageTextOpts{
+		_, _, err := c.EffectiveMessage.EditCaption(h.bot,
+			&gotgbot.EditMessageCaptionOpts{
+				Caption:     helpers.AddCallbackData("Ты уверен, что хочешь удалить эту партию?", user.State.CallbackData.String()),
 				ReplyMarkup: markup,
 				ParseMode:   "HTML",
 			})
+		return err
 	})
 
 	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {

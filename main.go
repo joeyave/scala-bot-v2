@@ -18,7 +18,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -38,23 +37,34 @@ func main() {
 		panic("failed to create new bot: " + err.Error())
 	}
 
-	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-
+	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
+	clientOptions := options.Client().
+		ApplyURI(os.Getenv("MONGODB_URI")).
+		SetServerAPIOptions(serverAPIOptions)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	mongoClient, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		log.Fatal().Err(err).Msg("err")
+	}
 
-	err = mongoClient.Connect(ctx)
-	if err != nil {
-		log.Fatal().Err(err)
-	}
-	defer mongoClient.Disconnect(ctx)
-	err = mongoClient.Ping(ctx, readpref.Primary())
-	if err != nil {
-		log.Fatal().Err(err)
-	}
+	//mongoClient, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
+	//if err != nil {
+	//	log.Fatal().Err(err).Msg("error creating mongo client")
+	//}
+	//
+	//ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	//defer cancel()
+	//
+	//err = mongoClient.Connect(ctx)
+	//if err != nil {
+	//	log.Fatal().Err(err)
+	//}
+	//defer mongoClient.Disconnect(ctx)
+	//err = mongoClient.Ping(ctx, readpref.Primary())
+	//if err != nil {
+	//	log.Fatal().Err(err).Msg("error pinging mongo")
+	//}
 
 	driveRepository, err := drive.NewService(context.TODO(), option.WithCredentialsJSON([]byte(os.Getenv("GOOGLEAPIS_CREDENTIALS"))))
 	if err != nil {
@@ -154,16 +164,8 @@ func main() {
 		roleService,
 	)
 
-	// old
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, handler.RegisterUser), 0)
-
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Text, handler.OnText), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Voice, handler.OnVoice), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Audio, handler.OnAudio), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.All, handler.OnCallback), 1)
-
 	// new
-	dispatcher.AddHandlerToGroup(handlers.NewCommand("start", botController.Menu), 2)
+	//dispatcher.AddHandlerToGroup(handlers.NewCommand("start", botController.Menu), -1)
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 
 		if msg.WebAppData != nil && msg.WebAppData.ButtonText == "➕ Добавить собрание" {
@@ -171,9 +173,17 @@ func main() {
 		}
 
 		return false
-	}, botController.CreateEvent), 2)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), 2)
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool { return msg.Text == "🗓️ Расписание" }, botController.Events), 2)
+	}, botController.CreateEvent), -1)
+	//dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), -1)
+	//dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool { return msg.Text == "🗓️ Расписание" }, botController.Events), -1)
+
+	// old
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, handler.RegisterUser), 0)
+
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Text, handler.OnText), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Voice, handler.OnVoice), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Audio, handler.OnAudio), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.All, handler.OnCallback), 1)
 
 	go handler.NotifyUser()
 
