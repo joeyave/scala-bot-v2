@@ -7,7 +7,14 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/callbackquery"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/message"
 	"github.com/gin-gonic/gin"
+	"github.com/joeyave/scala-bot-v2/controller"
+	"github.com/joeyave/scala-bot-v2/entities"
+	myhandlers "github.com/joeyave/scala-bot-v2/handlers"
+	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/repositories"
+	"github.com/joeyave/scala-bot-v2/services"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,9 +24,6 @@ import (
 	"google.golang.org/api/option"
 	"net/http"
 	"os"
-	"scala-bot-v2/handler"
-	"scala-bot-v2/repository"
-	"scala-bot-v2/service"
 	"time"
 )
 
@@ -62,30 +66,30 @@ func main() {
 		log.Fatal().Msgf("Unable to retrieve Docs client: %v", err)
 	}
 
-	voiceRepository := repository.NewVoiceRepository(mongoClient)
-	voiceService := service.NewVoiceService(voiceRepository)
+	voiceRepository := repositories.NewVoiceRepository(mongoClient)
+	voiceService := services.NewVoiceService(voiceRepository)
 
-	bandRepository := repository.NewBandRepository(mongoClient)
-	bandService := service.NewBandService(bandRepository)
+	bandRepository := repositories.NewBandRepository(mongoClient)
+	bandService := services.NewBandService(bandRepository)
 
-	driveFileService := service.NewDriveFileService(driveRepository, docsRepository)
+	driveFileService := services.NewDriveFileService(driveRepository, docsRepository)
 
-	songRepository := repository.NewSongRepository(mongoClient)
-	songService := service.NewSongService(songRepository, voiceRepository, bandRepository, driveRepository, driveFileService)
+	songRepository := repositories.NewSongRepository(mongoClient)
+	songService := services.NewSongService(songRepository, voiceRepository, bandRepository, driveRepository, driveFileService)
 
-	userRepository := repository.NewUserRepository(mongoClient)
-	userService := service.NewUserService(userRepository)
+	userRepository := repositories.NewUserRepository(mongoClient)
+	userService := services.NewUserService(userRepository)
 
-	membershipRepository := repository.NewMembershipRepository(mongoClient)
-	membershipService := service.NewMembershipService(membershipRepository)
+	membershipRepository := repositories.NewMembershipRepository(mongoClient)
+	membershipService := services.NewMembershipService(membershipRepository)
 
-	eventRepository := repository.NewEventRepository(mongoClient)
-	eventService := service.NewEventService(eventRepository, membershipRepository, driveFileService)
+	eventRepository := repositories.NewEventRepository(mongoClient)
+	eventService := services.NewEventService(eventRepository, membershipRepository, driveFileService)
 
-	roleRepository := repository.NewRoleRepository(mongoClient)
-	roleService := service.NewRoleService(roleRepository)
+	roleRepository := repositories.NewRoleRepository(mongoClient)
+	roleService := services.NewRoleService(roleRepository)
 
-	botHandler := handler.BotHandler{
+	botController := controller.BotController{
 		UserService:       userService,
 		DriveFileService:  driveFileService,
 		SongService:       songService,
@@ -95,7 +99,7 @@ func main() {
 		EventService:      eventService,
 		RoleService:       roleService,
 	}
-	webAppHandler := handler.WebAppHandler{
+	webAppController := controller.WebAppController{
 		EventService: eventService,
 		Bot:          bot,
 	}
@@ -106,7 +110,30 @@ func main() {
 		DispatcherOpts: ext.DispatcherOpts{
 			Error: func(b *gotgbot.Bot, ctx *ext.Context, err error) ext.DispatcherAction {
 				fmt.Println("an error occurred while handling update:", err.Error())
-				return ext.DispatcherActionNoop
+
+				_, sendMsgErr := ctx.EffectiveChat.SendMessage(b, "Произошла ошибка. Поправим.", nil)
+				if sendMsgErr != nil {
+					log.Error().Err(sendMsgErr).Msg("Error!")
+					return ext.DispatcherActionEndGroups
+				}
+
+				user, findUserErr := userService.FindOneByID(ctx.EffectiveChat.Id)
+				if findUserErr != nil {
+					log.Error().Err(findUserErr).Msg("Error!")
+					return ext.DispatcherActionEndGroups
+				}
+
+				// todo: send message to the logs channel
+				log.Error().Err(err).Msg("Error!")
+
+				user.State = &entities.State{Name: helpers.MainMenuState}
+				_, err = userService.UpdateOne(*user)
+				if findUserErr != nil {
+					log.Error().Err(findUserErr).Msg("Error!")
+					return ext.DispatcherActionEndGroups
+				}
+
+				return ext.DispatcherActionEndGroups
 			},
 			Panic:       nil,
 			ErrorLog:    nil,
@@ -115,24 +142,47 @@ func main() {
 	})
 	dispatcher := updater.Dispatcher
 
-	dispatcher.AddHandler(handlers.NewCommand("start", botHandler.Menu))
-	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+	handler := myhandlers.NewHandler(
+		bot,
+		userService,
+		driveFileService,
+		songService,
+		voiceService,
+		bandService,
+		membershipService,
+		eventService,
+		roleService,
+	)
+
+	// old
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, handler.RegisterUser), 0)
+
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Text, handler.OnText), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Voice, handler.OnVoice), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Audio, handler.OnAudio), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.All, handler.OnCallback), 1)
+
+	// new
+	dispatcher.AddHandlerToGroup(handlers.NewCommand("start", botController.Menu), 2)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 
 		if msg.WebAppData != nil && msg.WebAppData.ButtonText == "➕ Добавить собрание" {
 			return true
 		}
 
 		return false
-	}, botHandler.CreateEvent))
-	dispatcher.AddHandler(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botHandler.EventChords))
-	dispatcher.AddHandler(handlers.NewMessage(func(msg *gotgbot.Message) bool { return msg.Text == "🗓️ Расписание" }, botHandler.Events))
+	}, botController.CreateEvent), 2)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), 2)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool { return msg.Text == "🗓️ Расписание" }, botController.Events), 2)
+
+	go handler.NotifyUser()
 
 	router := gin.New()
 	router.LoadHTMLGlob("tmpl/**/*.tmpl")
 	router.Static("/assets", "./assets")
 
-	router.GET("/web-app/create-event", webAppHandler.CreateEvent)
-	router.GET("/web-app/edit-event/:id", webAppHandler.EditEvent)
+	router.GET("/web-app/create-event", webAppController.CreateEvent)
+	router.GET("/web-app/edit-event/:id", webAppController.EditEvent)
 
 	go func() {
 		// Start receiving updates.
