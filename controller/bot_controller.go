@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
@@ -15,7 +14,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/services"
 	"github.com/joeyave/scala-bot-v2/state"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/api/drive/v3"
 	"os"
 	"regexp"
@@ -184,121 +182,128 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 			}
 		case 1:
 			{
-				text := ctx.EffectiveMessage.Text
+				switch ctx.EffectiveMessage.Text {
+				case helpers.NextPage, helpers.PrevPage:
+					return c.GetEvents(0)(bot, ctx)
 
-				if strings.Contains(text, "〔") && strings.Contains(text, "〕") {
-					if helpers.IsWeekdayString(strings.ReplaceAll(strings.ReplaceAll(text, "〔", ""), "〕", "")) && user.Cache.Filter == helpers.Archive {
-						text = helpers.Archive
-					} else {
-						return c.GetEvents(0)(bot, ctx)
+				case helpers.GetEventsWithMe, helpers.Archive:
+					return c.FilterEvents(0)(bot, ctx)
+
+				default:
+					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
+						return c.FilterEvents(0)(bot, ctx)
 					}
 				}
 
-				markup := &gotgbot.ReplyKeyboardMarkup{
-					ResizeKeyboard:        true,
-					InputFieldPlaceholder: helpers.Placeholder,
-				}
+				//if strings.Contains(text, "〔") && strings.Contains(text, "〕") {
+				//	if helpers.IsWeekdayString(strings.ReplaceAll(strings.ReplaceAll(text, "〔", ""), "〕", "")) && user.Cache.Filter == helpers.Archive {
+				//		text = helpers.Archive
+				//	} else {
+				//		return c.GetEvents(0)(bot, ctx)
+				//	}
+				//}
 
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				if text == helpers.GetEventsWithMe || text == helpers.Archive || text == helpers.PrevPage || text == helpers.NextPage || helpers.IsWeekdayString(text) {
+				//markup := &gotgbot.ReplyKeyboardMarkup{
+				//	ResizeKeyboard:        true,
+				//	InputFieldPlaceholder: helpers.Placeholder,
+				//}
 
-					if text == helpers.NextPage {
-						user.Cache.PageIndex++
-					} else if text == helpers.PrevPage {
-						user.Cache.PageIndex--
-					} else {
-						if user.Cache.Filter == helpers.Archive && helpers.IsWeekdayString(text) {
-							// todo
-						} else {
-							user.Cache.Filter = text
-						}
-					}
+				//if text == helpers.GetEventsWithMe || text == helpers.Archive || text == helpers.PrevPage || text == helpers.NextPage || helpers.IsWeekdayString(text) {
+				//
+				//	if text == helpers.NextPage {
+				//		user.Cache.PageIndex++
+				//	} else if text == helpers.PrevPage {
+				//		user.Cache.PageIndex--
+				//	} else {
+				//		if user.Cache.Filter == helpers.Archive && helpers.IsWeekdayString(text) {
+				//			// todo
+				//		} else {
+				//			user.Cache.Filter = text
+				//		}
+				//	}
+				//
+				//	var buttons []gotgbot.KeyboardButton
+				//	for _, button := range user.State.Context.WeekdayButtons {
+				//		buttons = append(buttons, button)
+				//	}
+				//
+				//	markup.Keyboard = append(markup.Keyboard, buttons)
+				//	markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
+				//
+				//	for i := range markup.Keyboard[0] {
+				//		if markup.Keyboard[0][i].Text == user.Cache.Filter || (markup.Keyboard[0][i].Text == text && user.Cache.Filter == helpers.Archive) ||
+				//			(markup.Keyboard[0][i].Text == user.State.Context.PrevText && user.Cache.Filter == helpers.Archive && (ctx.EffectiveMessage.Text == helpers.NextPage || ctx.EffectiveMessage.Text == helpers.PrevPage)) {
+				//			markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
+				//		}
+				//	}
+				//
+				//	var events []*entities.Event
+				//	var err error
+				//	switch user.Cache.Filter {
+				//	case helpers.Archive:
+				//		if helpers.IsWeekdayString(text) {
+				//			events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(text), user.Cache.PageIndex)
+				//			user.State.Context.PrevText = text
+				//		} else if helpers.IsWeekdayString(user.State.Context.PrevText) && (ctx.EffectiveMessage.Text == helpers.NextPage || ctx.EffectiveMessage.Text == helpers.PrevPage) {
+				//			events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(user.State.Context.PrevText), user.Cache.PageIndex)
+				//		} else {
+				//			events, err = c.EventService.FindManyUntilTodayByBandIDAndPageNumber(user.BandID, user.Cache.PageIndex)
+				//		}
+				//	case helpers.GetEventsWithMe:
+				//		events, err = c.EventService.FindManyFromTodayByBandIDAndUserID(user.BandID, user.ID, user.Cache.PageIndex)
+				//	default:
+				//		if helpers.IsWeekdayString(user.Cache.Filter) {
+				//			events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, helpers.GetWeekdayFromString(user.Cache.Filter))
+				//		}
+				//	}
+				//	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+				//		return err
+				//	}
+				//
+				//	for _, event := range events {
+				//
+				//		buttonText := ""
+				//		if user.Cache.Filter == helpers.GetEventsWithMe {
+				//			buttonText = helpers.EventButton(event, user, true)
+				//		} else {
+				//			buttonText = helpers.EventButton(event, user, false)
+				//		}
+				//
+				//		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
+				//	}
+				//	if user.Cache.PageIndex != 0 {
+				//		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
+				//	} else {
+				//		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
+				//	}
+				//
+				//	_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери собрание:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				//	if err != nil {
+				//		return err
+				//	}
+				//
+				//	return nil
+				//}
 
-					var buttons []gotgbot.KeyboardButton
-					for _, button := range user.State.Context.WeekdayButtons {
-						buttons = append(buttons, button)
-					}
-
-					markup.Keyboard = append(markup.Keyboard, buttons)
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
-
-					for i := range markup.Keyboard[0] {
-						if markup.Keyboard[0][i].Text == user.Cache.Filter || (markup.Keyboard[0][i].Text == text && user.Cache.Filter == helpers.Archive) ||
-							(markup.Keyboard[0][i].Text == user.State.Context.PrevText && user.Cache.Filter == helpers.Archive && (ctx.EffectiveMessage.Text == helpers.NextPage || ctx.EffectiveMessage.Text == helpers.PrevPage)) {
-							markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
-						}
-					}
-
-					var events []*entities.Event
-					var err error
-					switch user.Cache.Filter {
-					case helpers.Archive:
-						if helpers.IsWeekdayString(text) {
-							events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(text), user.Cache.PageIndex)
-							user.State.Context.PrevText = text
-						} else if helpers.IsWeekdayString(user.State.Context.PrevText) && (ctx.EffectiveMessage.Text == helpers.NextPage || ctx.EffectiveMessage.Text == helpers.PrevPage) {
-							events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(user.State.Context.PrevText), user.Cache.PageIndex)
-						} else {
-							events, err = c.EventService.FindManyUntilTodayByBandIDAndPageNumber(user.BandID, user.Cache.PageIndex)
-						}
-					case helpers.GetEventsWithMe:
-						events, err = c.EventService.FindManyFromTodayByBandIDAndUserID(user.BandID, user.ID, user.Cache.PageIndex)
-					default:
-						if helpers.IsWeekdayString(user.Cache.Filter) {
-							events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, helpers.GetWeekdayFromString(user.Cache.Filter))
-						}
-					}
-					if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-						return err
-					}
-
-					for _, event := range events {
-
-						buttonText := ""
-						if user.Cache.Filter == helpers.GetEventsWithMe {
-							buttonText = helpers.EventButton(event, user, true)
-						} else {
-							buttonText = helpers.EventButton(event, user, false)
-						}
-
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
-					}
-					if user.Cache.PageIndex != 0 {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
-					} else {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
-					}
-
-					_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери собрание:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-					if err != nil {
-						return err
-					}
-
-					return nil
-				} else {
-
-					eventName, eventTime, err := helpers.ParseEventButton(text)
-					if err != nil {
-						user.State = entities.State{
-							Name: helpers.SearchSongState,
-						}
-						return nil
-					}
-
-					foundEvent, err := c.EventService.FindOneByNameAndTimeAndBandID(eventName, eventTime, user.BandID)
-					if err != nil {
-						return c.GetEvents(0)(bot, ctx)
-					}
-
-					event, err := c.EventService.FindOneByID(foundEvent.ID)
-					if err != nil {
-						return err
-					}
-
-					err = c.Event(bot, ctx, event)
-					return err
+				eventName, eventTime, err := helpers.ParseEventButton(ctx.EffectiveMessage.Text)
+				if err != nil {
+					return c.Search(0)(bot, ctx)
 				}
+
+				foundEvent, err := c.EventService.FindOneByNameAndTimeAndBandID(eventName, eventTime, user.BandID)
+				if err != nil {
+					return c.GetEvents(0)(bot, ctx)
+				}
+
+				//event, err := c.EventService.FindOneByID(foundEvent.ID)
+				//if err != nil {
+				//	return err
+				//}
+
+				err = c.Event(bot, ctx, foundEvent)
+				return err
 			}
 		}
 		return nil
