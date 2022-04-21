@@ -23,13 +23,7 @@ func (s *UserService) FindOneByID(ID int64) (*entities.User, error) {
 func (s *UserService) FindOneOrCreateByID(ID int64) (*entities.User, error) {
 	user, err := s.userRepository.FindOneByID(ID)
 	if err != nil {
-		user, err = s.userRepository.UpdateOne(entities.User{
-			ID: ID,
-			State: &entities.State{
-				Index: 0,
-				//Name:  helper.MainMenuState,
-			},
-		})
+		user, err = s.userRepository.UpdateOne(entities.User{ID: ID})
 		if err != nil {
 			return nil, err
 		}

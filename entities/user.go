@@ -12,13 +12,86 @@ import (
 )
 
 type User struct {
-	ID    int64  `bson:"_id,omitempty" json:"id"`
-	Name  string `bson:"name,omitempty" json:"name"`
-	Role  string `bson:"role,omitempty" json:"role"`
-	State *State `bson:"state,omitempty" json:"state,omitempty"`
+	ID   int64  `bson:"_id,omitempty"`
+	Name string `bson:"name,omitempty"`
+	Role string `bson:"role,omitempty"`
 
-	BandID primitive.ObjectID `bson:"bandId,omitempty" json:"band_id,omitempty"`
-	Band   *Band              `bson:"band,omitempty" json:"-"`
+	State State `bson:"state,omitempty"`
+	Cache Cache `bson:"cache"`
+
+	BandID primitive.ObjectID `bson:"bandId,omitempty"`
+	Band   *Band              `bson:"band,omitempty"`
+}
+
+//type State struct {
+//	Name  int `bson:"name,omitempty"`
+//	Index int `bson:"index,omitempty"`
+//}
+
+type Cache struct {
+	Query     string `bson:"query,omitempty"`
+	Filter    string `bson:"filter,omitempty"`
+	PageIndex int    `bson:"page_index,omitempty"`
+}
+
+type State struct {
+	Name  int `bson:"name,omitempty" json:"name"`
+	Index int `bson:"index,omitempty" json:"index"`
+
+	Context      Context  `bson:"context,omitempty" json:"-"`
+	CallbackData *url.URL `bson:"-" json:"-"`
+
+	Prev *State `bson:"prev,omitempty" json:"prev,omitempty"`
+	Next *State `bson:"next,omitempty" json:"next,omitempty"`
+}
+
+type Context struct {
+	SongNames        []string `bson:"songNames,omitempty" json:"song_names,omitempty"`
+	MessagesToDelete []int64  `bson:"messagesToDelete,omitempty" json:"messages_to_delete,omitempty"`
+	Query            string   `bson:"query,omitempty" json:"query,omitempty"`
+	QueryType        string   `bson:"queryType,omitempty" json:"query_type,omitempty"`
+
+	DriveFileID       string        `bson:"currentSongId,omitempty" json:"drive_file_id,omitempty"`
+	FoundDriveFileIDs []string      `bson:"foundDriveFileIds,omitempty" json:"found_drive_file_i_ds,omitempty"`
+	DriveFiles        []*drive.File `bson:"driveFiles,omitempty" json:"drive_files,omitempty"`
+
+	Voice *Voice `bson:"currentVoice,omitempty" json:"voice,omitempty"`
+
+	Band  *Band   `bson:"currentBand,omitempty" json:"band,omitempty"`
+	Bands []*Band `bson:"bands,omitempty" json:"bands,omitempty"`
+
+	Role *Role `bson:"role,omitempty" json:"role,omitempty"`
+
+	EventID primitive.ObjectID `bson:"eventId,omitempty" json:"event_id,omitempty"`
+
+	CreateSongPayload struct {
+		Name   string `bson:"name,omitempty" json:"name,omitempty"`
+		Lyrics string `bson:"lyrics,omitempty" json:"lyrics,omitempty"`
+		Key    string `bson:"key,omitempty" json:"key,omitempty"`
+		BPM    string `bson:"bpm,omitempty" json:"bpm,omitempty"`
+		Time   string `bson:"time,omitempty" json:"time,omitempty"`
+	} `bson:"createSongPayload,omitempty" json:"create_song_payload"`
+
+	Map  map[string]string `bson:"map,omitempty" json:"map,omitempty"`
+	Time time.Time         `bson:"time,omitempty" json:"time"`
+
+	PageIndex int `bson:"index, omitempty" json:"page_index,omitempty"`
+
+	NextPageToken  *PageToken               `bson:"nextPageToken,omitempty" json:"next_page_token,omitempty"`
+	WeekdayButtons []gotgbot.KeyboardButton `bson:"weekday_buttons,omitempty" json:"weekday_buttons,omitempty"`
+	PrevText       string                   `bson:"prev_text,omitempty" json:"prev_text,omitempty"`
+}
+
+type PageToken struct {
+	Token         string     `bson:"token" json:"token,omitempty"`
+	PrevPageToken *PageToken `bson:"prevPageToken,omitempty" json:"prev_page_token,omitempty"`
+}
+
+func (t *PageToken) PrevToken() string {
+	if t != nil && t.PrevPageToken != nil {
+		return t.PrevPageToken.Token
+	}
+	return ""
 }
 
 type UserExtra struct {
@@ -76,58 +149,4 @@ func (u *UserExtra) String() string {
 	}
 
 	return str
-}
-
-type State struct {
-	Index int `bson:"index,omitempty" json:"index"`
-	Name  int `bson:"name,omitempty" json:"name"`
-
-	// old
-	Context      Context  `bson:"context,omitempty" json:"-"`
-	CallbackData *url.URL `bson:"-" json:"-"`
-
-	Prev *State `bson:"prev,omitempty" json:"prev,omitempty"`
-	Next *State `bson:"next,omitempty" json:"next,omitempty"`
-}
-
-type Context struct {
-	SongNames        []string `bson:"songNames,omitempty" json:"song_names,omitempty"`
-	MessagesToDelete []int64  `bson:"messagesToDelete,omitempty" json:"messages_to_delete,omitempty"`
-	Query            string   `bson:"query,omitempty" json:"query,omitempty"`
-	QueryType        string   `bson:"queryType,omitempty" json:"query_type,omitempty"`
-
-	DriveFileID       string        `bson:"currentSongId,omitempty" json:"drive_file_id,omitempty"`
-	FoundDriveFileIDs []string      `bson:"foundDriveFileIds,omitempty" json:"found_drive_file_i_ds,omitempty"`
-	DriveFiles        []*drive.File `bson:"driveFiles,omitempty" json:"drive_files,omitempty"`
-
-	Voice *Voice `bson:"currentVoice,omitempty" json:"voice,omitempty"`
-
-	Band  *Band   `bson:"currentBand,omitempty" json:"band,omitempty"`
-	Bands []*Band `bson:"bands,omitempty" json:"bands,omitempty"`
-
-	Role *Role `bson:"role,omitempty" json:"role,omitempty"`
-
-	EventID primitive.ObjectID `bson:"eventId,omitempty" json:"event_id,omitempty"`
-
-	CreateSongPayload struct {
-		Name   string `bson:"name,omitempty" json:"name,omitempty"`
-		Lyrics string `bson:"lyrics,omitempty" json:"lyrics,omitempty"`
-		Key    string `bson:"key,omitempty" json:"key,omitempty"`
-		BPM    string `bson:"bpm,omitempty" json:"bpm,omitempty"`
-		Time   string `bson:"time,omitempty" json:"time,omitempty"`
-	} `bson:"createSongPayload,omitempty" json:"create_song_payload"`
-
-	Map  map[string]string `bson:"map,omitempty" json:"map,omitempty"`
-	Time time.Time         `bson:"time,omitempty" json:"time"`
-
-	PageIndex int `bson:"index, omitempty" json:"page_index,omitempty"`
-
-	NextPageToken  *NextPageToken           `bson:"nextPageToken,omitempty" json:"next_page_token,omitempty"`
-	WeekdayButtons []gotgbot.KeyboardButton `bson:"weekday_buttons,omitempty" json:"weekday_buttons,omitempty"`
-	PrevText       string                   `bson:"prev_text,omitempty" json:"prev_text,omitempty"`
-}
-
-type NextPageToken struct {
-	Token         string         `bson:"token" json:"token,omitempty"`
-	PrevPageToken *NextPageToken `bson:"prevPageToken,omitempty" json:"prev_page_token,omitempty"`
 }

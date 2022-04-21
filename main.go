@@ -148,7 +148,7 @@ func main() {
 				// todo: send message to the logs channel
 				log.Error().Err(err).Msg("Error!")
 
-				user.State = &entities.State{Name: helpers.MainMenuState}
+				user.State = entities.State{Name: helpers.MainMenuState}
 				_, err = userService.UpdateOne(*user)
 				if findUserErr != nil {
 					log.Error().Err(findUserErr).Msg("Error!")
@@ -172,7 +172,7 @@ func main() {
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Text == "🗓️ Расписание"
-	}, botController.GetEvents), 1)
+	}, botController.GetEvents(0)), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.WebAppData != nil && msg.WebAppData.ButtonText == "➕ Добавить собрание"
 	}, botController.CreateEvent), 1)
@@ -180,7 +180,7 @@ func main() {
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Text == "🎵 Песни"
-	}, botController.GetSongs), 1)
+	}, botController.GetSongs(0)), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 

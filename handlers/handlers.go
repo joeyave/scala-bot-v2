@@ -50,12 +50,12 @@ func mainMenuHandler() (int, []HandlerFunc) {
 		switch c.EffectiveMessage.Text {
 
 		case helpers.Schedule:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.GetEventsState,
 			}
 
 		case helpers.Songs:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.SearchSongState,
 			}
 
@@ -85,12 +85,12 @@ func mainMenuHandler() (int, []HandlerFunc) {
 			return err
 
 		case helpers.Settings:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.SettingsState,
 			}
 
 		default:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.SearchSongState,
 			}
 		}
@@ -149,17 +149,17 @@ func settingsHandler() (int, []HandlerFunc) {
 			return err
 
 		case helpers.ChangeBand:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.ChooseBandState,
 			}
 
 		case helpers.CreateRole:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.CreateRoleState,
 			}
 
 		case helpers.AddAdmin:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.AddBandAdminState,
 			}
 		}
@@ -262,7 +262,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{Name: helpers.MainMenuState}
+		user.State = entities.State{Name: helpers.MainMenuState}
 		return h.Enter(c, user)
 	})
 
@@ -330,9 +330,9 @@ func getEventsHandler() (int, []HandlerFunc) {
 		}
 
 		if text == helpers.CreateEvent {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.CreateEventState,
-				Prev: user.State,
+				Prev: &user.State,
 			}
 			user.State.Prev.Index = 0
 			return h.Enter(c, user)
@@ -428,7 +428,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 			eventName, eventTime, err := helpers.ParseEventButton(text)
 			if err != nil {
-				user.State = &entities.State{
+				user.State = entities.State{
 					Name: helpers.SearchSongState,
 				}
 				return h.Enter(c, user)
@@ -442,12 +442,12 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 			user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.EventActionsState,
 				Context: entities.Context{
 					EventID: foundEvent.ID,
 				},
-				Prev: user.State,
+				Prev: &user.State,
 			}
 			user.State.Prev.Index = 1
 			return h.Enter(c, user)
@@ -591,7 +591,7 @@ func createEventHandler() (int, []HandlerFunc) {
 
 		parsedTime, err := time.Parse(time.RFC3339, eventTime)
 		if err != nil {
-			user.State = &entities.State{Name: helpers.CreateEventState}
+			user.State = entities.State{Name: helpers.CreateEventState}
 			return h.Enter(c, user)
 		}
 
@@ -615,7 +615,7 @@ func createEventHandler() (int, []HandlerFunc) {
 
 		h.enterInlineHandler(c, user)
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.GetEventsState,
 		}
 		return h.enterReplyHandler(c, user)
@@ -684,10 +684,10 @@ func eventActionsHandler() (int, []HandlerFunc) {
 			}
 
 			if user.State.Next != nil {
-				user.State = user.State.Next
+				user.State = *user.State.Next
 				return h.Enter(c, user)
 			} else {
-				user.State = user.State.Prev
+				user.State = *user.State.Prev
 				return nil
 			}
 		}
@@ -963,7 +963,7 @@ func changeEventDateHandler() (int, []HandlerFunc) {
 
 		parsedTime, err := time.Parse(time.RFC3339, eventTime)
 		if err != nil {
-			user.State = &entities.State{Name: helpers.CreateEventState}
+			user.State = entities.State{Name: helpers.CreateEventState}
 			return h.Enter(c, user)
 		}
 
@@ -1369,7 +1369,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 1,
 			Name:  helpers.AddEventSongState,
 			Context: entities.Context{
@@ -1382,7 +1382,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
 
 		if c.EffectiveMessage.Text == helpers.End {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name:    helpers.DeleteEventSongState,
 				Context: user.State.Context,
 			}
@@ -1398,7 +1398,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		songNames := helpers.SplitQueryByNewlines(query)
 
 		if len(songNames) > 1 {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Index:   0,
 				Name:    helpers.SetlistState,
 				Context: user.State.Context,
@@ -1450,7 +1450,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
 
 		if c.EffectiveMessage.Text == helpers.End {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name:    helpers.DeleteEventSongState,
 				Context: user.State.Context,
 			}
@@ -1532,14 +1532,14 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 
 		// user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, msg.MessageId)
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 1,
 			Name:  helpers.ChangeEventNotesState,
 			Context: entities.Context{
 				EventID:          eventID,
 				MessagesToDelete: user.State.Context.MessagesToDelete,
 			},
-			Prev: user.State,
+			Prev: &user.State,
 		}
 
 		return nil
@@ -1589,7 +1589,7 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 0,
 			Name:  helpers.EventActionsState,
 			Context: entities.Context{
@@ -1689,10 +1689,10 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 		c.CallbackQuery.Answer(h.bot, nil)
 
 		if c.CallbackQuery == nil && user.State.Next != nil {
-			user.State = user.State.Next
+			user.State = *user.State.Next
 			return h.Enter(c, user)
 		} else if c.CallbackQuery == nil {
-			user.State = user.State.Prev
+			user.State = *user.State.Prev
 			return nil
 		}
 		return nil
@@ -1840,7 +1840,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.CreateBand:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Index: 0,
 				Name:  helpers.CreateBandState,
 			}
@@ -1863,7 +1863,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 				}
 
 				user.BandID = foundBand.ID
-				user.State = &entities.State{
+				user.State = entities.State{
 					Index: 0,
 					Name:  helpers.MainMenuState,
 				}
@@ -1936,7 +1936,7 @@ func createBandHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.MainMenuState,
 		}
 		return h.Enter(c, user)
@@ -1999,7 +1999,7 @@ func addBandAdminHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.MainMenuState,
 		}
 
@@ -2102,7 +2102,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 
 		switch c.EffectiveMessage.Text {
 		case helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.LikedSongs, helpers.TagsEmoji:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name:    helpers.GetSongsFromMongoState,
 				Context: user.State.Context,
 			}
@@ -2125,19 +2125,19 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 
 		song, err := h.songService.FindOneByName(strings.TrimSpace(songName))
 		if err != nil {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name:    helpers.SearchSongState,
 				Context: user.State.Context,
 			}
 			return h.Enter(c, user)
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.SongActionsState,
 			Context: entities.Context{
 				DriveFileID: song.DriveFileID,
 			},
-			Prev: user.State,
+			Prev: &user.State,
 		}
 		return h.Enter(c, user)
 	})
@@ -2198,7 +2198,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 
 		var query string
 		if c.EffectiveMessage.Text == helpers.CreateDoc {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.CreateSongState,
 			}
 			return h.Enter(c, user)
@@ -2219,7 +2219,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 		songNames := helpers.SplitQueryByNewlines(query)
 
 		if len(songNames) > 1 {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Index: 0,
 				Name:  helpers.SetlistState,
 				Next: &entities.State{
@@ -2240,7 +2240,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 				return err
 			}
 
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.MainMenuState,
 			}
 
@@ -2259,7 +2259,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 		}
 
 		if user.State.Context.NextPageToken == nil {
-			user.State.Context.NextPageToken = &entities.NextPageToken{}
+			user.State.Context.NextPageToken = &entities.PageToken{}
 		}
 
 		filters := true
@@ -2286,7 +2286,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State.Context.NextPageToken = &entities.NextPageToken{
+		user.State.Context.NextPageToken = &entities.PageToken{
 			Token:         nextPageToken,
 			PrevPageToken: user.State.Context.NextPageToken,
 		}
@@ -2388,7 +2388,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 
 		switch c.EffectiveMessage.Text {
 		case helpers.CreateDoc:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name: helpers.CreateSongState,
 			}
 			return h.Enter(c, user)
@@ -2398,7 +2398,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			return h.Enter(c, user)
 
 		case helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.LikedSongs, helpers.TagsEmoji:
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name:    helpers.GetSongsFromMongoState,
 				Context: user.State.Context,
 			}
@@ -2417,12 +2417,12 @@ func searchSongHandler() (int, []HandlerFunc) {
 			}
 
 			if foundDriveFile != nil {
-				user.State = &entities.State{
+				user.State = entities.State{
 					Name: helpers.SongActionsState,
 					Context: entities.Context{
 						DriveFileID: foundDriveFile.Id,
 					},
-					Prev: user.State,
+					Prev: &user.State,
 				}
 				return h.Enter(c, user)
 			} else {
@@ -2443,7 +2443,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.MainMenuState,
 		}
 		return h.Enter(c, user)
@@ -2479,11 +2479,11 @@ func songActionsHandler() (int, []HandlerFunc) {
 			c.CallbackQuery.Answer(h.bot, nil)
 		} else {
 			if user.State.Next != nil {
-				user.State = user.State.Next
+				user.State = *user.State.Next
 				return h.Enter(c, user)
 			} else {
 				user.State.Prev.Context.MessagesToDelete = user.State.Prev.Context.MessagesToDelete[:0]
-				user.State = user.State.Prev
+				user.State = *user.State.Prev
 				return nil
 			}
 		}
@@ -2599,7 +2599,7 @@ func addSongTagHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: index + 1,
 			Name:  state,
 			Context: entities.Context{
@@ -2661,7 +2661,7 @@ func addSongTagHandler() (int, []HandlerFunc) {
 				})
 			c.CallbackQuery.Answer(h.bot, nil)
 		} else {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Name:    helpers.SongActionsState,
 				Context: user.State.Context,
 				Next: &entities.State{
@@ -2880,7 +2880,7 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 
 		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 1,
 			Name:  helpers.ChangeSongBPMState,
 			Context: entities.Context{
@@ -2927,7 +2927,7 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index:   0,
 			Name:    helpers.SongActionsState,
 			Context: user.State.Context,
@@ -3113,7 +3113,7 @@ func createSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 0,
 			Name:  helpers.SongActionsState,
 			Context: entities.Context{
@@ -3400,7 +3400,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 
 		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.", nil)
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.SongActionsState,
 			Context: entities.Context{
 				DriveFileID: user.State.Context.DriveFileID,
@@ -3412,7 +3412,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 	// Upload voice from song menu.
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name:    helpers.UploadVoiceState,
 			Index:   4,
 			Context: entities.Context{DriveFileID: user.State.CallbackData.Query().Get("driveFileId")},
@@ -3464,7 +3464,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 
 		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.", nil)
 
-		user.State = &entities.State{
+		user.State = entities.State{
 			Name: helpers.SongActionsState,
 			Context: entities.Context{
 				DriveFileID: user.State.Context.DriveFileID,
@@ -3605,12 +3605,12 @@ func setlistHandler() (int, []HandlerFunc) {
 		driveFileIDs := user.State.Context.FoundDriveFileIDs
 		messagesToDelete := user.State.Context.MessagesToDelete
 		if user.State.Next != nil {
-			user.State = user.State.Next
+			user.State = *user.State.Next
 			user.State.Context.FoundDriveFileIDs = driveFileIDs
 			user.State.Context.MessagesToDelete = messagesToDelete
 			return h.Enter(c, user)
 		} else {
-			user.State = user.State.Prev
+			user.State = *user.State.Prev
 			return nil
 		}
 

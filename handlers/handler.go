@@ -69,17 +69,17 @@ func (h *Handler) OnText(b *gotgbot.Bot, ctx *ext.Context) error {
 		// 	})
 		// }
 		if user.State.Prev != nil {
-			user.State = user.State.Prev
+			user.State = *user.State.Prev
 			user.State.Index = 0
 		} else {
-			user.State = &entities.State{
+			user.State = entities.State{
 				Index: 0,
 				Name:  helpers.MainMenuState,
 			}
 		}
 
 	case helpers.Menu:
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 0,
 			Name:  helpers.MainMenuState,
 		}
@@ -106,7 +106,7 @@ func (h *Handler) OnVoice(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	if user.State.Name != helpers.UploadVoiceState {
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 0,
 			Name:  helpers.UploadVoiceState,
 			Context: entities.Context{
@@ -114,7 +114,7 @@ func (h *Handler) OnVoice(b *gotgbot.Bot, ctx *ext.Context) error {
 					FileID: ctx.EffectiveMessage.Voice.FileId,
 				},
 			},
-			Prev: user.State,
+			Prev: &user.State,
 		}
 	}
 
@@ -139,7 +139,7 @@ func (h *Handler) OnAudio(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	if user.State.Name != helpers.UploadVoiceState {
-		user.State = &entities.State{
+		user.State = entities.State{
 			Index: 0,
 			Name:  helpers.UploadVoiceState,
 			Context: entities.Context{
@@ -147,7 +147,7 @@ func (h *Handler) OnAudio(b *gotgbot.Bot, ctx *ext.Context) error {
 					FileID: ctx.EffectiveMessage.Audio.FileId,
 				},
 			},
-			Prev: user.State,
+			Prev: &user.State,
 		}
 	}
 
@@ -277,7 +277,7 @@ func (h *Handler) enterReplyHandler(c *ext.Context, user *entities.User) error {
 	handlerFuncs, ok := handlers[user.State.Name]
 
 	if ok == false || user.State.Index < 0 || user.State.Index >= len(handlerFuncs) {
-		user.State = &entities.State{Name: helpers.MainMenuState}
+		user.State = entities.State{Name: helpers.MainMenuState}
 		handlerFuncs = handlers[user.State.Name]
 	}
 
