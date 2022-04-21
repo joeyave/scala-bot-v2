@@ -79,8 +79,10 @@ func (u *UserExtra) String() string {
 }
 
 type State struct {
-	Index        int      `bson:"index,omitempty" json:"index"`
-	Name         int      `bson:"name,omitempty" json:"name"`
+	Index int `bson:"index,omitempty" json:"index"`
+	Name  int `bson:"name,omitempty" json:"name"`
+
+	// old
 	Context      Context  `bson:"context,omitempty" json:"-"`
 	CallbackData *url.URL `bson:"-" json:"-"`
 

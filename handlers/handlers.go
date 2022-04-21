@@ -95,7 +95,7 @@ func mainMenuHandler() (int, []HandlerFunc) {
 			}
 		}
 
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.MainMenuState, handlerFuncs
@@ -164,7 +164,7 @@ func settingsHandler() (int, []HandlerFunc) {
 			}
 		}
 
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.SettingsState, handlerFuncs
@@ -203,7 +203,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 		if len(user.Band.Roles) == 0 {
 			user.State.Context.Role.Priority = 1
 			user.State.Index++
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		for _, role := range user.Band.Roles {
@@ -234,7 +234,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 
 			if foundRole == nil {
 				user.State.Index--
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			}
 
 			user.State.Context.Role.Priority = foundRole.Priority + 1
@@ -263,7 +263,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 		}
 
 		user.State = &entities.State{Name: helpers.MainMenuState}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.CreateRoleState, handlerFuncs
@@ -320,7 +320,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 				text = helpers.Archive
 			} else {
 				user.State.Index--
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			}
 		}
 
@@ -335,7 +335,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 				Prev: user.State,
 			}
 			user.State.Prev.Index = 0
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		} else if text == helpers.GetEventsWithMe || text == helpers.Archive || text == helpers.PrevPage || text == helpers.NextPage || helpers.IsWeekdayString(text) {
 
 			c.EffectiveChat.SendAction(h.bot, "typing")
@@ -431,13 +431,13 @@ func getEventsHandler() (int, []HandlerFunc) {
 				user.State = &entities.State{
 					Name: helpers.SearchSongState,
 				}
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			}
 
 			foundEvent, err := h.eventService.FindOneByNameAndTimeAndBandID(eventName, eventTime, user.BandID)
 			if err != nil {
 				user.State.Index--
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			}
 
 			user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
@@ -450,7 +450,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 				Prev: user.State,
 			}
 			user.State.Prev.Index = 1
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 	})
 
@@ -592,7 +592,7 @@ func createEventHandler() (int, []HandlerFunc) {
 		parsedTime, err := time.Parse(time.RFC3339, eventTime)
 		if err != nil {
 			user.State = &entities.State{Name: helpers.CreateEventState}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		event, err := h.eventService.FindOneByNameAndTimeAndBandID(user.State.Context.Map["eventName"], parsedTime, user.BandID)
@@ -685,7 +685,7 @@ func eventActionsHandler() (int, []HandlerFunc) {
 
 			if user.State.Next != nil {
 				user.State = user.State.Next
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			} else {
 				user.State = user.State.Prev
 				return nil
@@ -823,7 +823,7 @@ func changeSongOrderHandler() (int, []HandlerFunc) {
 
 		if len(user.State.CallbackData.Query()["driveFileIds"]) == 0 {
 			c.CallbackQuery.Data = helpers.AggregateCallbackData(helpers.DeleteEventSongState, 0, "")
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		event, err := h.eventService.GetEventWithSongs(eventID)
@@ -964,7 +964,7 @@ func changeEventDateHandler() (int, []HandlerFunc) {
 		parsedTime, err := time.Parse(time.RFC3339, eventTime)
 		if err != nil {
 			user.State = &entities.State{Name: helpers.CreateEventState}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
@@ -1183,7 +1183,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 		}
 
 		c.CallbackQuery.Data = helpers.AggregateCallbackData(helpers.AddEventMemberState, 1, payload)
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.AddEventMemberState, handlerFuncs
@@ -1335,7 +1335,7 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 		}
 
 		c.CallbackQuery.Data = helpers.AggregateCallbackData(helpers.DeleteEventMemberState, 0, "deleted")
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.DeleteEventMemberState, handlerFuncs
@@ -1389,7 +1389,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 			user.State.Next = &entities.State{
 				Name: helpers.GetEventsState,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
@@ -1409,7 +1409,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 				},
 			}
 			user.State.Context.SongNames = songNames
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		driveFiles, _, err := h.driveFileService.FindSomeByFullTextAndFolderID(query, user.Band.DriveFolderID, "")
@@ -1457,7 +1457,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 			user.State.Next = &entities.State{
 				Name: helpers.GetEventsState,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
@@ -1465,7 +1465,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		foundDriveFile, err := h.driveFileService.FindOneByNameAndFolderID(c.EffectiveMessage.Text, user.Band.DriveFolderID)
 		if err != nil {
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		song, _, err := h.songService.FindOrCreateOneByDriveFileID(foundDriveFile.Id)
@@ -1481,7 +1481,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		}
 
 		user.State.Index = 0
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
@@ -1503,7 +1503,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		}
 
 		user.State.Index = 0
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.AddEventSongState, handlerFuncs
@@ -1600,7 +1600,7 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 			},
 		}
 
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.ChangeEventNotesState, handlerFuncs
@@ -1690,7 +1690,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 
 		if c.CallbackQuery == nil && user.State.Next != nil {
 			user.State = user.State.Next
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		} else if c.CallbackQuery == nil {
 			user.State = user.State.Prev
 			return nil
@@ -1765,7 +1765,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 		}
 
 		c.CallbackQuery.Data = helpers.AggregateCallbackData(helpers.DeleteEventSongState, 0, "deleted")
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.DeleteEventSongState, handlerFuncs
@@ -1844,7 +1844,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 				Index: 0,
 				Name:  helpers.CreateBandState,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 
 		default:
 			bands := user.State.Context.Bands
@@ -1871,7 +1871,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 				user.State.Index--
 			}
 
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 	})
 
@@ -1920,7 +1920,7 @@ func createBandHandler() (int, []HandlerFunc) {
 		matches := re.FindStringSubmatch(c.EffectiveMessage.Text)
 		if matches == nil || len(matches) < 3 {
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 		user.State.Context.Band.DriveFolderID = matches[2]
 		user.Role = helpers.Admin
@@ -1939,7 +1939,7 @@ func createBandHandler() (int, []HandlerFunc) {
 		user.State = &entities.State{
 			Name: helpers.MainMenuState,
 		}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.CreateBandState, handlerFunc
@@ -1985,7 +1985,7 @@ func addBandAdminHandler() (int, []HandlerFunc) {
 		chosenUser, err := h.userService.FindOneByName(query)
 		if err != nil {
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		chosenUser.Role = helpers.Admin
@@ -2003,7 +2003,7 @@ func addBandAdminHandler() (int, []HandlerFunc) {
 			Name: helpers.MainMenuState,
 		}
 
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.AddBandAdminState, handlerFunc
@@ -2024,7 +2024,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 		case helpers.TagsEmoji:
 			user.State.Context.QueryType = c.EffectiveMessage.Text
 			user.State.Index = 2
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		var songs []*entities.SongExtra
@@ -2106,15 +2106,15 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 				Name:    helpers.GetSongsFromMongoState,
 				Context: user.State.Context,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		case helpers.NextPage:
 			user.State.Context.PageIndex++
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		case helpers.PrevPage:
 			user.State.Context.PageIndex--
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		c.EffectiveChat.SendAction(h.bot, "upload_document")
@@ -2129,7 +2129,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 				Name:    helpers.SearchSongState,
 				Context: user.State.Context,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		user.State = &entities.State{
@@ -2139,7 +2139,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 			},
 			Prev: user.State,
 		}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
@@ -2192,197 +2192,196 @@ func searchSongHandler() (int, []HandlerFunc) {
 
 	// Print list of found songs.
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
-		{
-			c.EffectiveChat.SendAction(h.bot, "typing")
+		c.EffectiveChat.SendAction(h.bot, "typing")
 
-			// user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
+		// user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
-			var query string
-			if c.EffectiveMessage.Text == helpers.CreateDoc {
-				user.State = &entities.State{
-					Name: helpers.CreateSongState,
-				}
-				return h.enter(c, user)
-			} else if c.EffectiveMessage.Text == helpers.SearchEverywhere || c.EffectiveMessage.Text == helpers.Songs || c.EffectiveMessage.Text == helpers.SongsByLastDateOfPerforming {
-				user.State.Context.QueryType = c.EffectiveMessage.Text
-				query = user.State.Context.Query
-			} else if strings.Contains(c.EffectiveMessage.Text, "〔") && strings.Contains(c.EffectiveMessage.Text, "〕") {
-				user.State.Context.QueryType = helpers.Songs
-				query = user.State.Context.Query
-			} else if c.EffectiveMessage.Text == helpers.PrevPage || c.EffectiveMessage.Text == helpers.NextPage {
-				query = user.State.Context.Query
-			} else {
-				user.State.Context.NextPageToken = nil
-				query = c.EffectiveMessage.Text
+		var query string
+		if c.EffectiveMessage.Text == helpers.CreateDoc {
+			user.State = &entities.State{
+				Name: helpers.CreateSongState,
 			}
-
-			query = helpers.CleanUpQuery(query)
-			songNames := helpers.SplitQueryByNewlines(query)
-
-			if len(songNames) > 1 {
-				user.State = &entities.State{
-					Index: 0,
-					Name:  helpers.SetlistState,
-					Next: &entities.State{
-						Index: 2,
-						Name:  helpers.SearchSongState,
-					},
-					Context: user.State.Context,
-				}
-				user.State.Context.SongNames = songNames
-				return h.enter(c, user)
-
-			} else if len(songNames) == 1 {
-				query = songNames[0]
-				user.State.Context.Query = query
-			} else {
-				_, err := c.EffectiveChat.SendMessage(h.bot, "Из запроса удаляются все числа, дефисы и скобки вместе с тем, что в них.", nil)
-				if err != nil {
-					return err
-				}
-
-				user.State = &entities.State{
-					Name: helpers.MainMenuState,
-				}
-
-				return h.enter(c, user)
-			}
-
-			var driveFiles []*drive.File
-			var nextPageToken string
-			var err error
-
-			if c.EffectiveMessage.Text == helpers.PrevPage {
-				if user.State.Context.NextPageToken != nil &&
-					user.State.Context.NextPageToken.PrevPageToken != nil {
-					user.State.Context.NextPageToken = user.State.Context.NextPageToken.PrevPageToken.PrevPageToken
-				}
-			}
-
-			if user.State.Context.NextPageToken == nil {
-				user.State.Context.NextPageToken = &entities.NextPageToken{}
-			}
-
-			filters := true
-			if user.State.Context.QueryType == helpers.SearchEverywhere {
-				filters = false
-				_driveFiles, _nextPageToken, _err := h.driveFileService.FindSomeByFullTextAndFolderID(query, "", user.State.Context.NextPageToken.Token)
-				driveFiles = _driveFiles
-				nextPageToken = _nextPageToken
-				err = _err
-			} else if user.State.Context.QueryType == helpers.Songs && user.State.Context.Query == "" {
-				_driveFiles, _nextPageToken, _err := h.driveFileService.FindAllByFolderID(user.Band.DriveFolderID, user.State.Context.NextPageToken.Token)
-				driveFiles = _driveFiles
-				nextPageToken = _nextPageToken
-				err = _err
-			} else {
-				filters = false
-				_driveFiles, _nextPageToken, _err := h.driveFileService.FindSomeByFullTextAndFolderID(query, user.Band.DriveFolderID, user.State.Context.NextPageToken.Token)
-				driveFiles = _driveFiles
-				nextPageToken = _nextPageToken
-				err = _err
-			}
-
-			if err != nil {
-				return err
-			}
-
-			user.State.Context.NextPageToken = &entities.NextPageToken{
-				Token:         nextPageToken,
-				PrevPageToken: user.State.Context.NextPageToken,
-			}
-
-			if len(driveFiles) == 0 {
-				markup := &gotgbot.ReplyKeyboardMarkup{
-					Keyboard:       helpers.SearchEverywhereKeyboard,
-					ResizeKeyboard: true,
-				}
-				_, err := c.EffectiveChat.SendMessage(h.bot, "Ничего не найдено. Попробуй еще раз.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-				return err
-			}
-
-			markup := &gotgbot.ReplyKeyboardMarkup{
-				ResizeKeyboard:        true,
-				InputFieldPlaceholder: query,
-			}
-			if markup.InputFieldPlaceholder == "" {
-				markup.InputFieldPlaceholder = helpers.Placeholder
-			}
-
-			if filters {
-				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji}},
-				}
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.CreateDoc}})
-			}
-
-			likedSongs, likedSongErr := h.songService.FindManyLiked(user.ID)
-
-			set := make(map[string]*entities.Band)
-			for i, driveFile := range driveFiles {
-
-				if user.State.Context.QueryType == helpers.SearchEverywhere {
-
-					for _, parentFolderID := range driveFile.Parents {
-						_, exists := set[parentFolderID]
-						if !exists {
-							band, err := h.bandService.FindOneByDriveFolderID(parentFolderID)
-							if err == nil {
-								set[parentFolderID] = band
-								driveFiles[i].Name += fmt.Sprintf(" (%s)", band.Name)
-								break
-							}
-						} else {
-							driveFiles[i].Name += fmt.Sprintf(" (%s)", set[parentFolderID].Name)
-						}
-					}
-				}
-				driveFileName := driveFile.Name
-
-				if likedSongErr == nil {
-					for _, likedSong := range likedSongs {
-						if likedSong.DriveFileID == driveFile.Id {
-							driveFileName += " " + helpers.Like
-						}
-					}
-				}
-
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
-			}
-
-			if c.EffectiveMessage.Text != helpers.SearchEverywhere || c.EffectiveMessage.Text != helpers.Songs {
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.SearchEverywhere}})
-			}
-
-			if user.State.Context.NextPageToken.Token != "" {
-				if user.State.Context.NextPageToken.PrevPageToken != nil && user.State.Context.NextPageToken.PrevPageToken.Token != "" {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
-				} else {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
-				}
-			} else {
-				if user.State.Context.NextPageToken.PrevPageToken.Token != "" {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}})
-				} else {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
-				}
-			}
-
-			msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-			if err != nil {
-				return err
-			}
-
-			for _, messageID := range user.State.Context.MessagesToDelete {
-				h.bot.DeleteMessage(c.EffectiveChat.Id, messageID)
-			}
-
-			user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, msg.MessageId)
-
-			user.State.Context.DriveFiles = driveFiles
-			user.State.Index++
-			return nil
+			return h.Enter(c, user)
+		} else if c.EffectiveMessage.Text == helpers.SearchEverywhere || c.EffectiveMessage.Text == helpers.Songs || c.EffectiveMessage.Text == helpers.SongsByLastDateOfPerforming {
+			user.State.Context.QueryType = c.EffectiveMessage.Text
+			query = user.State.Context.Query
+		} else if strings.Contains(c.EffectiveMessage.Text, "〔") && strings.Contains(c.EffectiveMessage.Text, "〕") {
+			user.State.Context.QueryType = helpers.Songs
+			query = user.State.Context.Query
+		} else if c.EffectiveMessage.Text == helpers.PrevPage || c.EffectiveMessage.Text == helpers.NextPage {
+			query = user.State.Context.Query
+		} else {
+			user.State.Context.NextPageToken = nil
+			query = c.EffectiveMessage.Text
 		}
+
+		query = helpers.CleanUpQuery(query)
+		songNames := helpers.SplitQueryByNewlines(query)
+
+		if len(songNames) > 1 {
+			user.State = &entities.State{
+				Index: 0,
+				Name:  helpers.SetlistState,
+				Next: &entities.State{
+					Index: 2,
+					Name:  helpers.SearchSongState,
+				},
+				Context: user.State.Context,
+			}
+			user.State.Context.SongNames = songNames
+			return h.Enter(c, user)
+
+		} else if len(songNames) == 1 {
+			query = songNames[0]
+			user.State.Context.Query = query
+		} else {
+			_, err := c.EffectiveChat.SendMessage(h.bot, "Из запроса удаляются все числа, дефисы и скобки вместе с тем, что в них.", nil)
+			if err != nil {
+				return err
+			}
+
+			user.State = &entities.State{
+				Name: helpers.MainMenuState,
+			}
+
+			return h.Enter(c, user)
+		}
+
+		var driveFiles []*drive.File
+		var nextPageToken string
+		var err error
+
+		if c.EffectiveMessage.Text == helpers.PrevPage {
+			if user.State.Context.NextPageToken != nil &&
+				user.State.Context.NextPageToken.PrevPageToken != nil {
+				user.State.Context.NextPageToken = user.State.Context.NextPageToken.PrevPageToken.PrevPageToken
+			}
+		}
+
+		if user.State.Context.NextPageToken == nil {
+			user.State.Context.NextPageToken = &entities.NextPageToken{}
+		}
+
+		filters := true
+		if user.State.Context.QueryType == helpers.SearchEverywhere {
+			filters = false
+			_driveFiles, _nextPageToken, _err := h.driveFileService.FindSomeByFullTextAndFolderID(query, "", user.State.Context.NextPageToken.Token)
+			driveFiles = _driveFiles
+			nextPageToken = _nextPageToken
+			err = _err
+		} else if user.State.Context.QueryType == helpers.Songs && user.State.Context.Query == "" {
+			_driveFiles, _nextPageToken, _err := h.driveFileService.FindAllByFolderID(user.Band.DriveFolderID, user.State.Context.NextPageToken.Token)
+			driveFiles = _driveFiles
+			nextPageToken = _nextPageToken
+			err = _err
+		} else {
+			filters = false
+			_driveFiles, _nextPageToken, _err := h.driveFileService.FindSomeByFullTextAndFolderID(query, user.Band.DriveFolderID, user.State.Context.NextPageToken.Token)
+			driveFiles = _driveFiles
+			nextPageToken = _nextPageToken
+			err = _err
+		}
+
+		if err != nil {
+			return err
+		}
+
+		user.State.Context.NextPageToken = &entities.NextPageToken{
+			Token:         nextPageToken,
+			PrevPageToken: user.State.Context.NextPageToken,
+		}
+
+		if len(driveFiles) == 0 {
+			markup := &gotgbot.ReplyKeyboardMarkup{
+				Keyboard:       helpers.SearchEverywhereKeyboard,
+				ResizeKeyboard: true,
+			}
+			_, err := c.EffectiveChat.SendMessage(h.bot, "Ничего не найдено. Попробуй еще раз.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+			return err
+		}
+
+		markup := &gotgbot.ReplyKeyboardMarkup{
+			ResizeKeyboard:        true,
+			InputFieldPlaceholder: query,
+		}
+		if markup.InputFieldPlaceholder == "" {
+			markup.InputFieldPlaceholder = helpers.Placeholder
+		}
+
+		if filters {
+			markup.Keyboard = [][]gotgbot.KeyboardButton{
+				{{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji}},
+			}
+			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.CreateDoc}})
+		}
+
+		likedSongs, likedSongErr := h.songService.FindManyLiked(user.ID)
+
+		set := make(map[string]*entities.Band)
+		for i, driveFile := range driveFiles {
+
+			if user.State.Context.QueryType == helpers.SearchEverywhere {
+
+				for _, parentFolderID := range driveFile.Parents {
+					_, exists := set[parentFolderID]
+					if !exists {
+						band, err := h.bandService.FindOneByDriveFolderID(parentFolderID)
+						if err == nil {
+							set[parentFolderID] = band
+							driveFiles[i].Name += fmt.Sprintf(" (%s)", band.Name)
+							break
+						}
+					} else {
+						driveFiles[i].Name += fmt.Sprintf(" (%s)", set[parentFolderID].Name)
+					}
+				}
+			}
+			driveFileName := driveFile.Name
+
+			if likedSongErr == nil {
+				for _, likedSong := range likedSongs {
+					if likedSong.DriveFileID == driveFile.Id {
+						driveFileName += " " + helpers.Like
+					}
+				}
+			}
+
+			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
+		}
+
+		if c.EffectiveMessage.Text != helpers.SearchEverywhere || c.EffectiveMessage.Text != helpers.Songs {
+			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.SearchEverywhere}})
+		}
+
+		if user.State.Context.NextPageToken.Token != "" {
+			if user.State.Context.NextPageToken.PrevPageToken != nil && user.State.Context.NextPageToken.PrevPageToken.Token != "" {
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
+			} else {
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
+			}
+		} else {
+			if user.State.Context.NextPageToken.PrevPageToken.Token != "" {
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}})
+			} else {
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
+			}
+		}
+
+		msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		if err != nil {
+			return err
+		}
+
+		for _, messageID := range user.State.Context.MessagesToDelete {
+			h.bot.DeleteMessage(c.EffectiveChat.Id, messageID)
+		}
+
+		user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, msg.MessageId)
+
+		user.State.Context.DriveFiles = driveFiles
+		user.State.Index++
+		return nil
+
 	})
 
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
@@ -2392,18 +2391,18 @@ func searchSongHandler() (int, []HandlerFunc) {
 			user.State = &entities.State{
 				Name: helpers.CreateSongState,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 
 		case helpers.SearchEverywhere, helpers.NextPage:
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 
 		case helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.LikedSongs, helpers.TagsEmoji:
 			user.State = &entities.State{
 				Name:    helpers.GetSongsFromMongoState,
 				Context: user.State.Context,
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 
 		default:
 			c.EffectiveChat.SendAction(h.bot, "upload_document")
@@ -2425,10 +2424,10 @@ func searchSongHandler() (int, []HandlerFunc) {
 					},
 					Prev: user.State,
 				}
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			} else {
 				user.State.Index--
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			}
 		}
 	})
@@ -2447,7 +2446,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 		user.State = &entities.State{
 			Name: helpers.MainMenuState,
 		}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.SearchSongState, handlerFunc
@@ -2481,7 +2480,7 @@ func songActionsHandler() (int, []HandlerFunc) {
 		} else {
 			if user.State.Next != nil {
 				user.State = user.State.Next
-				return h.enter(c, user)
+				return h.Enter(c, user)
 			} else {
 				user.State.Prev.Context.MessagesToDelete = user.State.Prev.Context.MessagesToDelete[:0]
 				user.State = user.State.Prev
@@ -2669,7 +2668,7 @@ func addSongTagHandler() (int, []HandlerFunc) {
 					Name: helpers.MainMenuState,
 				},
 			}
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 		return nil
 	})
@@ -2934,7 +2933,7 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 			Context: user.State.Context,
 			Next:    &entities.State{Name: helpers.MainMenuState, Index: 0},
 		}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.ChangeSongBPMState, handlerFunc
@@ -3125,7 +3124,7 @@ func createSongHandler() (int, []HandlerFunc) {
 			},
 		}
 
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.CreateSongState, handlerFunc
@@ -3291,7 +3290,7 @@ func getVoicesHandler() (int, []HandlerFunc) {
 		switch c.EffectiveMessage.Text {
 		case helpers.Back:
 			user.State.Index = 0
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		case helpers.Members:
 			// TODO: handle delete
 			return nil
@@ -3363,7 +3362,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		foundDriveFile, err := h.driveFileService.FindOneByNameAndFolderID(c.EffectiveMessage.Text, user.Band.DriveFolderID)
 		if err != nil {
 			user.State.Index--
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		song, _, err := h.songService.FindOrCreateOneByDriveFileID(foundDriveFile.Id)
@@ -3407,7 +3406,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 				DriveFileID: user.State.Context.DriveFileID,
 			},
 		}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	// Upload voice from song menu.
@@ -3472,7 +3471,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 			},
 			Next: &entities.State{Name: helpers.MainMenuState},
 		}
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	return helpers.UploadVoiceState, handlerFunc
@@ -3529,7 +3528,7 @@ func setlistHandler() (int, []HandlerFunc) {
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
 		if len(user.State.Context.SongNames) < 1 {
 			user.State.Index = 2
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		songNames := user.State.Context.SongNames
@@ -3587,7 +3586,7 @@ func setlistHandler() (int, []HandlerFunc) {
 		switch c.EffectiveMessage.Text {
 		case helpers.Skip:
 			user.State.Index = 0
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		}
 
 		foundDriveFile, err := h.driveFileService.FindOneByNameAndFolderID(c.EffectiveMessage.Text, user.Band.DriveFolderID)
@@ -3598,7 +3597,7 @@ func setlistHandler() (int, []HandlerFunc) {
 		}
 
 		user.State.Index = 0
-		return h.enter(c, user)
+		return h.Enter(c, user)
 	})
 
 	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
@@ -3609,7 +3608,7 @@ func setlistHandler() (int, []HandlerFunc) {
 			user.State = user.State.Next
 			user.State.Context.FoundDriveFileIDs = driveFileIDs
 			user.State.Context.MessagesToDelete = messagesToDelete
-			return h.enter(c, user)
+			return h.Enter(c, user)
 		} else {
 			user.State = user.State.Prev
 			return nil

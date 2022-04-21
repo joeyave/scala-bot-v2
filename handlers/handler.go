@@ -7,11 +7,9 @@ import (
 	"github.com/joeyave/scala-bot-v2/entities"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/services"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/url"
 	"regexp"
 
-	"strings"
 	"time"
 )
 
@@ -87,7 +85,7 @@ func (h *Handler) OnText(b *gotgbot.Bot, ctx *ext.Context) error {
 		}
 	}
 
-	err = h.enter(ctx, user)
+	err = h.Enter(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -120,7 +118,7 @@ func (h *Handler) OnVoice(b *gotgbot.Bot, ctx *ext.Context) error {
 		}
 	}
 
-	err = h.enter(ctx, user)
+	err = h.Enter(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -153,7 +151,7 @@ func (h *Handler) OnAudio(b *gotgbot.Bot, ctx *ext.Context) error {
 		}
 	}
 
-	err = h.enter(ctx, user)
+	err = h.Enter(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -172,7 +170,7 @@ func (h *Handler) OnCallback(b *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	err = h.enter(ctx, user)
+	err = h.Enter(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -181,29 +179,6 @@ func (h *Handler) OnCallback(b *gotgbot.Bot, ctx *ext.Context) error {
 	if err != nil {
 		return err
 	}
-
-	return nil
-}
-
-func (h *Handler) RegisterUser(b *gotgbot.Bot, ctx *ext.Context) error {
-
-	user, err := h.userService.FindOneOrCreateByID(ctx.EffectiveChat.Id)
-	if err != nil {
-		return err
-	}
-
-	// if user.Name == "" {
-	// }
-	user.Name = strings.TrimSpace(fmt.Sprintf("%s %s", ctx.EffectiveChat.FirstName, ctx.EffectiveChat.LastName))
-
-	if user.BandID == primitive.NilObjectID && user.State.Name != helpers.ChooseBandState && user.State.Name != helpers.CreateBandState {
-		user.State = &entities.State{
-			Index: 0,
-			Name:  helpers.ChooseBandState,
-		}
-	}
-
-	ctx.Data["user"] = user
 
 	return nil
 }
@@ -241,7 +216,7 @@ func (h *Handler) NotifyUser() {
 	}
 }
 
-func (h *Handler) enter(c *ext.Context, user *entities.User) error {
+func (h *Handler) Enter(c *ext.Context, user *entities.User) error {
 
 	if user.State.CallbackData == nil {
 		user.State.CallbackData, _ = url.Parse("t.me/callbackData")

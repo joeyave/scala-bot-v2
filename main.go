@@ -6,7 +6,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
-	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/callbackquery"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/message"
 	"github.com/gin-gonic/gin"
 	"github.com/joeyave/scala-bot-v2/controller"
@@ -99,7 +98,20 @@ func main() {
 	roleRepository := repositories.NewRoleRepository(mongoClient)
 	roleService := services.NewRoleService(roleRepository)
 
+	handler := myhandlers.NewHandler(
+		bot,
+		userService,
+		driveFileService,
+		songService,
+		voiceService,
+		bandService,
+		membershipService,
+		eventService,
+		roleService,
+	)
+
 	botController := controller.BotController{
+		OldHandler:        handler,
 		UserService:       userService,
 		DriveFileService:  driveFileService,
 		SongService:       songService,
@@ -152,38 +164,27 @@ func main() {
 	})
 	dispatcher := updater.Dispatcher
 
-	handler := myhandlers.NewHandler(
-		bot,
-		userService,
-		driveFileService,
-		songService,
-		voiceService,
-		bandService,
-		membershipService,
-		eventService,
-		roleService,
-	)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.RegisterUser), 0)
 
-	// new
-	//dispatcher.AddHandlerToGroup(handlers.NewCommand("start", botController.Menu), -1)
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Text == "💻 Меню"
+	}, botController.Menu), 1)
 
-		if msg.WebAppData != nil && msg.WebAppData.ButtonText == "➕ Добавить собрание" {
-			return true
-		}
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Text == "🗓️ Расписание"
+	}, botController.GetEvents), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.WebAppData != nil && msg.WebAppData.ButtonText == "➕ Добавить собрание"
+	}, botController.CreateEvent), 1)
+	//dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), 1)
 
-		return false
-	}, botController.CreateEvent), -1)
-	//dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), -1)
-	//dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool { return msg.Text == "🗓️ Расписание" }, botController.Events), -1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Text == "🎵 Песни"
+	}, botController.GetSongs), 1)
 
-	// old
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, handler.RegisterUser), 0)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Text, handler.OnText), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Voice, handler.OnVoice), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.Audio, handler.OnAudio), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.All, handler.OnCallback), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)
 
 	go handler.NotifyUser()
 
