@@ -51,8 +51,14 @@ var locales = map[string]map[string]string{
 	"button.cancel": {
 		"ru": "🚫 Отмена",
 	},
+	"button.skip": {
+		"ru": "⏩ Пропустить",
+	},
 	"button.createDoc": {
 		"ru": "➕ Создать документ",
+	},
+	"button.createEvent": {
+		"ru": "➕ Добавить собрание",
 	},
 
 	"text.defaultPlaceholder": {
@@ -67,8 +73,14 @@ var locales = map[string]map[string]string{
 	"text.chooseSong": {
 		"ru": "Выбери песню:",
 	},
+	"text.chooseSongOrTypeAnotherQuery": {
+		"ru": "Выбери песню по запросу %s или введи другое название:",
+	},
 	"text.nothingFound": {
 		"ru": "Ничего не найдено. Попробуй еще раз.",
+	},
+	"text.nothingFoundByQuery": {
+		"ru": "По запросу %s ничего не найдено. Напиши новое название или пропусти эту песню.",
 	},
 	"text.menu": {
 		"ru": "Меню:",

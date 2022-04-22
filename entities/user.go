@@ -38,6 +38,8 @@ type Cache struct {
 	DriveFiles []*drive.File `bson:"drive_files,omitempty"`
 
 	NextPageToken *NextPageToken `json:"next_page_token,omitempty"`
+	SongNames     []string       `bson:"song_names,omitempty"`
+	DriveFileIDs  []string       `bson:"drive_file_ids,omitempty"`
 }
 
 type NextPageToken struct {

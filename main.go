@@ -14,6 +14,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/repositories"
 	"github.com/joeyave/scala-bot-v2/services"
+	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -157,14 +158,14 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.RegisterUser), 0)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Text == "💻 Меню"
+		return msg.Text == txt.Get("button.menu", msg.From.LanguageCode) || msg.Text == txt.Get("button.cancel", msg.From.LanguageCode)
 	}, botController.Menu), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Text == "🗓️ Расписание"
+		return msg.Text == txt.Get("button.schedule", msg.From.LanguageCode)
 	}, botController.GetEvents(0)), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.WebAppData != nil && msg.WebAppData.ButtonText == "➕ Добавить собрание"
+		return msg.WebAppData != nil && msg.WebAppData.ButtonText == txt.Get("button.createEvent", msg.From.LanguageCode)
 	}, botController.CreateEvent), 1)
 	//dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), 1)
 
