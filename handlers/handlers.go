@@ -9,6 +9,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/joeyave/scala-bot-v2/entities"
 	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -293,7 +294,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}})
 
-		msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери собрание:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		msg, err := c.EffectiveChat.SendMessage(h.bot, txt.Get("text.chooseEvent", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -410,7 +411,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
 			}
 
-			msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери собрание:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+			msg, err := c.EffectiveChat.SendMessage(h.bot, txt.Get("text.chooseEvent", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 			if err != nil {
 				return err
 			}
@@ -2081,7 +2082,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
 		}
 
-		msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		msg, err := c.EffectiveChat.SendMessage(h.bot, txt.Get("text.chooseSong", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -2175,7 +2176,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 		}
 		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Back}})
 
-		msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери тег:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		msg, err := c.EffectiveChat.SendMessage(h.bot, txt.Get("text.chooseTag", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -2296,7 +2297,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 				Keyboard:       helpers.SearchEverywhereKeyboard,
 				ResizeKeyboard: true,
 			}
-			_, err := c.EffectiveChat.SendMessage(h.bot, "Ничего не найдено. Попробуй еще раз.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+			_, err := c.EffectiveChat.SendMessage(h.bot, txt.Get("text.nothingFound", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 			return err
 		}
 
@@ -2367,7 +2368,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			}
 		}
 
-		msg, err := c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		msg, err := c.EffectiveChat.SendMessage(h.bot, txt.Get("text.chooseSong", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}
@@ -3346,7 +3347,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		}
 		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Cancel}})
 
-		_, err = c.EffectiveChat.SendMessage(h.bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+		_, err = c.EffectiveChat.SendMessage(h.bot, txt.Get("text.chooseSong", c.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
 		}

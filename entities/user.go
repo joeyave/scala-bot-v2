@@ -32,6 +32,38 @@ type Cache struct {
 	Query     string `bson:"query,omitempty"`
 	Filter    string `bson:"filter,omitempty"`
 	PageIndex int    `bson:"page_index,omitempty"`
+
+	Buttons []gotgbot.KeyboardButton `bson:"buttons,omitempty"`
+
+	DriveFiles []*drive.File `bson:"drive_files,omitempty"`
+
+	NextPageToken *NextPageToken `json:"next_page_token,omitempty"`
+}
+
+type NextPageToken struct {
+	Value string         `bson:"value"`
+	Prev  *NextPageToken `bson:"prev,omitempty"`
+}
+
+func (t *NextPageToken) SetValue(token string) {
+	if t == nil {
+		t = &NextPageToken{}
+	}
+	t.Value = token
+}
+
+func (t *NextPageToken) GetValue() string {
+	if t != nil {
+		return t.Value
+	}
+	return ""
+}
+
+func (t *NextPageToken) GetPrevValue() string {
+	if t != nil && t.Prev != nil {
+		return t.Prev.Value
+	}
+	return ""
 }
 
 type State struct {

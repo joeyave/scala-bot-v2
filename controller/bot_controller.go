@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
@@ -13,7 +14,9 @@ import (
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/services"
 	"github.com/joeyave/scala-bot-v2/state"
+	"github.com/joeyave/scala-bot-v2/txt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/api/drive/v3"
 	"os"
 	"regexp"
@@ -40,6 +43,8 @@ func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context
 	switch user.State.Name {
 	case state.GetEvents:
 		return c.GetEvents(user.State.Index)(bot, ctx)
+	case state.FilterEvents:
+		return c.FilterEvents(user.State.Index)(bot, ctx)
 	case state.GetSongs:
 		return c.GetSongs(user.State.Index)(bot, ctx)
 	case state.FilterSongs:
@@ -143,13 +148,14 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 				Index: index,
 				Name:  state.GetEvents,
 			}
+			user.Cache = entities.Cache{}
 		}
 
 		switch index {
 		case 0:
 			{
 				events, err := c.EventService.FindManyFromTodayByBandID(user.BandID)
-				if err != nil {
+				if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 					return err
 				}
 
@@ -158,8 +164,8 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 					InputFieldPlaceholder: "Фраза из песни или список",
 				}
 
-				user.State.Context.WeekdayButtons = helpers.GetWeekdayButtons(events)
-				markup.Keyboard = append(markup.Keyboard, user.State.Context.WeekdayButtons)
+				user.Cache.Buttons = helpers.GetWeekdayButtons(events)
+				markup.Keyboard = append(markup.Keyboard, user.Cache.Buttons)
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 				for _, event := range events {
@@ -167,9 +173,9 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
 				}
 
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}})
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери собрание:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseEvent", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
@@ -183,109 +189,21 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 		case 1:
 			{
 				switch ctx.EffectiveMessage.Text {
-				case helpers.NextPage, helpers.PrevPage:
+				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode), txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					return c.GetEvents(0)(bot, ctx)
 
-				case helpers.GetEventsWithMe, helpers.Archive:
+				case txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode), txt.Get("button.archive", ctx.EffectiveUser.LanguageCode):
+					ctx.Data["buttons"] = user.Cache.Buttons
 					return c.FilterEvents(0)(bot, ctx)
 
 				default:
 					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
+						ctx.Data["buttons"] = user.Cache.Buttons
 						return c.FilterEvents(0)(bot, ctx)
 					}
 				}
 
-				//if strings.Contains(text, "〔") && strings.Contains(text, "〕") {
-				//	if helpers.IsWeekdayString(strings.ReplaceAll(strings.ReplaceAll(text, "〔", ""), "〕", "")) && user.Cache.Filter == helpers.Archive {
-				//		text = helpers.Archive
-				//	} else {
-				//		return c.GetEvents(0)(bot, ctx)
-				//	}
-				//}
-
 				ctx.EffectiveChat.SendAction(bot, "typing")
-
-				//markup := &gotgbot.ReplyKeyboardMarkup{
-				//	ResizeKeyboard:        true,
-				//	InputFieldPlaceholder: helpers.Placeholder,
-				//}
-
-				//if text == helpers.GetEventsWithMe || text == helpers.Archive || text == helpers.PrevPage || text == helpers.NextPage || helpers.IsWeekdayString(text) {
-				//
-				//	if text == helpers.NextPage {
-				//		user.Cache.PageIndex++
-				//	} else if text == helpers.PrevPage {
-				//		user.Cache.PageIndex--
-				//	} else {
-				//		if user.Cache.Filter == helpers.Archive && helpers.IsWeekdayString(text) {
-				//			// todo
-				//		} else {
-				//			user.Cache.Filter = text
-				//		}
-				//	}
-				//
-				//	var buttons []gotgbot.KeyboardButton
-				//	for _, button := range user.State.Context.WeekdayButtons {
-				//		buttons = append(buttons, button)
-				//	}
-				//
-				//	markup.Keyboard = append(markup.Keyboard, buttons)
-				//	markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
-				//
-				//	for i := range markup.Keyboard[0] {
-				//		if markup.Keyboard[0][i].Text == user.Cache.Filter || (markup.Keyboard[0][i].Text == text && user.Cache.Filter == helpers.Archive) ||
-				//			(markup.Keyboard[0][i].Text == user.State.Context.PrevText && user.Cache.Filter == helpers.Archive && (ctx.EffectiveMessage.Text == helpers.NextPage || ctx.EffectiveMessage.Text == helpers.PrevPage)) {
-				//			markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
-				//		}
-				//	}
-				//
-				//	var events []*entities.Event
-				//	var err error
-				//	switch user.Cache.Filter {
-				//	case helpers.Archive:
-				//		if helpers.IsWeekdayString(text) {
-				//			events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(text), user.Cache.PageIndex)
-				//			user.State.Context.PrevText = text
-				//		} else if helpers.IsWeekdayString(user.State.Context.PrevText) && (ctx.EffectiveMessage.Text == helpers.NextPage || ctx.EffectiveMessage.Text == helpers.PrevPage) {
-				//			events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(user.State.Context.PrevText), user.Cache.PageIndex)
-				//		} else {
-				//			events, err = c.EventService.FindManyUntilTodayByBandIDAndPageNumber(user.BandID, user.Cache.PageIndex)
-				//		}
-				//	case helpers.GetEventsWithMe:
-				//		events, err = c.EventService.FindManyFromTodayByBandIDAndUserID(user.BandID, user.ID, user.Cache.PageIndex)
-				//	default:
-				//		if helpers.IsWeekdayString(user.Cache.Filter) {
-				//			events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, helpers.GetWeekdayFromString(user.Cache.Filter))
-				//		}
-				//	}
-				//	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-				//		return err
-				//	}
-				//
-				//	for _, event := range events {
-				//
-				//		buttonText := ""
-				//		if user.Cache.Filter == helpers.GetEventsWithMe {
-				//			buttonText = helpers.EventButton(event, user, true)
-				//		} else {
-				//			buttonText = helpers.EventButton(event, user, false)
-				//		}
-				//
-				//		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
-				//	}
-				//	if user.Cache.PageIndex != 0 {
-				//		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
-				//	} else {
-				//		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
-				//	}
-				//
-				//	_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери собрание:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-				//	if err != nil {
-				//		return err
-				//	}
-				//
-				//	return nil
-				//}
 
 				eventName, eventTime, err := helpers.ParseEventButton(ctx.EffectiveMessage.Text)
 				if err != nil {
@@ -320,6 +238,7 @@ func (c *BotController) FilterEvents(index int) handlers.Response {
 				Index: index,
 				Name:  state.FilterEvents,
 			}
+			user.Cache = entities.Cache{}
 		}
 
 		switch index {
@@ -327,79 +246,83 @@ func (c *BotController) FilterEvents(index int) handlers.Response {
 			{
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				switch ctx.EffectiveMessage.Text {
-				case helpers.LikedSongs, helpers.SongsByNumberOfPerforming, helpers.SongsByLastDateOfPerforming:
+				if (ctx.EffectiveMessage.Text == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) ||
+					helpers.IsWeekdayString(ctx.EffectiveMessage.Text)) && user.Cache.Filter != txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
 					user.Cache.Filter = ctx.EffectiveMessage.Text
-
-				case helpers.TagsEmoji:
-					user.Cache.Filter = ctx.EffectiveMessage.Text
-					return c.FilterSongs(2)(bot, ctx)
 				}
 
 				var (
-					songs []*entities.SongExtra
-					err   error
+					events []*entities.Event
+					err    error
 				)
 
-				switch user.Cache.Filter {
-				case helpers.LikedSongs:
-					songs, err = c.SongService.FindManyExtraLiked(user.ID, user.Cache.PageIndex)
-				case helpers.SongsByLastDateOfPerforming:
-					songs, err = c.SongService.FindAllExtraByPageNumberSortedByLatestEventDate(user.BandID, user.Cache.PageIndex)
-				case helpers.SongsByNumberOfPerforming:
-					songs, err = c.SongService.FindAllExtraByPageNumberSortedByEventsNumber(user.BandID, user.Cache.PageIndex)
-				case helpers.TagsEmoji:
-					if strings.Contains(ctx.EffectiveMessage.Text, "〔") {
-						return c.GetSongs(0)(bot, ctx)
-					}
-					if user.Cache.Query == "" {
+				if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
+					events, err = c.EventService.FindManyFromTodayByBandIDAndUserID(user.BandID, user.ID, user.Cache.PageIndex)
+				} else if user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
+					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(ctx.EffectiveMessage.Text), user.Cache.PageIndex)
 						user.Cache.Query = ctx.EffectiveMessage.Text
+					} else if helpers.IsWeekdayString(user.Cache.Query) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode)) {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(user.Cache.Query), user.Cache.PageIndex)
+					} else if ctx.EffectiveMessage.Text == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndUserIDAndPageNumber(user.BandID, user.ID, user.Cache.PageIndex)
+						user.Cache.Query = ctx.EffectiveMessage.Text
+					} else if user.Cache.Query == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode)) {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndUserIDAndPageNumber(user.BandID, user.ID, user.Cache.PageIndex)
+					} else {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndPageNumber(user.BandID, user.Cache.PageIndex)
+						user.Cache.Buttons = helpers.GetWeekdayButtons(events)
 					}
-					songs, err = c.SongService.FindManyExtraByTag(user.Cache.Query, user.BandID, user.Cache.PageIndex)
+				} else if helpers.IsWeekdayString(user.Cache.Filter) {
+					events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, helpers.GetWeekdayFromString(user.Cache.Filter))
+				}
+				if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+					return err
 				}
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
 					InputFieldPlaceholder: "Фраза из песни или список",
 				}
-				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{
-						{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji},
-					},
+
+				if len(user.Cache.Buttons) == 0 {
+					user.Cache.Buttons = ctx.Data["buttons"].([]gotgbot.KeyboardButton)
 				}
+
+				var buttons []gotgbot.KeyboardButton
+				for _, button := range user.Cache.Buttons {
+					buttons = append(buttons, button)
+				}
+
+				markup.Keyboard = append(markup.Keyboard, buttons)
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 				for i := range markup.Keyboard[0] {
-					if markup.Keyboard[0][i].Text == user.Cache.Filter {
+					if markup.Keyboard[0][i].Text == user.Cache.Filter || (markup.Keyboard[0][i].Text == ctx.EffectiveMessage.Text && user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode)) ||
+						(markup.Keyboard[0][i].Text == user.Cache.Query && user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode))) {
 						markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
-						break
 					}
 				}
 
-				for _, songExtra := range songs {
-					buttonText := songExtra.Song.PDF.Name
-					if songExtra.Caption() != "" {
-						buttonText += fmt.Sprintf(" (%s)", songExtra.Caption())
-					}
+				for _, event := range events {
 
-					if user.Cache.Filter != helpers.LikedSongs {
-						for _, userID := range songExtra.Song.Likes {
-							if user.ID == userID {
-								buttonText += " " + helpers.Like
-								break
-							}
-						}
+					buttonText := ""
+					if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
+						buttonText = helpers.EventButton(event, user, true)
+					} else {
+						buttonText = helpers.EventButton(event, user, false)
 					}
 
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
 				}
 
 				if user.Cache.PageIndex != 0 {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
+					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.prev", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.next", ctx.EffectiveUser.LanguageCode)}})
 				} else {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
+					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.next", ctx.EffectiveUser.LanguageCode)}})
 				}
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseEvent", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
@@ -411,32 +334,49 @@ func (c *BotController) FilterEvents(index int) handlers.Response {
 		case 1:
 			{
 				switch ctx.EffectiveMessage.Text {
-				case helpers.LikedSongs, helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.TagsEmoji:
-					return c.FilterSongs(0)(bot, ctx)
-				case helpers.NextPage:
+				case txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode), txt.Get("button.archive", ctx.EffectiveUser.LanguageCode):
+					user.Cache.PageIndex = 0
+					return c.FilterEvents(0)(bot, ctx)
+				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode):
 					user.Cache.PageIndex++
-					return c.FilterSongs(0)(bot, ctx)
-				case helpers.PrevPage:
+					return c.FilterEvents(0)(bot, ctx)
+				case txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					user.Cache.PageIndex--
-					return c.FilterSongs(0)(bot, ctx)
+					return c.FilterEvents(0)(bot, ctx)
+				default:
+					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
+						user.Cache.PageIndex = 0
+						return c.FilterEvents(0)(bot, ctx)
+					}
 				}
 
 				if strings.Contains(ctx.EffectiveMessage.Text, "〔") && strings.Contains(ctx.EffectiveMessage.Text, "〕") {
-					return c.GetSongs(0)(bot, ctx)
+					if user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
+						if helpers.IsWeekdayString(strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "")) ||
+							strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "") == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
+							return c.FilterEvents(0)(bot, ctx)
+						} else {
+							return c.GetEvents(0)(bot, ctx)
+						}
+					} else {
+						return c.GetEvents(0)(bot, ctx)
+					}
 				}
 
-				ctx.EffectiveChat.SendAction(bot, "upload_document")
+				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				var songName string
-				regex := regexp.MustCompile(`\s*\(.*\)\s*(` + helpers.Like + `)?\s*`)
-				songName = regex.ReplaceAllString(ctx.EffectiveMessage.Text, "")
-
-				song, err := c.SongService.FindOneByName(strings.TrimSpace(songName))
+				eventName, eventTime, err := helpers.ParseEventButton(ctx.EffectiveMessage.Text)
 				if err != nil {
 					return c.Search(0)(bot, ctx)
 				}
 
-				return c.Song(bot, ctx, song.DriveFileID)
+				foundEvent, err := c.EventService.FindOneByNameAndTimeAndBandID(eventName, eventTime, user.BandID)
+				if err != nil {
+					return c.GetEvents(0)(bot, ctx)
+				}
+
+				err = c.Event(bot, ctx, foundEvent)
+				return err
 			}
 		case 2:
 			{
@@ -449,11 +389,11 @@ func (c *BotController) FilterEvents(index int) handlers.Response {
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
-					InputFieldPlaceholder: helpers.Placeholder,
+					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
 				markup.Keyboard = [][]gotgbot.KeyboardButton{
 					{
-						{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji},
+						{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)},
 					},
 				}
 
@@ -468,7 +408,7 @@ func (c *BotController) FilterEvents(index int) handlers.Response {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: tag}})
 				}
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери тег:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseTag", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
@@ -492,6 +432,7 @@ func (c *BotController) Search(index int) handlers.Response {
 				Index: index,
 				Name:  state.Search,
 			}
+			user.Cache = entities.Cache{}
 		}
 
 		switch index {
@@ -500,14 +441,20 @@ func (c *BotController) Search(index int) handlers.Response {
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
 				var query string
-				if ctx.EffectiveMessage.Text == helpers.SearchEverywhere {
+
+				switch ctx.EffectiveMessage.Text {
+				case txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode):
 					user.Cache.Filter = ctx.EffectiveMessage.Text
 					query = user.Cache.Query
-				} else if ctx.EffectiveMessage.Text == helpers.PrevPage || ctx.EffectiveMessage.Text == helpers.NextPage {
+				case txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					query = user.Cache.Query
-				} else {
-					user.State.Context.NextPageToken = nil
+					user.Cache.NextPageToken = user.Cache.NextPageToken.Prev.Prev
+				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode):
+					query = user.Cache.Query
+				default:
 					query = ctx.EffectiveMessage.Text
+					// Обнуляем страницы при новом запросе.
+					user.Cache.NextPageToken = nil
 				}
 
 				query = helpers.CleanUpQuery(query)
@@ -535,13 +482,9 @@ func (c *BotController) Search(index int) handlers.Response {
 					return err
 				}
 
-				if ctx.EffectiveMessage.Text == helpers.PrevPage && user.State.Context.NextPageToken.PrevToken() != "" {
-					user.State.Context.NextPageToken = user.State.Context.NextPageToken.PrevPageToken.PrevPageToken
-				}
-
-				if user.State.Context.NextPageToken == nil {
-					user.State.Context.NextPageToken = &entities.PageToken{}
-				}
+				//if user.Cache.nextPageToken == nil {
+				//	user.Cache.nextPageToken = &entities.nextPageToken{}
+				//}
 
 				var (
 					driveFiles    []*drive.File
@@ -549,26 +492,28 @@ func (c *BotController) Search(index int) handlers.Response {
 					err           error
 				)
 				switch user.Cache.Filter {
-				case helpers.SearchEverywhere:
-					driveFiles, nextPageToken, err = c.DriveFileService.FindSomeByFullTextAndFolderID(query, "", user.State.Context.NextPageToken.Token)
+				case txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode):
+					driveFiles, nextPageToken, err = c.DriveFileService.FindSomeByFullTextAndFolderID(query, "", user.Cache.NextPageToken.GetValue())
 				default:
-					driveFiles, nextPageToken, err = c.DriveFileService.FindSomeByFullTextAndFolderID(query, user.Band.DriveFolderID, user.State.Context.NextPageToken.Token)
+					driveFiles, nextPageToken, err = c.DriveFileService.FindSomeByFullTextAndFolderID(query, user.Band.DriveFolderID, user.Cache.NextPageToken.GetValue())
 				}
 				if err != nil {
 					return err
 				}
 
-				user.State.Context.NextPageToken = &entities.PageToken{
-					Token:         nextPageToken,
-					PrevPageToken: user.State.Context.NextPageToken,
+				user.Cache.NextPageToken = &entities.NextPageToken{
+					Value: nextPageToken,
+					Prev:  user.Cache.NextPageToken,
 				}
 
 				if len(driveFiles) == 0 {
 					markup := &gotgbot.ReplyKeyboardMarkup{
-						Keyboard:       helpers.SearchEverywhereKeyboard,
+						Keyboard: [][]gotgbot.KeyboardButton{
+							{{Text: txt.Get("button.cancel", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode)}},
+						},
 						ResizeKeyboard: true,
 					}
-					_, err := ctx.EffectiveChat.SendMessage(bot, "Ничего не найдено. Попробуй еще раз.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+					_, err := ctx.EffectiveChat.SendMessage(bot, txt.Get("text.nothingFound", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 					return err
 				}
 
@@ -577,7 +522,7 @@ func (c *BotController) Search(index int) handlers.Response {
 					InputFieldPlaceholder: query,
 				}
 				if markup.InputFieldPlaceholder == "" {
-					markup.InputFieldPlaceholder = helpers.Placeholder
+					markup.InputFieldPlaceholder = txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode)
 				}
 
 				likedSongs, likedSongErr := c.SongService.FindManyLiked(user.ID)
@@ -585,7 +530,7 @@ func (c *BotController) Search(index int) handlers.Response {
 				set := make(map[string]*entities.Band)
 				for i, driveFile := range driveFiles {
 
-					if user.Cache.Filter == helpers.SearchEverywhere {
+					if user.Cache.Filter == txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode) {
 
 						for _, parentFolderID := range driveFile.Parents {
 							_, exists := set[parentFolderID]
@@ -606,7 +551,7 @@ func (c *BotController) Search(index int) handlers.Response {
 					if likedSongErr == nil {
 						for _, likedSong := range likedSongs {
 							if likedSong.DriveFileID == driveFile.Id {
-								driveFileName += " " + helpers.Like
+								driveFileName += " " + txt.Get("button.like", ctx.EffectiveUser.LanguageCode)
 							}
 						}
 					}
@@ -614,32 +559,18 @@ func (c *BotController) Search(index int) handlers.Response {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
 				}
 
-				if ctx.EffectiveMessage.Text != helpers.SearchEverywhere {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.SearchEverywhere}})
+				if ctx.EffectiveMessage.Text != txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode) {
+					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode)}})
 				}
 
-				// если есть пред стр
-				if user.State.Context.NextPageToken.PrevToken() != "" {
-					// если нет след стр
-					if user.State.Context.NextPageToken.Token != "" {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
-					} else { // если есть след
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}})
-					}
-				} else { // если нет пред стр
-					if user.State.Context.NextPageToken.Token != "" {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
-					} else {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}})
-					}
-				}
+				markup.Keyboard = append(markup.Keyboard, keyboard.Navigation(user.Cache.NextPageToken, ctx.EffectiveUser.LanguageCode)...)
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseSong", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
 
-				user.State.Context.DriveFiles = driveFiles
+				user.Cache.DriveFiles = driveFiles
 
 				user.State.Index = 1
 
@@ -648,16 +579,16 @@ func (c *BotController) Search(index int) handlers.Response {
 		case 1:
 			{
 				switch ctx.EffectiveMessage.Text {
-				case helpers.SearchEverywhere, helpers.NextPage:
+				case txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode), txt.Get("button.next", ctx.EffectiveUser.LanguageCode):
 					return c.Search(0)(bot, ctx)
 				}
 
 				ctx.EffectiveChat.SendAction(bot, "upload_document")
 
-				driveFiles := user.State.Context.DriveFiles
+				driveFiles := user.Cache.DriveFiles
 				var foundDriveFile *drive.File
 				for _, driveFile := range driveFiles {
-					if driveFile.Name == strings.ReplaceAll(ctx.EffectiveMessage.Text, " "+helpers.Like, "") {
+					if driveFile.Name == strings.ReplaceAll(ctx.EffectiveMessage.Text, " "+txt.Get("button.like", ctx.EffectiveUser.LanguageCode), "") {
 						foundDriveFile = driveFile
 						break
 					}
@@ -754,13 +685,14 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 				Index: index,
 				Name:  state.GetSongs,
 			}
+			user.Cache = entities.Cache{}
 		}
 
 		switch index {
 		case 0:
 			{
 				// todo
-				if ctx.EffectiveMessage.Text == helpers.CreateDoc {
+				if ctx.EffectiveMessage.Text == txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode) {
 					user.State = entities.State{
 						Name: helpers.CreateSongState,
 					}
@@ -769,27 +701,25 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				if ctx.EffectiveMessage.Text == helpers.PrevPage && user.State.Context.NextPageToken.PrevToken() != "" {
-					user.State.Context.NextPageToken = user.State.Context.NextPageToken.PrevPageToken.PrevPageToken
+				if ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode) && user.Cache.NextPageToken.GetPrevValue() != "" {
+					user.Cache.NextPageToken = user.Cache.NextPageToken.Prev.Prev
 				}
 
-				if user.State.Context.NextPageToken == nil {
-					user.State.Context.NextPageToken = &entities.PageToken{}
-				}
-
-				driveFiles, nextPageToken, err := c.DriveFileService.FindAllByFolderID(user.Band.DriveFolderID, user.State.Context.NextPageToken.Token)
+				driveFiles, nextPageToken, err := c.DriveFileService.FindAllByFolderID(user.Band.DriveFolderID, user.Cache.NextPageToken.GetValue())
 				if err != nil {
 					return err
 				}
 
-				user.State.Context.NextPageToken = &entities.PageToken{
-					Token:         nextPageToken,
-					PrevPageToken: user.State.Context.NextPageToken,
+				user.Cache.NextPageToken = &entities.NextPageToken{
+					Value: nextPageToken,
+					Prev:  user.Cache.NextPageToken,
 				}
 
 				if len(driveFiles) == 0 {
 					markup := &gotgbot.ReplyKeyboardMarkup{
-						Keyboard:       helpers.SearchEverywhereKeyboard,
+						Keyboard: [][]gotgbot.KeyboardButton{
+							{{Text: txt.Get("button.cancel", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode)}},
+						},
 						ResizeKeyboard: true,
 					}
 					_, err := ctx.EffectiveChat.SendMessage(bot, "В папке на Google Диске нет документов.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
@@ -802,9 +732,9 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 				}
 
 				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji}},
+					{{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)}},
 				}
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.CreateDoc}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode)}})
 
 				likedSongs, likedSongErr := c.SongService.FindManyLiked(user.ID)
 
@@ -814,7 +744,7 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 					if likedSongErr == nil {
 						for _, likedSong := range likedSongs {
 							if likedSong.DriveFileID == driveFile.Id {
-								driveFileName += " " + helpers.Like
+								driveFileName += " " + txt.Get("button.like", ctx.EffectiveUser.LanguageCode)
 							}
 						}
 					}
@@ -822,28 +752,14 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
 				}
 
-				// если есть пред стр
-				if user.State.Context.NextPageToken.PrevToken() != "" {
-					// если нет след стр
-					if user.State.Context.NextPageToken.Token != "" {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
-					} else { // если есть след
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}})
-					}
-				} else { // если нет пред стр
-					if user.State.Context.NextPageToken.Token != "" {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
-					} else {
-						markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}})
-					}
-				}
+				markup.Keyboard = append(markup.Keyboard, keyboard.Navigation(user.Cache.NextPageToken, ctx.EffectiveUser.LanguageCode)...)
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseSong", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
 
-				user.State.Context.DriveFiles = driveFiles
+				user.Cache.DriveFiles = driveFiles
 
 				user.State.Index = 1
 
@@ -854,25 +770,25 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 				switch ctx.EffectiveMessage.Text {
 
 				// todo
-				case helpers.CreateDoc:
+				case txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode):
 					user.State = entities.State{
 						Name: helpers.CreateSongState,
 					}
 					return c.OldHandler.Enter(ctx, user)
 
-				case helpers.NextPage, helpers.PrevPage:
+				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode), txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					return c.GetSongs(0)(bot, ctx)
 
-				case helpers.LikedSongs, helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.TagsEmoji:
+				case txt.Get("button.like", ctx.EffectiveUser.LanguageCode), txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode), txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode), txt.Get("button.tag", ctx.EffectiveUser.LanguageCode):
 					return c.FilterSongs(0)(bot, ctx)
 				}
 
 				ctx.EffectiveChat.SendAction(bot, "upload_document")
 
-				driveFiles := user.State.Context.DriveFiles
+				driveFiles := user.Cache.DriveFiles
 				var foundDriveFile *drive.File
 				for _, driveFile := range driveFiles {
-					if driveFile.Name == strings.ReplaceAll(ctx.EffectiveMessage.Text, " "+helpers.Like, "") {
+					if driveFile.Name == strings.ReplaceAll(ctx.EffectiveMessage.Text, " "+txt.Get("button.like", ctx.EffectiveUser.LanguageCode), "") {
 						foundDriveFile = driveFile
 						break
 					}
@@ -899,6 +815,7 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 				Index: index,
 				Name:  state.FilterSongs,
 			}
+			user.Cache = entities.Cache{}
 		}
 
 		switch index {
@@ -907,10 +824,10 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
 				switch ctx.EffectiveMessage.Text {
-				case helpers.LikedSongs, helpers.SongsByNumberOfPerforming, helpers.SongsByLastDateOfPerforming:
+				case txt.Get("button.like", ctx.EffectiveUser.LanguageCode), txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode), txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode):
 					user.Cache.Filter = ctx.EffectiveMessage.Text
 
-				case helpers.TagsEmoji:
+				case txt.Get("button.tag", ctx.EffectiveUser.LanguageCode):
 					user.Cache.Filter = ctx.EffectiveMessage.Text
 					return c.FilterSongs(2)(bot, ctx)
 				}
@@ -921,13 +838,13 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 				)
 
 				switch user.Cache.Filter {
-				case helpers.LikedSongs:
+				case txt.Get("button.like", ctx.EffectiveUser.LanguageCode):
 					songs, err = c.SongService.FindManyExtraLiked(user.ID, user.Cache.PageIndex)
-				case helpers.SongsByLastDateOfPerforming:
+				case txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode):
 					songs, err = c.SongService.FindAllExtraByPageNumberSortedByLatestEventDate(user.BandID, user.Cache.PageIndex)
-				case helpers.SongsByNumberOfPerforming:
+				case txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode):
 					songs, err = c.SongService.FindAllExtraByPageNumberSortedByEventsNumber(user.BandID, user.Cache.PageIndex)
-				case helpers.TagsEmoji:
+				case txt.Get("button.tag", ctx.EffectiveUser.LanguageCode):
 					if strings.Contains(ctx.EffectiveMessage.Text, "〔") {
 						return c.GetSongs(0)(bot, ctx)
 					}
@@ -936,6 +853,9 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 					}
 					songs, err = c.SongService.FindManyExtraByTag(user.Cache.Query, user.BandID, user.Cache.PageIndex)
 				}
+				if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+					return err
+				}
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
@@ -943,7 +863,7 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 				}
 				markup.Keyboard = [][]gotgbot.KeyboardButton{
 					{
-						{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji},
+						{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)},
 					},
 				}
 
@@ -960,10 +880,10 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 						buttonText += fmt.Sprintf(" (%s)", songExtra.Caption())
 					}
 
-					if user.Cache.Filter != helpers.LikedSongs {
+					if user.Cache.Filter != txt.Get("button.like", ctx.EffectiveUser.LanguageCode) {
 						for _, userID := range songExtra.Song.Likes {
 							if user.ID == userID {
-								buttonText += " " + helpers.Like
+								buttonText += " " + txt.Get("button.like", ctx.EffectiveUser.LanguageCode)
 								break
 							}
 						}
@@ -973,12 +893,12 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 				}
 
 				if user.Cache.PageIndex != 0 {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.PrevPage}, {Text: helpers.Menu}, {Text: helpers.NextPage}})
+					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.prev", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.next", ctx.EffectiveUser.LanguageCode)}})
 				} else {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Menu}, {Text: helpers.NextPage}})
+					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.next", ctx.EffectiveUser.LanguageCode)}})
 				}
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери песню:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseSong", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
@@ -990,12 +910,13 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 		case 1:
 			{
 				switch ctx.EffectiveMessage.Text {
-				case helpers.LikedSongs, helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.TagsEmoji:
+				case txt.Get("button.like", ctx.EffectiveUser.LanguageCode), txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode), txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode), txt.Get("button.tag", ctx.EffectiveUser.LanguageCode):
+					user.Cache.PageIndex = 0
 					return c.FilterSongs(0)(bot, ctx)
-				case helpers.NextPage:
+				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode):
 					user.Cache.PageIndex++
 					return c.FilterSongs(0)(bot, ctx)
-				case helpers.PrevPage:
+				case txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					user.Cache.PageIndex--
 					return c.FilterSongs(0)(bot, ctx)
 				}
@@ -1007,7 +928,7 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 				ctx.EffectiveChat.SendAction(bot, "upload_document")
 
 				var songName string
-				regex := regexp.MustCompile(`\s*\(.*\)\s*(` + helpers.Like + `)?\s*`)
+				regex := regexp.MustCompile(`\s*\(.*\)\s*(` + txt.Get("button.like", ctx.EffectiveUser.LanguageCode) + `)?\s*`)
 				songName = regex.ReplaceAllString(ctx.EffectiveMessage.Text, "")
 
 				song, err := c.SongService.FindOneByName(strings.TrimSpace(songName))
@@ -1028,11 +949,11 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
-					InputFieldPlaceholder: helpers.Placeholder,
+					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
 				markup.Keyboard = [][]gotgbot.KeyboardButton{
 					{
-						{Text: helpers.LikedSongs}, {Text: helpers.SongsByLastDateOfPerforming}, {Text: helpers.SongsByNumberOfPerforming}, {Text: helpers.TagsEmoji},
+						{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)},
 					},
 				}
 
@@ -1047,7 +968,7 @@ func (c *BotController) FilterSongs(index int) handlers.Response {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: tag}})
 				}
 
-				_, err = ctx.EffectiveChat.SendMessage(bot, "Выбери тег:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
+				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseTag", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {
 					return err
 				}
@@ -1068,11 +989,11 @@ func (c *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
 	user.State = entities.State{}
 
 	replyMarkup := &gotgbot.ReplyKeyboardMarkup{
-		Keyboard:       keyboard.Menu,
+		Keyboard:       keyboard.Menu(ctx.EffectiveUser.LanguageCode),
 		ResizeKeyboard: true,
 	}
 
-	_, err := ctx.EffectiveChat.SendMessage(b, "Меню:", &gotgbot.SendMessageOpts{
+	_, err := ctx.EffectiveChat.SendMessage(b, txt.Get("text.menu", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
 		ReplyMarkup: replyMarkup,
 	})
 	if err != nil {

@@ -64,6 +64,10 @@ func (s *EventService) FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(bandID 
 	return s.eventRepository.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(bandID, weekday, pageNumber)
 }
 
+func (s *EventService) FindManyUntilTodayByBandIDAndUserIDAndPageNumber(bandID primitive.ObjectID, userID int64, pageNumber int) ([]*entities.Event, error) {
+	return s.eventRepository.FindManyUntilTodayByBandIDAndUserIDAndPageNumber(bandID, userID, pageNumber)
+}
+
 func (s *EventService) FindManyFromTodayByBandIDAndUserID(bandID primitive.ObjectID, userID int64, pageNumber int) ([]*entities.Event, error) {
 	return s.eventRepository.FindManyFromTodayByBandIDAndUserID(bandID, userID, pageNumber)
 }

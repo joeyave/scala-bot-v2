@@ -17,6 +17,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -36,34 +37,23 @@ func main() {
 		panic("failed to create new bot: " + err.Error())
 	}
 
-	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
-	clientOptions := options.Client().
-		ApplyURI(os.Getenv("MONGODB_URI")).
-		SetServerAPIOptions(serverAPIOptions)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	mongoClient, err := mongo.Connect(ctx, clientOptions)
+	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
 	if err != nil {
-		log.Fatal().Err(err).Msg("err")
+		log.Fatal().Err(err).Msg("error creating mongo client")
 	}
 
-	//mongoClient, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
-	//if err != nil {
-	//	log.Fatal().Err(err).Msg("error creating mongo client")
-	//}
-	//
-	//ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	//defer cancel()
-	//
-	//err = mongoClient.Connect(ctx)
-	//if err != nil {
-	//	log.Fatal().Err(err)
-	//}
-	//defer mongoClient.Disconnect(ctx)
-	//err = mongoClient.Ping(ctx, readpref.Primary())
-	//if err != nil {
-	//	log.Fatal().Err(err).Msg("error pinging mongo")
-	//}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = mongoClient.Connect(ctx)
+	if err != nil {
+		log.Fatal().Err(err)
+	}
+	defer mongoClient.Disconnect(ctx)
+	err = mongoClient.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatal().Err(err).Msg("error pinging mongo")
+	}
 
 	driveRepository, err := drive.NewService(context.TODO(), option.WithCredentialsJSON([]byte(os.Getenv("GOOGLEAPIS_CREDENTIALS"))))
 	if err != nil {
