@@ -164,7 +164,7 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
 				}
 
-				markup.Keyboard = append(markup.Keyboard, keyboard.Navigation(user.Cache.NextPageToken, ctx.EffectiveUser.LanguageCode)...)
+				markup.Keyboard = append(markup.Keyboard, keyboard.NavigationByToken(user.Cache.NextPageToken, ctx.EffectiveUser.LanguageCode)...)
 
 				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseSong", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 				if err != nil {

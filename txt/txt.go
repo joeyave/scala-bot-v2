@@ -60,6 +60,15 @@ var locales = map[string]map[string]string{
 	"button.createEvent": {
 		"ru": "➕ Добавить собрание",
 	},
+	"button.chords": {
+		"ru": "🎶 Аккорды",
+	},
+	"button.metronome": {
+		"ru": "🥁 Метроном",
+	},
+	"button.edit": {
+		"ru": "✍️ Редактировать",
+	},
 
 	"text.defaultPlaceholder": {
 		"ru": "Фраза из песни или список",

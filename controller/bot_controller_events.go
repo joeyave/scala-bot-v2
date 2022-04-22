@@ -10,6 +10,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/dto"
 	"github.com/joeyave/scala-bot-v2/entities"
 	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,7 +26,7 @@ func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entitie
 	html := c.EventService.ToHtmlStringByEvent(*event)
 
 	markup := gotgbot.InlineKeyboardMarkup{
-		InlineKeyboard: helpers.GetEventActionsKeyboard(*user, *event),
+		InlineKeyboard: keyboard.EventInit(user, event, ctx.EffectiveUser.LanguageCode),
 	}
 
 	_, err := ctx.EffectiveChat.SendMessage(bot, html, &gotgbot.SendMessageOpts{

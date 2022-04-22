@@ -170,7 +170,7 @@ func main() {
 	//dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Text == "🎵 Песни"
+		return msg.Text == txt.Get("button.song", msg.From.LanguageCode)
 	}, botController.GetSongs(0)), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
