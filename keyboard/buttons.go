@@ -7,6 +7,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
+	"google.golang.org/api/drive/v3"
 	"regexp"
 	"sort"
 	"strings"
@@ -56,7 +57,112 @@ func ParseEventButton(text string) (string, time.Time, error) {
 	return eventName, eventTime, nil
 }
 
-func GetEventsFilterButtons(events []*entity.Event, lang string) []gotgbot.KeyboardButton {
+type SongButtonOpts struct {
+	ShowStats bool
+	ShowLike  bool
+}
+
+func SongButton(song *entity.SongWithEvents, user *entity.User, opts *SongButtonOpts) []gotgbot.KeyboardButton {
+	text := song.PDF.Name
+
+	if opts != nil {
+		if opts.ShowStats {
+			text += fmt.Sprintf(" (%s)", song.Caption())
+		}
+		if opts.ShowLike {
+			for _, userID := range song.Song.Likes {
+				if user.ID == userID {
+					text += fmt.Sprintf(" %s", txt.Get("button.like", ""))
+					break
+				}
+			}
+		}
+	}
+
+	return []gotgbot.KeyboardButton{{Text: text}}
+}
+
+// todo: refactor
+var songButtonRegEx = regexp.MustCompile(`\s*\(.*\)\s*(` + txt.Get("button.like", "") + `)?\s*`)
+
+func ParseSongButton(text string) string {
+	return songButtonRegEx.ReplaceAllString(text, "")
+}
+
+type DriveFileButtonOpts struct {
+	ShowLike bool
+	ShowBand bool
+}
+
+func DriveFileButton(driveFile *drive.File, likedSongs []*entity.Song, opts *DriveFileButtonOpts) []gotgbot.KeyboardButton {
+	text := driveFile.Name
+
+	if opts != nil {
+		if opts.ShowLike {
+			for _, likedSong := range likedSongs {
+				if likedSong.DriveFileID == driveFile.Id {
+					text += fmt.Sprintf(" %s", txt.Get("button.like", ""))
+					break
+				}
+			}
+		}
+	}
+
+	return []gotgbot.KeyboardButton{{Text: text}}
+}
+
+var driveFileButtonRegEx = regexp.MustCompile(`(\s` + txt.Get("button.like", "") + `)?`)
+
+func ParseDriveFileButton(text string) string {
+	return driveFileButtonRegEx.ReplaceAllString(text, "")
+}
+
+func IsWeekdayButton(text string) bool {
+	switch strings.ToLower(text) {
+	case "пн.", "вт.", "ср.", "чт.", "пт.", "сб.", "вс.":
+		return true
+	}
+	return false
+}
+
+func ParseWeekdayButton(text string) time.Weekday {
+	switch strings.ToLower(text) {
+	case "пн.":
+		return time.Monday
+	case "вт.":
+		return time.Tuesday
+	case "ср.":
+		return time.Wednesday
+	case "чт.":
+		return time.Thursday
+	case "пт.":
+		return time.Friday
+	case "сб.":
+		return time.Saturday
+	case "вс.":
+		return time.Sunday
+	}
+	return time.Sunday
+}
+
+func SelectedButton(text string) gotgbot.KeyboardButton {
+	selected := fmt.Sprintf("〔%s〕", text)
+	button := gotgbot.KeyboardButton{Text: selected}
+	return button
+}
+
+func ParseSelectedButton(text string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(text, "〔", ""), "〕", "")
+}
+
+func IsSelectedButton(text string) bool {
+	if strings.HasPrefix(text, "〔") && strings.HasSuffix(text, "〕") {
+		return true
+	}
+	return false
+}
+
+func GetEventsStateFilterButtons(events []*entity.Event, lang string) []gotgbot.KeyboardButton {
 
 	weekdaysMap := make(map[time.Weekday]time.Time, 0)
 	for _, event := range events {
@@ -96,30 +202,8 @@ func GetEventsFilterButtons(events []*entity.Event, lang string) []gotgbot.Keybo
 	return buttons
 }
 
-func IsWeekdayButton(text string) bool {
-	switch strings.ToLower(text) {
-	case "пн.", "вт.", "ср.", "чт.", "пт.", "сб.", "вс.":
-		return true
+func GetSongsStateFilterButtons(lang string) []gotgbot.KeyboardButton {
+	return []gotgbot.KeyboardButton{
+		{Text: txt.Get("button.like", lang)}, {Text: txt.Get("button.calendar", lang)}, {Text: txt.Get("button.numbers", lang)}, {Text: txt.Get("button.tag", lang)},
 	}
-	return false
-}
-
-func ParseWeekdayButton(text string) time.Weekday {
-	switch strings.ToLower(text) {
-	case "пн.":
-		return time.Monday
-	case "вт.":
-		return time.Tuesday
-	case "ср.":
-		return time.Wednesday
-	case "чт.":
-		return time.Thursday
-	case "пт.":
-		return time.Friday
-	case "сб.":
-		return time.Saturday
-	case "вс.":
-		return time.Sunday
-	}
-	return time.Sunday
 }

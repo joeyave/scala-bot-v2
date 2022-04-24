@@ -2028,7 +2028,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 			return h.Enter(c, user)
 		}
 
-		var songs []*entity.SongExtra
+		var songs []*entity.SongWithEvents
 		var err error
 		switch user.State.Context.QueryType {
 		case helpers.SongsByLastDateOfPerforming:

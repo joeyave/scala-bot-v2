@@ -13,7 +13,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/txt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/api/drive/v3"
-	"regexp"
 	"strings"
 )
 
@@ -141,28 +140,22 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
-					InputFieldPlaceholder: "Фраза из песни или список",
+					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
 
-				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)}},
-				}
+				markup.Keyboard = append(markup.Keyboard, keyboard.GetSongsStateFilterButtons(ctx.EffectiveUser.LanguageCode))
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode)}})
 
 				likedSongs, likedSongErr := c.SongService.FindManyLiked(user.ID)
 
 				for _, driveFile := range driveFiles {
-					driveFileName := driveFile.Name
-
-					if likedSongErr == nil {
-						for _, likedSong := range likedSongs {
-							if likedSong.DriveFileID == driveFile.Id {
-								driveFileName += " " + txt.Get("button.like", ctx.EffectiveUser.LanguageCode)
-							}
-						}
+					opts := &keyboard.DriveFileButtonOpts{
+						ShowLike: true,
 					}
-
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
+					if likedSongErr != nil {
+						opts.ShowLike = false
+					}
+					markup.Keyboard = append(markup.Keyboard, keyboard.DriveFileButton(driveFile, likedSongs, opts))
 				}
 
 				markup.Keyboard = append(markup.Keyboard, keyboard.NavigationByToken(user.Cache.NextPageToken, ctx.EffectiveUser.LanguageCode)...)
@@ -199,10 +192,12 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 
 				ctx.EffectiveChat.SendAction(bot, "upload_document")
 
+				driveFileName := keyboard.ParseDriveFileButton(ctx.EffectiveMessage.Text)
+
 				driveFiles := user.Cache.DriveFiles
 				var foundDriveFile *drive.File
 				for _, driveFile := range driveFiles {
-					if driveFile.Name == strings.ReplaceAll(ctx.EffectiveMessage.Text, " "+txt.Get("button.like", ctx.EffectiveUser.LanguageCode), "") {
+					if driveFile.Name == driveFileName {
 						foundDriveFile = driveFile
 						break
 					}
@@ -247,7 +242,7 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 				}
 
 				var (
-					songs []*entity.SongExtra
+					songs []*entity.SongWithEvents
 					err   error
 				)
 
@@ -259,7 +254,7 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 				case txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode):
 					songs, err = c.SongService.FindAllExtraByPageNumberSortedByEventsNumber(user.BandID, user.Cache.PageIndex)
 				case txt.Get("button.tag", ctx.EffectiveUser.LanguageCode):
-					if strings.Contains(ctx.EffectiveMessage.Text, "〔") {
+					if keyboard.IsSelectedButton(ctx.EffectiveMessage.Text) {
 						return c.GetSongs(0)(bot, ctx)
 					}
 					if user.Cache.Query == "" {
@@ -273,37 +268,30 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
-					InputFieldPlaceholder: "Фраза из песни или список",
-				}
-				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{
-						{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)},
-					},
+					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
 
-				for i := range markup.Keyboard[0] {
-					if markup.Keyboard[0][i].Text == user.Cache.Filter {
-						markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
+				filterButtons := keyboard.GetSongsStateFilterButtons(ctx.EffectiveUser.LanguageCode)
+				for i := range filterButtons {
+					if filterButtons[i].Text == user.Cache.Filter {
+						filterButtons[i] = keyboard.SelectedButton(filterButtons[i].Text)
 						break
 					}
 				}
+				markup.Keyboard = append(markup.Keyboard, filterButtons)
 
-				for _, songExtra := range songs {
-					buttonText := songExtra.Song.PDF.Name
-					if songExtra.Caption() != "" {
-						buttonText += fmt.Sprintf(" (%s)", songExtra.Caption())
+				for _, song := range songs {
+
+					songButtonOpts := &keyboard.SongButtonOpts{
+						ShowLike:  false,
+						ShowStats: true,
 					}
 
 					if user.Cache.Filter != txt.Get("button.like", ctx.EffectiveUser.LanguageCode) {
-						for _, userID := range songExtra.Song.Likes {
-							if user.ID == userID {
-								buttonText += " " + txt.Get("button.like", ctx.EffectiveUser.LanguageCode)
-								break
-							}
-						}
+						songButtonOpts.ShowLike = true
 					}
 
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
+					markup.Keyboard = append(markup.Keyboard, keyboard.SongButton(song, user, songButtonOpts))
 				}
 
 				if user.Cache.PageIndex != 0 {
@@ -335,15 +323,13 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 					return c.filterSongs(0)(bot, ctx)
 				}
 
-				if strings.Contains(ctx.EffectiveMessage.Text, "〔") && strings.Contains(ctx.EffectiveMessage.Text, "〕") {
+				if keyboard.IsSelectedButton(ctx.EffectiveMessage.Text) {
 					return c.GetSongs(0)(bot, ctx)
 				}
 
 				ctx.EffectiveChat.SendAction(bot, "upload_document")
 
-				var songName string
-				regex := regexp.MustCompile(`\s*\(.*\)\s*(` + txt.Get("button.like", ctx.EffectiveUser.LanguageCode) + `)?\s*`)
-				songName = regex.ReplaceAllString(ctx.EffectiveMessage.Text, "")
+				songName := keyboard.ParseSongButton(ctx.EffectiveMessage.Text)
 
 				song, err := c.SongService.FindOneByName(strings.TrimSpace(songName))
 				if err != nil {
@@ -365,18 +351,15 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 					ResizeKeyboard:        true,
 					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
-				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{
-						{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)},
-					},
-				}
 
-				for i := range markup.Keyboard[0] {
-					if markup.Keyboard[0][i].Text == user.Cache.Filter {
-						markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
+				filterButtons := keyboard.GetSongsStateFilterButtons(ctx.EffectiveUser.LanguageCode)
+				for i := range filterButtons {
+					if filterButtons[i].Text == user.Cache.Filter {
+						filterButtons[i] = keyboard.SelectedButton(filterButtons[i].Text)
 						break
 					}
 				}
+				markup.Keyboard = append(markup.Keyboard, filterButtons)
 
 				for _, tag := range tags {
 					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: tag}})

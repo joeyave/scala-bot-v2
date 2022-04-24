@@ -77,6 +77,19 @@ func (c *BotController) UpdateUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 	return err
 }
 
+func prepareUserForHandlerWithCache(ctx *ext.Context, state, index int, cache entity.Cache) *entity.User {
+	user := ctx.Data["user"].(*entity.User)
+
+	if user.State.Name != state {
+		user.State = entity.State{
+			Index: index,
+			Name:  state,
+		}
+		user.Cache = cache
+	}
+	return user
+}
+
 func (c *BotController) search(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
@@ -191,17 +204,14 @@ func (c *BotController) search(index int) handlers.Response {
 							}
 						}
 					}
-					driveFileName := driveFile.Name
 
-					if likedSongErr == nil {
-						for _, likedSong := range likedSongs {
-							if likedSong.DriveFileID == driveFile.Id {
-								driveFileName += " " + txt.Get("button.like", ctx.EffectiveUser.LanguageCode)
-							}
-						}
+					opts := &keyboard.DriveFileButtonOpts{
+						ShowLike: true,
 					}
-
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: driveFileName}})
+					if likedSongErr != nil {
+						opts.ShowLike = false
+					}
+					markup.Keyboard = append(markup.Keyboard, keyboard.DriveFileButton(driveFile, likedSongs, opts))
 				}
 
 				if ctx.EffectiveMessage.Text != txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode) {
@@ -230,10 +240,12 @@ func (c *BotController) search(index int) handlers.Response {
 
 				ctx.EffectiveChat.SendAction(bot, "upload_document")
 
+				driveFileName := keyboard.ParseDriveFileButton(ctx.EffectiveMessage.Text)
+
 				driveFiles := user.Cache.DriveFiles
 				var foundDriveFile *drive.File
 				for _, driveFile := range driveFiles {
-					if driveFile.Name == strings.ReplaceAll(ctx.EffectiveMessage.Text, " "+txt.Get("button.like", ctx.EffectiveUser.LanguageCode), "") {
+					if driveFile.Name == driveFileName {
 						foundDriveFile = driveFile
 						break
 					}

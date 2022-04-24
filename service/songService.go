@@ -42,7 +42,7 @@ func (s *SongService) FindManyByDriveFileIDs(IDs []string) ([]*entity.Song, erro
 	return s.songRepository.FindManyByDriveFileIDs(IDs)
 }
 
-func (s *SongService) FindManyExtraLiked(userID int64, pageNumber int) ([]*entity.SongExtra, error) {
+func (s *SongService) FindManyExtraLiked(userID int64, pageNumber int) ([]*entity.SongWithEvents, error) {
 	return s.songRepository.FindManyExtraByPageNumberLiked(userID, pageNumber)
 }
 
@@ -143,15 +143,15 @@ func (s *SongService) Dislike(songID primitive.ObjectID, userID int64) error {
 	return s.songRepository.Dislike(songID, userID)
 }
 
-func (s *SongService) FindAllExtraByPageNumberSortedByEventsNumber(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
+func (s *SongService) FindAllExtraByPageNumberSortedByEventsNumber(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongWithEvents, error) {
 	return s.songRepository.FindAllExtraByPageNumberSortedByEventsNumber(bandID, pageNumber)
 }
 
-func (s *SongService) FindAllExtraByPageNumberSortedByLatestEventDate(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
+func (s *SongService) FindAllExtraByPageNumberSortedByLatestEventDate(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongWithEvents, error) {
 	return s.songRepository.FindAllExtraByPageNumberSortedByLatestEventDate(bandID, pageNumber)
 }
 
-func (s *SongService) FindManyExtraByTag(tag string, bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
+func (s *SongService) FindManyExtraByTag(tag string, bandID primitive.ObjectID, pageNumber int) ([]*entity.SongWithEvents, error) {
 	return s.songRepository.FindManyExtraByTag(tag, bandID, pageNumber)
 }
 

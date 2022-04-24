@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
@@ -14,7 +13,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/txt"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -22,7 +20,7 @@ func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entity.
 
 	user := ctx.Data["user"].(*entity.User)
 
-	html := c.EventService.ToHtmlStringByEvent(*event)
+	html := c.EventService.ToHtmlStringByEvent(*event) // todo: refactor
 
 	markup := gotgbot.InlineKeyboardMarkup{
 		InlineKeyboard: keyboard.EventInit(event, user, ctx.EffectiveUser.LanguageCode),
@@ -97,12 +95,12 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
-					InputFieldPlaceholder: "Фраза из песни или список",
+					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
 
-				user.Cache.Buttons = keyboard.GetEventsFilterButtons(events, ctx.EffectiveUser.LanguageCode)
+				user.Cache.Buttons = keyboard.GetEventsStateFilterButtons(events, ctx.EffectiveUser.LanguageCode)
 				markup.Keyboard = append(markup.Keyboard, user.Cache.Buttons)
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 				for _, event := range events {
 					markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, false))
@@ -176,6 +174,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 			{
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
+				// todo: refactor - extract to func
 				if (ctx.EffectiveMessage.Text == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) ||
 					keyboard.IsWeekdayButton(ctx.EffectiveMessage.Text)) && user.Cache.Filter != txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
 					user.Cache.Filter = ctx.EffectiveMessage.Text
@@ -201,7 +200,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 						events, err = c.EventService.FindManyUntilTodayByBandIDAndUserIDAndPageNumber(user.BandID, user.ID, user.Cache.PageIndex)
 					} else {
 						events, err = c.EventService.FindManyUntilTodayByBandIDAndPageNumber(user.BandID, user.Cache.PageIndex)
-						user.Cache.Buttons = keyboard.GetEventsFilterButtons(events, ctx.EffectiveUser.LanguageCode)
+						user.Cache.Buttons = keyboard.GetEventsStateFilterButtons(events, ctx.EffectiveUser.LanguageCode)
 					}
 				} else if keyboard.IsWeekdayButton(user.Cache.Filter) {
 					events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, keyboard.ParseWeekdayButton(user.Cache.Filter))
@@ -212,23 +211,23 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
-					InputFieldPlaceholder: "Фраза из песни или список",
+					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
 				}
 
 				var buttons []gotgbot.KeyboardButton
 				for _, button := range user.Cache.Buttons {
+
+					if button.Text == user.Cache.Filter ||
+						(button.Text == ctx.EffectiveMessage.Text && user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode)) ||
+						(button.Text == user.Cache.Query && user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode))) {
+						button = keyboard.SelectedButton(button.Text)
+					}
+
 					buttons = append(buttons, button)
 				}
 
 				markup.Keyboard = append(markup.Keyboard, buttons)
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
-
-				for i := range markup.Keyboard[0] {
-					if markup.Keyboard[0][i].Text == user.Cache.Filter || (markup.Keyboard[0][i].Text == ctx.EffectiveMessage.Text && user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode)) ||
-						(markup.Keyboard[0][i].Text == user.Cache.Query && user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode))) {
-						markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
-					}
-				}
 
 				for _, event := range events {
 					if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
@@ -272,10 +271,10 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 					}
 				}
 
-				if strings.Contains(ctx.EffectiveMessage.Text, "〔") && strings.Contains(ctx.EffectiveMessage.Text, "〕") {
+				if keyboard.IsSelectedButton(ctx.EffectiveMessage.Text) {
 					if user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
-						if keyboard.IsWeekdayButton(strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "")) ||
-							strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "") == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
+						if keyboard.IsWeekdayButton(keyboard.ParseSelectedButton(ctx.EffectiveMessage.Text)) ||
+							keyboard.ParseSelectedButton(ctx.EffectiveMessage.Text) == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
 							return c.filterEvents(0)(bot, ctx)
 						} else {
 							return c.GetEvents(0)(bot, ctx)
@@ -299,44 +298,6 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 
 				err = c.event(bot, ctx, foundEvent)
 				return err
-			}
-		case 2:
-			{
-				ctx.EffectiveChat.SendAction(bot, "typing")
-
-				tags, err := c.SongService.GetTags()
-				if err != nil {
-					return err
-				}
-
-				markup := &gotgbot.ReplyKeyboardMarkup{
-					ResizeKeyboard:        true,
-					InputFieldPlaceholder: txt.Get("text.defaultPlaceholder", ctx.EffectiveUser.LanguageCode),
-				}
-				markup.Keyboard = [][]gotgbot.KeyboardButton{
-					{
-						{Text: txt.Get("button.like", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.calendar", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.numbers", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.tag", ctx.EffectiveUser.LanguageCode)},
-					},
-				}
-
-				for i := range markup.Keyboard[0] {
-					if markup.Keyboard[0][i].Text == user.Cache.Filter {
-						markup.Keyboard[0][i].Text = fmt.Sprintf("〔%s〕", markup.Keyboard[0][i].Text)
-						break
-					}
-				}
-
-				for _, tag := range tags {
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: tag}})
-				}
-
-				_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseTag", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-				if err != nil {
-					return err
-				}
-
-				user.State.Index = 0
-				return nil
 			}
 		}
 

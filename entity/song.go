@@ -45,15 +45,15 @@ type SongTagFrequencies struct {
 	Count int    `bson:"count"`
 }
 
-type SongExtra struct {
-	Song *Song `bson:",inline"`
+type SongWithEvents struct {
+	Song `bson:",inline"`
 
 	Events []*Event `bson:"events,omitempty"`
 }
 
-func (s *SongExtra) Caption() string {
+func (s *SongWithEvents) Caption() string {
 	if len(s.Events) == 0 {
-		return ""
+		return "-, 0"
 	}
 	return fmt.Sprintf("%v, %d", lctime.Strftime("%d %b", s.Events[0].Time), len(s.Events))
 }
