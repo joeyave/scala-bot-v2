@@ -2,39 +2,11 @@ package helpers
 
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"google.golang.org/api/drive/v3"
 )
 
-func GetSongInitKeyboard(user *entities.User, song *entities.Song) [][]gotgbot.InlineKeyboardButton {
-	keyboard := [][]gotgbot.InlineKeyboardButton{
-		{
-			{Text: "Подробнее", CallbackData: AggregateCallbackData(SongActionsState, 1, "")},
-		},
-	}
-
-	liked := false
-	for _, userID := range song.Likes {
-		if user.ID == userID {
-			liked = true
-			break
-		}
-	}
-
-	if liked {
-		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
-			{Text: Like, CallbackData: AggregateCallbackData(SongActionsState, 2, "dislike")},
-		})
-	} else {
-		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
-			{Text: "♡", CallbackData: AggregateCallbackData(SongActionsState, 2, "like")},
-		})
-	}
-
-	return keyboard
-}
-
-func GetSongActionsKeyboard(user entities.User, song entities.Song, driveFile drive.File) [][]gotgbot.InlineKeyboardButton {
+func GetSongActionsKeyboard(user entity.User, song entity.Song, driveFile drive.File) [][]gotgbot.InlineKeyboardButton {
 	if song.BandID == user.BandID {
 		return [][]gotgbot.InlineKeyboardButton{
 			{{Text: LinkToTheDoc, Url: driveFile.WebViewLink}},
@@ -60,7 +32,7 @@ func GetSongActionsKeyboard(user entities.User, song entities.Song, driveFile dr
 	}
 }
 
-func GetEventActionsKeyboard(user entities.User, event entities.Event) [][]gotgbot.InlineKeyboardButton {
+func GetEventActionsKeyboard(user entity.User, event entity.Event) [][]gotgbot.InlineKeyboardButton {
 	member := false
 	for _, membership := range event.Memberships {
 		if user.ID == membership.UserID {
@@ -88,7 +60,7 @@ func GetEventActionsKeyboard(user entities.User, event entities.Event) [][]gotgb
 	}
 }
 
-func GetEditEventKeyboard(user entities.User) [][]gotgbot.InlineKeyboardButton {
+func GetEditEventKeyboard(user entity.User) [][]gotgbot.InlineKeyboardButton {
 	if user.Role == Admin {
 		return [][]gotgbot.InlineKeyboardButton{
 			{
@@ -155,10 +127,6 @@ var KeysKeyboard = [][]gotgbot.KeyboardButton{
 
 var TimesKeyboard = [][]gotgbot.KeyboardButton{
 	{{Text: "2/4"}, {Text: "3/4"}, {Text: "4/4"}},
-}
-
-var CancelOrSkipKeyboard = [][]gotgbot.KeyboardButton{
-	{{Text: Cancel}, {Text: Skip}},
 }
 
 var SearchEverywhereKeyboard = [][]gotgbot.KeyboardButton{

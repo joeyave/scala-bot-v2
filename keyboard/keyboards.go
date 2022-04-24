@@ -2,7 +2,7 @@ package keyboard
 
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/txt"
 )
@@ -15,7 +15,7 @@ func Menu(lang string) [][]gotgbot.KeyboardButton {
 	}
 }
 
-func NavigationByToken(nextPageToken *entities.NextPageToken, lang string) [][]gotgbot.KeyboardButton {
+func NavigationByToken(nextPageToken *entity.NextPageToken, lang string) [][]gotgbot.KeyboardButton {
 
 	var keyboard [][]gotgbot.KeyboardButton
 
@@ -38,7 +38,7 @@ func NavigationByToken(nextPageToken *entities.NextPageToken, lang string) [][]g
 	return keyboard
 }
 
-func EventInit(user *entities.User, event *entities.Event, lang string) [][]gotgbot.InlineKeyboardButton {
+func EventInit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
 
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
@@ -58,6 +58,35 @@ func EventInit(user *entities.User, event *entities.Event, lang string) [][]gotg
 	if user.Role == helpers.Admin || member {
 		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
 			{Text: txt.Get("button.edit", lang), CallbackData: "todo"},
+		})
+	}
+
+	return keyboard
+}
+
+func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
+
+	keyboard := [][]gotgbot.InlineKeyboardButton{
+		{
+			{Text: txt.Get("button.edit", lang), CallbackData: "todo"},
+		},
+	}
+
+	liked := false
+	for _, userID := range song.Likes {
+		if user.ID == userID {
+			liked = true
+			break
+		}
+	}
+
+	if liked {
+		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
+			{Text: txt.Get("button.like", lang), CallbackData: "todo"},
+		})
+	} else {
+		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
+			{Text: txt.Get("button.unlike", lang), CallbackData: "todo"},
 		})
 	}
 

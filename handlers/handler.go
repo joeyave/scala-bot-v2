@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
-	"github.com/joeyave/scala-bot-v2/services"
+	"github.com/joeyave/scala-bot-v2/service"
 	"net/url"
 	"regexp"
 
@@ -15,26 +15,26 @@ import (
 
 type Handler struct {
 	bot               *gotgbot.Bot
-	userService       *services.UserService
-	driveFileService  *services.DriveFileService
-	songService       *services.SongService
-	voiceService      *services.VoiceService
-	bandService       *services.BandService
-	membershipService *services.MembershipService
-	eventService      *services.EventService
-	roleService       *services.RoleService
+	userService       *service.UserService
+	driveFileService  *service.DriveFileService
+	songService       *service.SongService
+	voiceService      *service.VoiceService
+	bandService       *service.BandService
+	membershipService *service.MembershipService
+	eventService      *service.EventService
+	roleService       *service.RoleService
 }
 
 func NewHandler(
 	bot *gotgbot.Bot,
-	userService *services.UserService,
-	driveFileService *services.DriveFileService,
-	songService *services.SongService,
-	voiceService *services.VoiceService,
-	bandService *services.BandService,
-	membershipService *services.MembershipService,
-	eventService *services.EventService,
-	roleService *services.RoleService,
+	userService *service.UserService,
+	driveFileService *service.DriveFileService,
+	songService *service.SongService,
+	voiceService *service.VoiceService,
+	bandService *service.BandService,
+	membershipService *service.MembershipService,
+	eventService *service.EventService,
+	roleService *service.RoleService,
 ) *Handler {
 
 	return &Handler{
@@ -72,14 +72,14 @@ func (h *Handler) OnText(b *gotgbot.Bot, ctx *ext.Context) error {
 			user.State = *user.State.Prev
 			user.State.Index = 0
 		} else {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: 0,
 				Name:  helpers.MainMenuState,
 			}
 		}
 
 	case helpers.Menu:
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 0,
 			Name:  helpers.MainMenuState,
 		}
@@ -106,11 +106,11 @@ func (h *Handler) OnVoice(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	if user.State.Name != helpers.UploadVoiceState {
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 0,
 			Name:  helpers.UploadVoiceState,
-			Context: entities.Context{
-				Voice: &entities.Voice{
+			Context: entity.Context{
+				Voice: &entity.Voice{
 					FileID: ctx.EffectiveMessage.Voice.FileId,
 				},
 			},
@@ -139,11 +139,11 @@ func (h *Handler) OnAudio(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	if user.State.Name != helpers.UploadVoiceState {
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 0,
 			Name:  helpers.UploadVoiceState,
-			Context: entities.Context{
-				Voice: &entities.Voice{
+			Context: entity.Context{
+				Voice: &entity.Voice{
 					FileID: ctx.EffectiveMessage.Audio.FileId,
 				},
 			},
@@ -216,7 +216,7 @@ func (h *Handler) NotifyUser() {
 	}
 }
 
-func (h *Handler) Enter(c *ext.Context, user *entities.User) error {
+func (h *Handler) Enter(c *ext.Context, user *entity.User) error {
 
 	if user.State.CallbackData == nil {
 		user.State.CallbackData, _ = url.Parse("t.me/callbackData")
@@ -229,7 +229,7 @@ func (h *Handler) Enter(c *ext.Context, user *entities.User) error {
 	}
 }
 
-func (h *Handler) enterInlineHandler(c *ext.Context, user *entities.User) error {
+func (h *Handler) enterInlineHandler(c *ext.Context, user *entity.User) error {
 
 	re := regexp.MustCompile(`t\.me/callbackData.*`)
 
@@ -273,11 +273,11 @@ func (h *Handler) enterInlineHandler(c *ext.Context, user *entities.User) error 
 	return handlerFuncs[index](h, c, user)
 }
 
-func (h *Handler) enterReplyHandler(c *ext.Context, user *entities.User) error {
+func (h *Handler) enterReplyHandler(c *ext.Context, user *entity.User) error {
 	handlerFuncs, ok := handlers[user.State.Name]
 
 	if ok == false || user.State.Index < 0 || user.State.Index >= len(handlerFuncs) {
-		user.State = entities.State{Name: helpers.MainMenuState}
+		user.State = entity.State{Name: helpers.MainMenuState}
 		handlerFuncs = handlers[user.State.Name]
 	}
 

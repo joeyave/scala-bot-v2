@@ -6,7 +6,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/state"
@@ -19,7 +19,7 @@ import (
 
 func (c *BotController) song(bot *gotgbot.Bot, ctx *ext.Context, driveFileID string) error {
 
-	user := ctx.Data["user"].(*entities.User)
+	user := ctx.Data["user"].(*entity.User)
 
 	ctx.EffectiveChat.SendAction(bot, "upload_document")
 
@@ -29,7 +29,7 @@ func (c *BotController) song(bot *gotgbot.Bot, ctx *ext.Context, driveFileID str
 	}
 
 	markup := gotgbot.InlineKeyboardMarkup{
-		InlineKeyboard: helpers.GetSongInitKeyboard(user, song),
+		InlineKeyboard: keyboard.SongInit(song, user, ctx.EffectiveUser.LanguageCode),
 	}
 
 	sendDocumentByReader := func() (*gotgbot.Message, error) {
@@ -90,14 +90,14 @@ func (c *BotController) song(bot *gotgbot.Bot, ctx *ext.Context, driveFileID str
 func (c *BotController) GetSongs(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-		user := ctx.Data["user"].(*entities.User)
+		user := ctx.Data["user"].(*entity.User)
 
 		if user.State.Name != state.GetSongs {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: index,
 				Name:  state.GetSongs,
 			}
-			user.Cache = entities.Cache{}
+			user.Cache = entity.Cache{}
 		}
 
 		switch index {
@@ -105,7 +105,7 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 			{
 				// todo
 				if ctx.EffectiveMessage.Text == txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode) {
-					user.State = entities.State{
+					user.State = entity.State{
 						Name: helpers.CreateSongState,
 					}
 					return nil
@@ -123,7 +123,7 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 					return err
 				}
 
-				user.Cache.NextPageToken = &entities.NextPageToken{
+				user.Cache.NextPageToken = &entity.NextPageToken{
 					Value: nextPageToken,
 					Prev:  user.Cache.NextPageToken,
 				}
@@ -184,7 +184,7 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 
 				// todo
 				case txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode):
-					user.State = entities.State{
+					user.State = entity.State{
 						Name: helpers.CreateSongState,
 					}
 					return nil
@@ -222,14 +222,14 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 func (c *BotController) filterSongs(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-		user := ctx.Data["user"].(*entities.User)
+		user := ctx.Data["user"].(*entity.User)
 
 		if user.State.Name != state.FilterSongs {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: index,
 				Name:  state.FilterSongs,
 			}
-			user.Cache = entities.Cache{}
+			user.Cache = entity.Cache{}
 		}
 
 		switch index {
@@ -247,7 +247,7 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 				}
 
 				var (
-					songs []*entities.SongExtra
+					songs []*entity.SongExtra
 					err   error
 				)
 

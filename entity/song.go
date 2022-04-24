@@ -1,4 +1,4 @@
-package entities
+package entity
 
 import (
 	"fmt"
@@ -22,19 +22,6 @@ type Song struct {
 	Tags  []string `bson:"tags,omitempty" json:"-"`
 }
 
-type SongExtra struct {
-	Song *Song `bson:",inline"`
-
-	Events []*Event `bson:"events,omitempty"`
-}
-
-func (s *SongExtra) Caption() string {
-	if len(s.Events) == 0 {
-		return ""
-	}
-	return fmt.Sprintf("%v, %d", lctime.Strftime("%d %b", s.Events[0].Time), len(s.Events))
-}
-
 type PDF struct {
 	ModifiedTime string `bson:"modifiedTime,omitempty"`
 
@@ -56,4 +43,17 @@ func (s *Song) Caption() string {
 type SongTagFrequencies struct {
 	Tag   string `bson:"_id"`
 	Count int    `bson:"count"`
+}
+
+type SongExtra struct {
+	Song *Song `bson:",inline"`
+
+	Events []*Event `bson:"events,omitempty"`
+}
+
+func (s *SongExtra) Caption() string {
+	if len(s.Events) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%v, %d", lctime.Strftime("%d %b", s.Events[0].Time), len(s.Events))
 }

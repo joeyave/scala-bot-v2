@@ -3,14 +3,14 @@ package controller
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/joeyave/scala-bot-v2/services"
+	"github.com/joeyave/scala-bot-v2/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 )
 
 type WebAppController struct {
 	Bot          *gotgbot.Bot
-	EventService *services.EventService
+	EventService *service.EventService
 }
 
 func (h *WebAppController) CreateEvent(ctx *gin.Context) {

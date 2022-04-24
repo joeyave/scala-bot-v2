@@ -1,33 +1,33 @@
-package services
+package service
 
 import (
-	"github.com/joeyave/scala-bot-v2/entities"
-	"github.com/joeyave/scala-bot-v2/repositories"
+	"github.com/joeyave/scala-bot-v2/entity"
+	"github.com/joeyave/scala-bot-v2/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MembershipService struct {
-	membershipRepository *repositories.MembershipRepository
+	membershipRepository *repository.MembershipRepository
 }
 
-func NewMembershipService(membershipRepository *repositories.MembershipRepository) *MembershipService {
+func NewMembershipService(membershipRepository *repository.MembershipRepository) *MembershipService {
 	return &MembershipService{
 		membershipRepository: membershipRepository,
 	}
 }
 
-func (s *MembershipService) FindAll() ([]*entities.Membership, error) {
+func (s *MembershipService) FindAll() ([]*entity.Membership, error) {
 	return s.membershipRepository.FindAll()
 }
 
-func (s *MembershipService) FindOneByID(ID primitive.ObjectID) (*entities.Membership, error) {
+func (s *MembershipService) FindOneByID(ID primitive.ObjectID) (*entity.Membership, error) {
 	return s.membershipRepository.FindOneByID(ID)
 }
-func (s *MembershipService) FindMultipleByEventID(ID primitive.ObjectID) ([]*entities.Membership, error) {
+func (s *MembershipService) FindMultipleByEventID(ID primitive.ObjectID) ([]*entity.Membership, error) {
 	return s.membershipRepository.FindMultipleByEventID(ID)
 }
 
-func (s *MembershipService) UpdateOne(membership entities.Membership) (*entities.Membership, error) {
+func (s *MembershipService) UpdateOne(membership entity.Membership) (*entity.Membership, error) {
 	memberships, err := s.membershipRepository.FindMultipleByUserIDAndEventID(membership.UserID, membership.EventID)
 	if err == nil {
 		for _, mb := range memberships {

@@ -1,8 +1,8 @@
-package repositories
+package repository
 
 import (
 	"context"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +21,7 @@ func NewMembershipRepository(mongoClient *mongo.Client) *MembershipRepository {
 	}
 }
 
-func (r *MembershipRepository) FindAll() ([]*entities.Membership, error) {
+func (r *MembershipRepository) FindAll() ([]*entity.Membership, error) {
 	memberships, err := r.find(bson.M{"_id": bson.M{"$ne": ""}})
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (r *MembershipRepository) FindAll() ([]*entities.Membership, error) {
 	return memberships, nil
 }
 
-func (r *MembershipRepository) FindOneByID(ID primitive.ObjectID) (*entities.Membership, error) {
+func (r *MembershipRepository) FindOneByID(ID primitive.ObjectID) (*entity.Membership, error) {
 	memberships, err := r.find(bson.M{"_id": ID})
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (r *MembershipRepository) FindOneByID(ID primitive.ObjectID) (*entities.Mem
 	return memberships[0], nil
 }
 
-func (r *MembershipRepository) FindMultipleByUserIDAndEventID(userID int64, eventID primitive.ObjectID) ([]*entities.Membership, error) {
+func (r *MembershipRepository) FindMultipleByUserIDAndEventID(userID int64, eventID primitive.ObjectID) ([]*entity.Membership, error) {
 	memberships, err := r.find(bson.M{"userId": userID, "eventId": eventID})
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (r *MembershipRepository) FindMultipleByUserIDAndEventID(userID int64, even
 	return memberships, nil
 }
 
-func (r *MembershipRepository) FindMultipleByEventID(eventID primitive.ObjectID) ([]*entities.Membership, error) {
+func (r *MembershipRepository) FindMultipleByEventID(eventID primitive.ObjectID) ([]*entity.Membership, error) {
 	memberships, err := r.find(bson.M{"eventId": eventID})
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (r *MembershipRepository) FindMultipleByEventID(eventID primitive.ObjectID)
 	return memberships, nil
 }
 
-func (r *MembershipRepository) find(m bson.M) ([]*entities.Membership, error) {
+func (r *MembershipRepository) find(m bson.M) ([]*entity.Membership, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("memberships")
 
 	pipeline := bson.A{
@@ -148,7 +148,7 @@ func (r *MembershipRepository) find(m bson.M) ([]*entities.Membership, error) {
 		return nil, err
 	}
 
-	var memberships []*entities.Membership
+	var memberships []*entity.Membership
 	err = cur.All(context.TODO(), &memberships)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (r *MembershipRepository) find(m bson.M) ([]*entities.Membership, error) {
 	return memberships, nil
 }
 
-func (r *MembershipRepository) UpdateOne(membership entities.Membership) (*entities.Membership, error) {
+func (r *MembershipRepository) UpdateOne(membership entity.Membership) (*entity.Membership, error) {
 	if membership.ID.IsZero() {
 		membership.ID = r.generateUniqueID()
 	}
@@ -188,7 +188,7 @@ func (r *MembershipRepository) UpdateOne(membership entities.Membership) (*entit
 		return nil, result.Err()
 	}
 
-	var newMembership *entities.Membership
+	var newMembership *entity.Membership
 	err := result.Decode(&newMembership)
 	if err != nil {
 		return nil, err

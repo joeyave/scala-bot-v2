@@ -1,9 +1,9 @@
-package services
+package service
 
 import (
 	"errors"
-	"github.com/joeyave/scala-bot-v2/entities"
-	"github.com/joeyave/scala-bot-v2/repositories"
+	"github.com/joeyave/scala-bot-v2/entity"
+	"github.com/joeyave/scala-bot-v2/repository"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/drive/v3"
@@ -12,14 +12,14 @@ import (
 )
 
 type SongService struct {
-	songRepository   *repositories.SongRepository
-	voiceRepository  *repositories.VoiceRepository
-	bandRepository   *repositories.BandRepository
+	songRepository   *repository.SongRepository
+	voiceRepository  *repository.VoiceRepository
+	bandRepository   *repository.BandRepository
 	driveRepository  *drive.Service
 	driveFileService *DriveFileService
 }
 
-func NewSongService(songRepository *repositories.SongRepository, voiceRepository *repositories.VoiceRepository, bandRepository *repositories.BandRepository,
+func NewSongService(songRepository *repository.SongRepository, voiceRepository *repository.VoiceRepository, bandRepository *repository.BandRepository,
 	driveClient *drive.Service, driveFileService *DriveFileService) *SongService {
 	return &SongService{
 		songRepository:   songRepository,
@@ -30,35 +30,35 @@ func NewSongService(songRepository *repositories.SongRepository, voiceRepository
 	}
 }
 
-func (s *SongService) FindAll() ([]*entities.Song, error) {
+func (s *SongService) FindAll() ([]*entity.Song, error) {
 	return s.songRepository.FindAll()
 }
 
-func (s *SongService) FindManyLiked(userID int64) ([]*entities.Song, error) {
+func (s *SongService) FindManyLiked(userID int64) ([]*entity.Song, error) {
 	return s.songRepository.FindManyLiked(userID)
 }
 
-func (s *SongService) FindManyByDriveFileIDs(IDs []string) ([]*entities.Song, error) {
+func (s *SongService) FindManyByDriveFileIDs(IDs []string) ([]*entity.Song, error) {
 	return s.songRepository.FindManyByDriveFileIDs(IDs)
 }
 
-func (s *SongService) FindManyExtraLiked(userID int64, pageNumber int) ([]*entities.SongExtra, error) {
+func (s *SongService) FindManyExtraLiked(userID int64, pageNumber int) ([]*entity.SongExtra, error) {
 	return s.songRepository.FindManyExtraByPageNumberLiked(userID, pageNumber)
 }
 
-func (s *SongService) FindOneByID(ID primitive.ObjectID) (*entities.Song, error) {
+func (s *SongService) FindOneByID(ID primitive.ObjectID) (*entity.Song, error) {
 	return s.songRepository.FindOneByID(ID)
 }
 
-func (s *SongService) FindOneByDriveFileID(driveFileID string) (*entities.Song, error) {
+func (s *SongService) FindOneByDriveFileID(driveFileID string) (*entity.Song, error) {
 	return s.songRepository.FindOneByDriveFileID(driveFileID)
 }
 
-func (s *SongService) FindOneByName(driveFileID string) (*entities.Song, error) {
+func (s *SongService) FindOneByName(driveFileID string) (*entity.Song, error) {
 	return s.songRepository.FindOneByName(driveFileID)
 }
 
-func (s *SongService) FindOrCreateOneByDriveFileID(driveFileID string) (*entities.Song, *drive.File, error) {
+func (s *SongService) FindOrCreateOneByDriveFileID(driveFileID string) (*entity.Song, *drive.File, error) {
 	var driveFile *drive.File
 	err := errors.New("fake error")
 	for err != nil {
@@ -67,7 +67,7 @@ func (s *SongService) FindOrCreateOneByDriveFileID(driveFileID string) (*entitie
 
 	song, err := s.songRepository.FindOneByDriveFileID(driveFileID)
 	if err != nil {
-		song = &entities.Song{
+		song = &entity.Song{
 			DriveFileID: driveFile.Id,
 		}
 
@@ -93,10 +93,10 @@ func (s *SongService) FindOrCreateOneByDriveFileID(driveFileID string) (*entitie
 	return song, driveFile, err
 }
 
-func (s *SongService) FindOrCreateManyByDriveFileIDs(driveFileIDs []string) ([]*entities.Song, []*drive.File, error) {
+func (s *SongService) FindOrCreateManyByDriveFileIDs(driveFileIDs []string) ([]*entity.Song, []*drive.File, error) {
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(len(driveFileIDs))
-	songs := make([]*entities.Song, len(driveFileIDs))
+	songs := make([]*entity.Song, len(driveFileIDs))
 	driveFiles := make([]*drive.File, len(driveFileIDs))
 	var err error
 	for i := range driveFileIDs {
@@ -117,7 +117,7 @@ func (s *SongService) FindOrCreateManyByDriveFileIDs(driveFileIDs []string) ([]*
 
 }
 
-func (s *SongService) UpdateOne(song entities.Song) (*entities.Song, error) {
+func (s *SongService) UpdateOne(song entity.Song) (*entity.Song, error) {
 	return s.songRepository.UpdateOne(song)
 }
 
@@ -143,19 +143,19 @@ func (s *SongService) Dislike(songID primitive.ObjectID, userID int64) error {
 	return s.songRepository.Dislike(songID, userID)
 }
 
-func (s *SongService) FindAllExtraByPageNumberSortedByEventsNumber(bandID primitive.ObjectID, pageNumber int) ([]*entities.SongExtra, error) {
+func (s *SongService) FindAllExtraByPageNumberSortedByEventsNumber(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
 	return s.songRepository.FindAllExtraByPageNumberSortedByEventsNumber(bandID, pageNumber)
 }
 
-func (s *SongService) FindAllExtraByPageNumberSortedByLatestEventDate(bandID primitive.ObjectID, pageNumber int) ([]*entities.SongExtra, error) {
+func (s *SongService) FindAllExtraByPageNumberSortedByLatestEventDate(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
 	return s.songRepository.FindAllExtraByPageNumberSortedByLatestEventDate(bandID, pageNumber)
 }
 
-func (s *SongService) FindManyExtraByTag(tag string, bandID primitive.ObjectID, pageNumber int) ([]*entities.SongExtra, error) {
+func (s *SongService) FindManyExtraByTag(tag string, bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
 	return s.songRepository.FindManyExtraByTag(tag, bandID, pageNumber)
 }
 
-func songHasOutdatedPDF(song *entities.Song, driveFile *drive.File) bool {
+func songHasOutdatedPDF(song *entity.Song, driveFile *drive.File) bool {
 	if song.PDF.ModifiedTime == "" || driveFile == nil {
 		return true
 	}
@@ -181,6 +181,6 @@ func (s *SongService) GetTags() ([]string, error) {
 	return s.songRepository.GetTags()
 }
 
-func (s *SongService) TagOrUntag(tag string, songID primitive.ObjectID) (*entities.Song, error) {
+func (s *SongService) TagOrUntag(tag string, songID primitive.ObjectID) (*entity.Song, error) {
 	return s.songRepository.TagOrUntag(tag, songID)
 }

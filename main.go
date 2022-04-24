@@ -9,10 +9,10 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/message"
 	"github.com/gin-gonic/gin"
 	"github.com/joeyave/scala-bot-v2/controller"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
-	"github.com/joeyave/scala-bot-v2/repositories"
-	"github.com/joeyave/scala-bot-v2/services"
+	"github.com/joeyave/scala-bot-v2/repository"
+	"github.com/joeyave/scala-bot-v2/service"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -65,28 +65,28 @@ func main() {
 		log.Fatal().Msgf("Unable to retrieve Docs client: %v", err)
 	}
 
-	voiceRepository := repositories.NewVoiceRepository(mongoClient)
-	voiceService := services.NewVoiceService(voiceRepository)
+	voiceRepository := repository.NewVoiceRepository(mongoClient)
+	voiceService := service.NewVoiceService(voiceRepository)
 
-	bandRepository := repositories.NewBandRepository(mongoClient)
-	bandService := services.NewBandService(bandRepository)
+	bandRepository := repository.NewBandRepository(mongoClient)
+	bandService := service.NewBandService(bandRepository)
 
-	driveFileService := services.NewDriveFileService(driveRepository, docsRepository)
+	driveFileService := service.NewDriveFileService(driveRepository, docsRepository)
 
-	songRepository := repositories.NewSongRepository(mongoClient)
-	songService := services.NewSongService(songRepository, voiceRepository, bandRepository, driveRepository, driveFileService)
+	songRepository := repository.NewSongRepository(mongoClient)
+	songService := service.NewSongService(songRepository, voiceRepository, bandRepository, driveRepository, driveFileService)
 
-	userRepository := repositories.NewUserRepository(mongoClient)
-	userService := services.NewUserService(userRepository)
+	userRepository := repository.NewUserRepository(mongoClient)
+	userService := service.NewUserService(userRepository)
 
-	membershipRepository := repositories.NewMembershipRepository(mongoClient)
-	membershipService := services.NewMembershipService(membershipRepository)
+	membershipRepository := repository.NewMembershipRepository(mongoClient)
+	membershipService := service.NewMembershipService(membershipRepository)
 
-	eventRepository := repositories.NewEventRepository(mongoClient)
-	eventService := services.NewEventService(eventRepository, membershipRepository, driveFileService)
+	eventRepository := repository.NewEventRepository(mongoClient)
+	eventService := service.NewEventService(eventRepository, membershipRepository, driveFileService)
 
-	roleRepository := repositories.NewRoleRepository(mongoClient)
-	roleService := services.NewRoleService(roleRepository)
+	roleRepository := repository.NewRoleRepository(mongoClient)
+	roleService := service.NewRoleService(roleRepository)
 
 	//handler := myhandlers.NewHandler(
 	//	bot,
@@ -138,7 +138,7 @@ func main() {
 				// todo: send message to the logs channel
 				log.Error().Err(err).Msg("Error!")
 
-				user.State = entities.State{Name: helpers.MainMenuState}
+				user.State = entity.State{Name: helpers.MainMenuState}
 				_, err = userService.UpdateOne(*user)
 				if findUserErr != nil {
 					log.Error().Err(findUserErr).Msg("Error!")

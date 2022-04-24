@@ -1,9 +1,9 @@
-package repositories
+package repository
 
 import (
 	"context"
 	"fmt"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,17 +23,17 @@ func NewSongRepository(mongoClient *mongo.Client) *SongRepository {
 	}
 }
 
-func (r *SongRepository) FindAll() ([]*entities.Song, error) {
+func (r *SongRepository) FindAll() ([]*entity.Song, error) {
 	return r.find(bson.M{})
 }
 
-func (r *SongRepository) FindManyLiked(userID int64) ([]*entities.Song, error) {
+func (r *SongRepository) FindManyLiked(userID int64) ([]*entity.Song, error) {
 	return r.find(bson.M{
 		"likes": bson.M{"$in": bson.A{userID}},
 	})
 }
 
-func (r *SongRepository) FindManyByDriveFileIDs(IDs []string) ([]*entities.Song, error) {
+func (r *SongRepository) FindManyByDriveFileIDs(IDs []string) ([]*entity.Song, error) {
 
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("songs")
 
@@ -84,9 +84,9 @@ func (r *SongRepository) FindManyByDriveFileIDs(IDs []string) ([]*entities.Song,
 		return nil, err
 	}
 
-	var songs []*entities.Song
+	var songs []*entity.Song
 	for cur.Next(context.TODO()) {
-		var song *entities.Song
+		var song *entity.Song
 		err := cur.Decode(&song)
 		if err != nil {
 			continue
@@ -102,7 +102,7 @@ func (r *SongRepository) FindManyByDriveFileIDs(IDs []string) ([]*entities.Song,
 	return songs, nil
 }
 
-func (r *SongRepository) FindOneByID(ID primitive.ObjectID) (*entities.Song, error) {
+func (r *SongRepository) FindOneByID(ID primitive.ObjectID) (*entity.Song, error) {
 	songs, err := r.find(bson.M{"_id": ID})
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (r *SongRepository) FindOneByID(ID primitive.ObjectID) (*entities.Song, err
 	return songs[0], nil
 }
 
-func (r *SongRepository) FindOneByDriveFileID(driveFileID string) (*entities.Song, error) {
+func (r *SongRepository) FindOneByDriveFileID(driveFileID string) (*entity.Song, error) {
 	songs, err := r.find(bson.M{"driveFileId": driveFileID})
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (r *SongRepository) FindOneByDriveFileID(driveFileID string) (*entities.Son
 	return songs[0], nil
 }
 
-func (r *SongRepository) FindOneByName(name string) (*entities.Song, error) {
+func (r *SongRepository) FindOneByName(name string) (*entity.Song, error) {
 	songs, err := r.find(bson.M{"pdf.name": name})
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (r *SongRepository) FindOneByName(name string) (*entities.Song, error) {
 	return songs[0], nil
 }
 
-func (r *SongRepository) find(m bson.M) ([]*entities.Song, error) {
+func (r *SongRepository) find(m bson.M) ([]*entity.Song, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("songs")
 
 	pipeline := bson.A{
@@ -162,9 +162,9 @@ func (r *SongRepository) find(m bson.M) ([]*entities.Song, error) {
 		return nil, err
 	}
 
-	var songs []*entities.Song
+	var songs []*entity.Song
 	for cur.Next(context.TODO()) {
-		var song *entities.Song
+		var song *entity.Song
 		err := cur.Decode(&song)
 		if err != nil {
 			continue
@@ -180,7 +180,7 @@ func (r *SongRepository) find(m bson.M) ([]*entities.Song, error) {
 	return songs, nil
 }
 
-func (r *SongRepository) UpdateOne(song entities.Song) (*entities.Song, error) {
+func (r *SongRepository) UpdateOne(song entity.Song) (*entity.Song, error) {
 	if song.ID.IsZero() {
 		song.ID = r.generateUniqueID()
 	}
@@ -209,7 +209,7 @@ func (r *SongRepository) UpdateOne(song entities.Song) (*entities.Song, error) {
 		return nil, result.Err()
 	}
 
-	var newSong *entities.Song
+	var newSong *entity.Song
 	err := result.Decode(&newSong)
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (r *SongRepository) generateUniqueID() primitive.ObjectID {
 	return ID
 }
 
-func (r *SongRepository) FindAllExtraByPageNumberSortedByEventsNumber(bandID primitive.ObjectID, pageNumber int) ([]*entities.SongExtra, error) {
+func (r *SongRepository) FindAllExtraByPageNumberSortedByEventsNumber(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
 
 	return r.findWithExtra(
 		bson.M{
@@ -307,7 +307,7 @@ func (r *SongRepository) FindAllExtraByPageNumberSortedByEventsNumber(bandID pri
 	)
 }
 
-func (r *SongRepository) FindAllExtraByPageNumberSortedByLatestEventDate(bandID primitive.ObjectID, pageNumber int) ([]*entities.SongExtra, error) {
+func (r *SongRepository) FindAllExtraByPageNumberSortedByLatestEventDate(bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
 
 	return r.findWithExtra(
 		bson.M{
@@ -328,7 +328,7 @@ func (r *SongRepository) FindAllExtraByPageNumberSortedByLatestEventDate(bandID 
 	)
 }
 
-func (r *SongRepository) FindManyExtraByTag(tag string, bandID primitive.ObjectID, pageNumber int) ([]*entities.SongExtra, error) {
+func (r *SongRepository) FindManyExtraByTag(tag string, bandID primitive.ObjectID, pageNumber int) ([]*entity.SongExtra, error) {
 
 	return r.findWithExtra(
 		bson.M{
@@ -344,7 +344,7 @@ func (r *SongRepository) FindManyExtraByTag(tag string, bandID primitive.ObjectI
 	)
 }
 
-func (r *SongRepository) FindManyExtraByDriveFileIDs(driveFileIDs []string) ([]*entities.SongExtra, error) {
+func (r *SongRepository) FindManyExtraByDriveFileIDs(driveFileIDs []string) ([]*entity.SongExtra, error) {
 	return r.findWithExtra(
 		bson.M{
 			"driveFileId": bson.M{
@@ -354,7 +354,7 @@ func (r *SongRepository) FindManyExtraByDriveFileIDs(driveFileIDs []string) ([]*
 	)
 }
 
-func (r *SongRepository) FindManyExtraByPageNumberLiked(userID int64, pageNumber int) ([]*entities.SongExtra, error) {
+func (r *SongRepository) FindManyExtraByPageNumberLiked(userID int64, pageNumber int) ([]*entity.SongExtra, error) {
 	return r.findWithExtra(
 		bson.M{
 			"likes": bson.M{"$in": bson.A{userID}},
@@ -368,7 +368,7 @@ func (r *SongRepository) FindManyExtraByPageNumberLiked(userID int64, pageNumber
 	)
 }
 
-func (r *SongRepository) findWithExtra(m bson.M, opts ...bson.M) ([]*entities.SongExtra, error) {
+func (r *SongRepository) findWithExtra(m bson.M, opts ...bson.M) ([]*entity.SongExtra, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("songs")
 
 	pipeline := bson.A{
@@ -488,7 +488,7 @@ func (r *SongRepository) findWithExtra(m bson.M, opts ...bson.M) ([]*entities.So
 		return nil, err
 	}
 
-	var songs []*entities.SongExtra
+	var songs []*entity.SongExtra
 	err = cur.All(context.TODO(), &songs)
 	return songs, err
 }
@@ -505,7 +505,7 @@ func (r *SongRepository) GetTags() ([]string, error) {
 		return nil, nil
 	}
 
-	var frequencies []*entities.SongTagFrequencies
+	var frequencies []*entity.SongTagFrequencies
 	err = cur.All(context.TODO(), &frequencies)
 	if err != nil {
 		return nil, err
@@ -524,7 +524,7 @@ func (r *SongRepository) GetTags() ([]string, error) {
 	return tags, nil
 }
 
-func (r *SongRepository) TagOrUntag(tag string, songID primitive.ObjectID) (*entities.Song, error) {
+func (r *SongRepository) TagOrUntag(tag string, songID primitive.ObjectID) (*entity.Song, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("songs")
 
 	filter := bson.M{
@@ -579,7 +579,7 @@ func (r *SongRepository) TagOrUntag(tag string, songID primitive.ObjectID) (*ent
 		return nil, result.Err()
 	}
 
-	var song *entities.Song
+	var song *entity.Song
 	err := result.Decode(&song)
 	if err != nil {
 		return nil, err

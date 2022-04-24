@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/klauspost/lctime"
@@ -26,7 +26,7 @@ import (
 func mainMenuHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			Keyboard:              helpers.MainMenuKeyboard,
@@ -46,17 +46,17 @@ func mainMenuHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		switch c.EffectiveMessage.Text {
 
 		case helpers.Schedule:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.GetEventsState,
 			}
 
 		case helpers.Songs:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.SearchSongState,
 			}
 
@@ -86,12 +86,12 @@ func mainMenuHandler() (int, []HandlerFunc) {
 			return err
 
 		case helpers.Settings:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.SettingsState,
 			}
 
 		default:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.SearchSongState,
 			}
 		}
@@ -106,7 +106,7 @@ func settingsHandler() (int, []HandlerFunc) {
 
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       helpers.SettingsKeyboard,
 			ResizeKeyboard: true,
@@ -122,9 +122,9 @@ func settingsHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
-		user.State.Prev = &entities.State{
+		user.State.Prev = &entity.State{
 			Index: 0,
 			Name:  helpers.SettingsState,
 		}
@@ -150,17 +150,17 @@ func settingsHandler() (int, []HandlerFunc) {
 			return err
 
 		case helpers.ChangeBand:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.ChooseBandState,
 			}
 
 		case helpers.CreateRole:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.CreateRoleState,
 			}
 
 		case helpers.AddAdmin:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.AddBandAdminState,
 			}
 		}
@@ -175,7 +175,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
@@ -191,9 +191,9 @@ func createRoleHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
-		user.State.Context.Role = &entities.Role{
+		user.State.Context.Role = &entity.Role{
 			Name: c.EffectiveMessage.Text,
 		}
 
@@ -221,11 +221,11 @@ func createRoleHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		if user.State.Context.Role.Priority == 0 {
 
-			var foundRole *entities.Role
+			var foundRole *entity.Role
 			for _, role := range user.Band.Roles {
 				if c.EffectiveMessage.Text == role.Name {
 					foundRole = role
@@ -249,7 +249,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 		}
 
 		role, err := h.roleService.UpdateOne(
-			entities.Role{
+			entity.Role{
 				Name:     user.State.Context.Role.Name,
 				BandID:   user.BandID,
 				Priority: user.State.Context.Role.Priority,
@@ -263,7 +263,7 @@ func createRoleHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{Name: helpers.MainMenuState}
+		user.State = entity.State{Name: helpers.MainMenuState}
 		return h.Enter(c, user)
 	})
 
@@ -274,7 +274,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		events, err := h.eventService.FindManyFromTodayByBandID(user.BandID)
 
@@ -310,7 +310,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		text := c.EffectiveMessage.Text
 
@@ -331,7 +331,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 		}
 
 		if text == helpers.CreateEvent {
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.CreateEventState,
 				Prev: &user.State,
 			}
@@ -371,7 +371,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 				}
 			}
 
-			var events []*entities.Event
+			var events []*entity.Event
 			var err error
 			switch user.State.Context.QueryType {
 			case helpers.Archive:
@@ -429,7 +429,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 			eventName, eventTime, err := helpers.ParseEventButton(text)
 			if err != nil {
-				user.State = entities.State{
+				user.State = entity.State{
 					Name: helpers.SearchSongState,
 				}
 				return h.Enter(c, user)
@@ -443,9 +443,9 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 			user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.EventActionsState,
-				Context: entities.Context{
+				Context: entity.Context{
 					EventID: foundEvent.ID,
 				},
 				Prev: &user.State,
@@ -462,7 +462,7 @@ func createEventHandler() (int, []HandlerFunc) {
 
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
@@ -490,7 +490,7 @@ func createEventHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := gotgbot.InlineKeyboardMarkup{}
 
@@ -586,20 +586,20 @@ func createEventHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, _, eventTime := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
 		parsedTime, err := time.Parse(time.RFC3339, eventTime)
 		if err != nil {
-			user.State = entities.State{Name: helpers.CreateEventState}
+			user.State = entity.State{Name: helpers.CreateEventState}
 			return h.Enter(c, user)
 		}
 
 		event, err := h.eventService.FindOneByNameAndTimeAndBandID(user.State.Context.Map["eventName"], parsedTime, user.BandID)
 		if err != nil || event == nil {
 			err = nil
-			event, err = h.eventService.UpdateOne(entities.Event{
+			event, err = h.eventService.UpdateOne(entity.Event{
 				Name:   user.State.Context.Map["eventName"],
 				Time:   parsedTime,
 				BandID: user.BandID,
@@ -616,7 +616,7 @@ func createEventHandler() (int, []HandlerFunc) {
 
 		h.enterInlineHandler(c, user)
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.GetEventsState,
 		}
 		return h.enterReplyHandler(c, user)
@@ -628,7 +628,7 @@ func createEventHandler() (int, []HandlerFunc) {
 func eventActionsHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		var eventID primitive.ObjectID
 		var keyboard string
@@ -694,7 +694,7 @@ func eventActionsHandler() (int, []HandlerFunc) {
 		}
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "upload_document")
 
@@ -722,7 +722,7 @@ func eventActionsHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 		c.EffectiveChat.SendAction(h.bot, "upload_audio")
 
 		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
@@ -770,7 +770,7 @@ func eventActionsHandler() (int, []HandlerFunc) {
 func changeSongOrderHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, chosenDriveFileID := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -875,7 +875,7 @@ func changeSongOrderHandler() (int, []HandlerFunc) {
 func changeEventDateHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 		markup := gotgbot.InlineKeyboardMarkup{}
 
 		now := time.Now()
@@ -959,12 +959,12 @@ func changeEventDateHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 		_, _, eventTime := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
 		parsedTime, err := time.Parse(time.RFC3339, eventTime)
 		if err != nil {
-			user.State = entities.State{Name: helpers.CreateEventState}
+			user.State = entity.State{Name: helpers.CreateEventState}
 			return h.Enter(c, user)
 		}
 
@@ -1006,7 +1006,7 @@ func changeEventDateHandler() (int, []HandlerFunc) {
 func addEventMemberHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, _ := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -1041,7 +1041,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, payload := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -1108,7 +1108,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, _, payload := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -1139,7 +1139,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		var foundEventMembership *entities.Membership
+		var foundEventMembership *entity.Membership
 		for _, eventMembership := range eventMemberships {
 			if eventMembership.RoleID == roleID && eventMembership.UserID == user2.ID {
 				foundEventMembership = eventMembership
@@ -1148,7 +1148,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 		}
 
 		if foundEventMembership == nil {
-			_, err = h.membershipService.UpdateOne(entities.Membership{
+			_, err = h.membershipService.UpdateOne(entity.Membership{
 				EventID: eventID,
 				UserID:  userID,
 				RoleID:  roleID,
@@ -1193,7 +1193,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 func deleteEventMemberHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, payload := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -1212,7 +1212,7 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		var memberships []*entities.Membership
+		var memberships []*entity.Membership
 		if payload != "deleted" {
 
 			membershipsJson, err := json.Marshal(eventMemberships)
@@ -1269,7 +1269,7 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, _, membershipHex := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -1284,13 +1284,13 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 				err = nil
 				membershipsJson := user.State.CallbackData.Query().Get("memberships")
 
-				var memberships []*entities.Membership
+				var memberships []*entity.Membership
 				err := json.Unmarshal([]byte(membershipsJson), &memberships)
 				if err != nil {
 					return err
 				}
 
-				var foundMembership *entities.Membership
+				var foundMembership *entity.Membership
 				for _, m := range memberships {
 					if m.ID == membershipID {
 						foundMembership = m
@@ -1345,7 +1345,7 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 func addEventSongHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		var eventID primitive.ObjectID
 		if c.CallbackQuery != nil {
@@ -1370,24 +1370,24 @@ func addEventSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 1,
 			Name:  helpers.AddEventSongState,
-			Context: entities.Context{
+			Context: entity.Context{
 				EventID: eventID,
 			},
 		}
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		if c.EffectiveMessage.Text == helpers.End {
-			user.State = entities.State{
+			user.State = entity.State{
 				Name:    helpers.DeleteEventSongState,
 				Context: user.State.Context,
 			}
-			user.State.Next = &entities.State{
+			user.State.Next = &entity.State{
 				Name: helpers.GetEventsState,
 			}
 			return h.Enter(c, user)
@@ -1399,11 +1399,11 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		songNames := helpers.SplitQueryByNewlines(query)
 
 		if len(songNames) > 1 {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index:   0,
 				Name:    helpers.SetlistState,
 				Context: user.State.Context,
-				Next: &entities.State{
+				Next: &entity.State{
 					Name:    helpers.AddEventSongState,
 					Index:   3,
 					Context: user.State.Context,
@@ -1448,14 +1448,14 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		if c.EffectiveMessage.Text == helpers.End {
-			user.State = entities.State{
+			user.State = entity.State{
 				Name:    helpers.DeleteEventSongState,
 				Context: user.State.Context,
 			}
-			user.State.Next = &entities.State{
+			user.State.Next = &entity.State{
 				Name: helpers.GetEventsState,
 			}
 			return h.Enter(c, user)
@@ -1485,7 +1485,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 		return h.Enter(c, user)
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
@@ -1513,7 +1513,7 @@ func addEventSongHandler() (int, []HandlerFunc) {
 func changeEventNotesHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
 		if err != nil {
@@ -1533,10 +1533,10 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 
 		// user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, msg.MessageId)
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 1,
 			Name:  helpers.ChangeEventNotesState,
-			Context: entities.Context{
+			Context: entity.Context{
 				EventID:          eventID,
 				MessagesToDelete: user.State.Context.MessagesToDelete,
 			},
@@ -1546,7 +1546,7 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		// user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
@@ -1590,13 +1590,13 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 0,
 			Name:  helpers.EventActionsState,
-			Context: entities.Context{
+			Context: entity.Context{
 				EventID: user.State.Context.EventID,
 			},
-			Next: &entities.State{
+			Next: &entity.State{
 				Name: helpers.GetEventsState,
 			},
 		}
@@ -1610,7 +1610,7 @@ func changeEventNotesHandler() (int, []HandlerFunc) {
 func deleteEventSongHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		var eventID primitive.ObjectID
 		var payload string
@@ -1631,7 +1631,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		var songs []*entities.Song
+		var songs []*entity.Song
 		if payload != "deleted" {
 
 			songsJson, err := json.Marshal(event.Songs)
@@ -1699,7 +1699,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, _, songIDHex := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -1734,7 +1734,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 		} else {
 			songsJson := user.State.CallbackData.Query().Get("songs")
 
-			var songs []*entities.Song
+			var songs []*entity.Song
 			err := json.Unmarshal([]byte(songsJson), &songs)
 			if err != nil {
 				return err
@@ -1775,7 +1775,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 func deleteEventHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := gotgbot.InlineKeyboardMarkup{}
 		markup.InlineKeyboard = helpers.ConfirmDeletingEventKeyboard
@@ -1789,7 +1789,7 @@ func deleteEventHandler() (int, []HandlerFunc) {
 
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
 		if err != nil {
@@ -1813,7 +1813,7 @@ func deleteEventHandler() (int, []HandlerFunc) {
 func chooseBandHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 		bands, err := h.bandService.FindAll()
 		if err != nil {
 			return err
@@ -1838,10 +1838,10 @@ func chooseBandHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.CreateBand:
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: 0,
 				Name:  helpers.CreateBandState,
 			}
@@ -1849,7 +1849,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 
 		default:
 			bands := user.State.Context.Bands
-			var foundBand *entities.Band
+			var foundBand *entity.Band
 			for _, band := range bands {
 				if band.Name == c.EffectiveMessage.Text {
 					foundBand = band
@@ -1864,7 +1864,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 				}
 
 				user.BandID = foundBand.ID
-				user.State = entities.State{
+				user.State = entity.State{
 					Index: 0,
 					Name:  helpers.MainMenuState,
 				}
@@ -1882,7 +1882,7 @@ func chooseBandHandler() (int, []HandlerFunc) {
 func createBandHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
 			ResizeKeyboard: true,
@@ -1897,8 +1897,8 @@ func createBandHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
-		user.State.Context.Band = &entities.Band{
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
+		user.State.Context.Band = &entity.Band{
 			Name: c.EffectiveMessage.Text,
 		}
 
@@ -1916,7 +1916,7 @@ func createBandHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		re := regexp.MustCompile(`(/folders/|id=)(.*?)(/|\?|$)`)
 		matches := re.FindStringSubmatch(c.EffectiveMessage.Text)
 		if matches == nil || len(matches) < 3 {
@@ -1937,7 +1937,7 @@ func createBandHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.MainMenuState,
 		}
 		return h.Enter(c, user)
@@ -1949,7 +1949,7 @@ func createBandHandler() (int, []HandlerFunc) {
 func addBandAdminHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			ResizeKeyboard: true,
@@ -1978,7 +1978,7 @@ func addBandAdminHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		regex := regexp.MustCompile(` \(админ\)$`)
 		query := regex.ReplaceAllString(c.EffectiveMessage.Text, "")
@@ -2000,7 +2000,7 @@ func addBandAdminHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.MainMenuState,
 		}
 
@@ -2013,7 +2013,7 @@ func addBandAdminHandler() (int, []HandlerFunc) {
 func getSongsFromMongoHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
@@ -2028,7 +2028,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 			return h.Enter(c, user)
 		}
 
-		var songs []*entities.SongExtra
+		var songs []*entity.SongExtra
 		var err error
 		switch user.State.Context.QueryType {
 		case helpers.SongsByLastDateOfPerforming:
@@ -2097,13 +2097,13 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
 		switch c.EffectiveMessage.Text {
 		case helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.LikedSongs, helpers.TagsEmoji:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name:    helpers.GetSongsFromMongoState,
 				Context: user.State.Context,
 			}
@@ -2126,16 +2126,16 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 
 		song, err := h.songService.FindOneByName(strings.TrimSpace(songName))
 		if err != nil {
-			user.State = entities.State{
+			user.State = entity.State{
 				Name:    helpers.SearchSongState,
 				Context: user.State.Context,
 			}
 			return h.Enter(c, user)
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.SongActionsState,
-			Context: entities.Context{
+			Context: entity.Context{
 				DriveFileID: song.DriveFileID,
 			},
 			Prev: &user.State,
@@ -2143,7 +2143,7 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 		return h.Enter(c, user)
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
@@ -2192,14 +2192,14 @@ func searchSongHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
 	// Print list of found songs.
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
 		// user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
 		var query string
 		if c.EffectiveMessage.Text == helpers.CreateDoc {
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.CreateSongState,
 			}
 			return h.Enter(c, user)
@@ -2220,10 +2220,10 @@ func searchSongHandler() (int, []HandlerFunc) {
 		songNames := helpers.SplitQueryByNewlines(query)
 
 		if len(songNames) > 1 {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: 0,
 				Name:  helpers.SetlistState,
-				Next: &entities.State{
+				Next: &entity.State{
 					Index: 2,
 					Name:  helpers.SearchSongState,
 				},
@@ -2241,7 +2241,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 				return err
 			}
 
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.MainMenuState,
 			}
 
@@ -2260,7 +2260,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 		}
 
 		if user.State.Context.NextPageToken == nil {
-			user.State.Context.NextPageToken = &entities.PageToken{}
+			user.State.Context.NextPageToken = &entity.PageToken{}
 		}
 
 		filters := true
@@ -2287,7 +2287,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State.Context.NextPageToken = &entities.PageToken{
+		user.State.Context.NextPageToken = &entity.PageToken{
 			Token:         nextPageToken,
 			PrevPageToken: user.State.Context.NextPageToken,
 		}
@@ -2318,7 +2318,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 
 		likedSongs, likedSongErr := h.songService.FindManyLiked(user.ID)
 
-		set := make(map[string]*entities.Band)
+		set := make(map[string]*entity.Band)
 		for i, driveFile := range driveFiles {
 
 			if user.State.Context.QueryType == helpers.SearchEverywhere {
@@ -2385,11 +2385,11 @@ func searchSongHandler() (int, []HandlerFunc) {
 
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		switch c.EffectiveMessage.Text {
 		case helpers.CreateDoc:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name: helpers.CreateSongState,
 			}
 			return h.Enter(c, user)
@@ -2399,7 +2399,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			return h.Enter(c, user)
 
 		case helpers.SongsByLastDateOfPerforming, helpers.SongsByNumberOfPerforming, helpers.LikedSongs, helpers.TagsEmoji:
-			user.State = entities.State{
+			user.State = entity.State{
 				Name:    helpers.GetSongsFromMongoState,
 				Context: user.State.Context,
 			}
@@ -2418,9 +2418,9 @@ func searchSongHandler() (int, []HandlerFunc) {
 			}
 
 			if foundDriveFile != nil {
-				user.State = entities.State{
+				user.State = entity.State{
 					Name: helpers.SongActionsState,
-					Context: entities.Context{
+					Context: entity.Context{
 						DriveFileID: foundDriveFile.Id,
 					},
 					Prev: &user.State,
@@ -2433,7 +2433,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 		}
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		for _, messageID := range user.State.Context.MessagesToDelete {
 			h.bot.DeleteMessage(c.EffectiveChat.Id, messageID)
@@ -2444,7 +2444,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.MainMenuState,
 		}
 		return h.Enter(c, user)
@@ -2456,7 +2456,7 @@ func searchSongHandler() (int, []HandlerFunc) {
 func songActionsHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		var driveFileID string
 
@@ -2491,7 +2491,7 @@ func songActionsHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		song, driveFile, err :=
 			h.songService.FindOrCreateOneByDriveFileID(user.State.CallbackData.Query().Get("driveFileId"))
@@ -2507,7 +2507,7 @@ func songActionsHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		song, _, err :=
 			h.songService.FindOrCreateOneByDriveFileID(user.State.CallbackData.Query().Get("driveFileId"))
@@ -2549,7 +2549,7 @@ func songActionsHandler() (int, []HandlerFunc) {
 func addSongTagHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, _ := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -2586,7 +2586,7 @@ func addSongTagHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		fmt.Println(c.EffectiveMessage.Text)
 		state, index, _ := helpers.ParseCallbackData(c.CallbackQuery.Data)
@@ -2600,17 +2600,17 @@ func addSongTagHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: index + 1,
 			Name:  state,
-			Context: entities.Context{
+			Context: entity.Context{
 				DriveFileID: user.State.CallbackData.Query().Get("driveFileId"),
 			},
 		}
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		driveFileID := user.State.Context.DriveFileID
 		tag := c.EffectiveMessage.Text
@@ -2662,10 +2662,10 @@ func addSongTagHandler() (int, []HandlerFunc) {
 				})
 			c.CallbackQuery.Answer(h.bot, nil)
 		} else {
-			user.State = entities.State{
+			user.State = entity.State{
 				Name:    helpers.SongActionsState,
 				Context: user.State.Context,
-				Next: &entities.State{
+				Next: &entity.State{
 					Name: helpers.MainMenuState,
 				},
 			}
@@ -2681,7 +2681,7 @@ func transposeSongHandler() (int, []HandlerFunc) {
 
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, _ := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -2736,7 +2736,7 @@ func transposeSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, key := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -2775,7 +2775,7 @@ func transposeSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "upload_document")
 
@@ -2812,7 +2812,7 @@ func styleSongHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
 	// Print list of found songs.
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
 
@@ -2845,7 +2845,7 @@ func addLyricsPageHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
 	// Print list of found songs.
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
 
@@ -2877,14 +2877,14 @@ func addLyricsPageHandler() (int, []HandlerFunc) {
 func changeSongBPMHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 1,
 			Name:  helpers.ChangeSongBPMState,
-			Context: entities.Context{
+			Context: entity.Context{
 				DriveFileID: driveFileID,
 			},
 		}
@@ -2904,7 +2904,7 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
@@ -2928,11 +2928,11 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index:   0,
 			Name:    helpers.SongActionsState,
 			Context: user.State.Context,
-			Next:    &entities.State{Name: helpers.MainMenuState, Index: 0},
+			Next:    &entity.State{Name: helpers.MainMenuState, Index: 0},
 		}
 		return h.Enter(c, user)
 	})
@@ -2943,7 +2943,7 @@ func changeSongBPMHandler() (int, []HandlerFunc) {
 func copySongHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
 
@@ -2995,7 +2995,7 @@ func createSongHandler() (int, []HandlerFunc) {
 		Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
 		ResizeKeyboard: true,
 	}
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь название:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
 			return err
@@ -3005,7 +3005,7 @@ func createSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		markup := &gotgbot.ReplyKeyboardMarkup{
 			Keyboard:       helpers.CancelOrSkipKeyboard,
 			ResizeKeyboard: true,
@@ -3023,7 +3023,7 @@ func createSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.Skip:
 		default:
@@ -3043,7 +3043,7 @@ func createSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.Skip:
 		default:
@@ -3063,7 +3063,7 @@ func createSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.Skip:
 		default:
@@ -3083,7 +3083,7 @@ func createSongHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.Skip:
 		default:
@@ -3114,13 +3114,13 @@ func createSongHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Index: 0,
 			Name:  helpers.SongActionsState,
-			Context: entities.Context{
+			Context: entity.Context{
 				DriveFileID: newFile.Id,
 			},
-			Next: &entities.State{
+			Next: &entity.State{
 				Name: helpers.MainMenuState,
 			},
 		}
@@ -3134,7 +3134,7 @@ func createSongHandler() (int, []HandlerFunc) {
 func deleteSongHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		if user.Role == helpers.Admin {
 			err := h.songService.DeleteOneByDriveFileID(user.State.CallbackData.Query().Get("driveFileId"))
 			if err != nil {
@@ -3153,7 +3153,7 @@ func deleteSongHandler() (int, []HandlerFunc) {
 func getVoicesHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, _ := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -3198,7 +3198,7 @@ func getVoicesHandler() (int, []HandlerFunc) {
 		}
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		state, index, voiceIDHex := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -3287,7 +3287,7 @@ func getVoicesHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		switch c.EffectiveMessage.Text {
 		case helpers.Back:
 			user.State.Index = 0
@@ -3312,7 +3312,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		ResizeKeyboard: true,
 	}
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, err := c.EffectiveChat.SendMessage(h.bot, "Введи название песни, к которой ты хочешь прикрепить эту партию:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
@@ -3323,7 +3323,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
@@ -3356,7 +3356,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "upload_document")
 
@@ -3383,7 +3383,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		user.State.Context.Voice.Name = c.EffectiveMessage.Text
 
@@ -3401,9 +3401,9 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 
 		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.", nil)
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.SongActionsState,
-			Context: entities.Context{
+			Context: entity.Context{
 				DriveFileID: user.State.Context.DriveFileID,
 			},
 		}
@@ -3411,12 +3411,12 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 	})
 
 	// Upload voice from song menu.
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name:    helpers.UploadVoiceState,
 			Index:   4,
-			Context: entities.Context{DriveFileID: user.State.CallbackData.Query().Get("driveFileId")},
+			Context: entity.Context{DriveFileID: user.State.CallbackData.Query().Get("driveFileId")},
 		}
 
 		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь мне аудио или голосовое сообщение:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
@@ -3428,7 +3428,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		c.EffectiveChat.SendAction(h.bot, "typing")
 
@@ -3436,7 +3436,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		if fileID == "" {
 			fileID = c.EffectiveMessage.Audio.FileId
 		}
-		user.State.Context.Voice = &entities.Voice{FileID: fileID}
+		user.State.Context.Voice = &entity.Voice{FileID: fileID}
 
 		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь мне название этой партии:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
 		if err != nil {
@@ -3447,7 +3447,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		user.State.Context.Voice.Name = c.EffectiveMessage.Text
 
@@ -3465,12 +3465,12 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 
 		c.EffectiveChat.SendMessage(h.bot, "Добавление завершено.", nil)
 
-		user.State = entities.State{
+		user.State = entity.State{
 			Name: helpers.SongActionsState,
-			Context: entities.Context{
+			Context: entity.Context{
 				DriveFileID: user.State.Context.DriveFileID,
 			},
-			Next: &entities.State{Name: helpers.MainMenuState},
+			Next: &entity.State{Name: helpers.MainMenuState},
 		}
 		return h.Enter(c, user)
 	})
@@ -3481,7 +3481,7 @@ func uploadVoiceHandler() (int, []HandlerFunc) {
 func deleteVoiceHandler() (int, []HandlerFunc) {
 	handlerFuncs := make([]HandlerFunc, 0)
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, index, voiceIDHex := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -3502,7 +3502,7 @@ func deleteVoiceHandler() (int, []HandlerFunc) {
 		return err
 	})
 
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		_, _, voiceIDHex := helpers.ParseCallbackData(c.CallbackQuery.Data)
 
@@ -3526,7 +3526,7 @@ func deleteVoiceHandler() (int, []HandlerFunc) {
 func setlistHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		if len(user.State.Context.SongNames) < 1 {
 			user.State.Index = 2
 			return h.Enter(c, user)
@@ -3581,7 +3581,7 @@ func setlistHandler() (int, []HandlerFunc) {
 		return nil
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 		user.State.Context.MessagesToDelete = append(user.State.Context.MessagesToDelete, c.EffectiveMessage.MessageId)
 
 		switch c.EffectiveMessage.Text {
@@ -3601,7 +3601,7 @@ func setlistHandler() (int, []HandlerFunc) {
 		return h.Enter(c, user)
 	})
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		driveFileIDs := user.State.Context.FoundDriveFileIDs
 		messagesToDelete := user.State.Context.MessagesToDelete
@@ -3627,7 +3627,7 @@ func setlistHandler() (int, []HandlerFunc) {
 func editInlineKeyboardHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entities.User) error {
+	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
 
 		markup := gotgbot.InlineKeyboardMarkup{}
 		markup.InlineKeyboard = helpers.GetEditEventKeyboard(*user)

@@ -1,9 +1,9 @@
-package repositories
+package repository
 
 import (
 	"context"
 	"fmt"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,7 +22,7 @@ func NewRoleRepository(mongoClient *mongo.Client) *RoleRepository {
 	}
 }
 
-func (r *RoleRepository) FindAll() ([]*entities.Role, error) {
+func (r *RoleRepository) FindAll() ([]*entity.Role, error) {
 	roles, err := r.find(bson.M{"_id": bson.M{"$ne": ""}})
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func (r *RoleRepository) FindAll() ([]*entities.Role, error) {
 	return roles, nil
 }
 
-func (r *RoleRepository) FindOneByID(ID primitive.ObjectID) (*entities.Role, error) {
+func (r *RoleRepository) FindOneByID(ID primitive.ObjectID) (*entity.Role, error) {
 	roles, err := r.find(bson.M{"_id": ID})
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (r *RoleRepository) FindOneByID(ID primitive.ObjectID) (*entities.Role, err
 	return roles[0], nil
 }
 
-func (r *RoleRepository) find(m bson.M) ([]*entities.Role, error) {
+func (r *RoleRepository) find(m bson.M) ([]*entity.Role, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("roles")
 
 	pipeline := bson.A{
@@ -59,7 +59,7 @@ func (r *RoleRepository) find(m bson.M) ([]*entities.Role, error) {
 		return nil, err
 	}
 
-	var roles []*entities.Role
+	var roles []*entity.Role
 	err = cur.All(context.TODO(), &roles)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (r *RoleRepository) find(m bson.M) ([]*entities.Role, error) {
 	return roles, nil
 }
 
-func (r *RoleRepository) UpdateOne(role entities.Role) (*entities.Role, error) {
+func (r *RoleRepository) UpdateOne(role entity.Role) (*entity.Role, error) {
 	if role.ID.IsZero() {
 		role.ID = r.generateUniqueID()
 	}
@@ -97,7 +97,7 @@ func (r *RoleRepository) UpdateOne(role entities.Role) (*entities.Role, error) {
 		return nil, result.Err()
 	}
 
-	var newRole *entities.Role
+	var newRole *entity.Role
 	err := result.Decode(&newRole)
 	if err != nil {
 		return nil, err

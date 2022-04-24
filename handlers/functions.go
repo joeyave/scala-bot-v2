@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"strings"
 	"sync"
 )
 
-func SendDriveFileToUser(h *Handler, c *ext.Context, user *entities.User, driveFileID string) error {
+func SendDriveFileToUser(h *Handler, c *ext.Context, user *entity.User, driveFileID string) error {
 
 	q := user.State.CallbackData.Query()
 	q.Set("driveFileId", driveFileID)
@@ -151,7 +151,7 @@ func SendDriveFileToUser(h *Handler, c *ext.Context, user *entities.User, driveF
 //	return nil
 //}
 
-func sendDriveFilesAlbum(h *Handler, ctx *ext.Context, user *entities.User, driveFileIDs []string) error {
+func sendDriveFilesAlbum(h *Handler, ctx *ext.Context, user *entity.User, driveFileIDs []string) error {
 
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(len(driveFileIDs))

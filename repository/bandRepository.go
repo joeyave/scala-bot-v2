@@ -1,9 +1,9 @@
-package repositories
+package repository
 
 import (
 	"context"
 	"fmt"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,7 +21,7 @@ func NewBandRepository(mongoClient *mongo.Client) *BandRepository {
 	}
 }
 
-func (r *BandRepository) FindAll() ([]*entities.Band, error) {
+func (r *BandRepository) FindAll() ([]*entity.Band, error) {
 	bands, err := r.find(bson.M{"_id": bson.M{"$ne": ""}})
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (r *BandRepository) FindAll() ([]*entities.Band, error) {
 	return bands, nil
 }
 
-func (r *BandRepository) FindOneByID(ID primitive.ObjectID) (*entities.Band, error) {
+func (r *BandRepository) FindOneByID(ID primitive.ObjectID) (*entity.Band, error) {
 	bands, err := r.find(bson.M{"_id": ID})
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (r *BandRepository) FindOneByID(ID primitive.ObjectID) (*entities.Band, err
 	return bands[0], nil
 }
 
-func (r *BandRepository) FindOneByDriveFolderID(driveFolderID string) (*entities.Band, error) {
+func (r *BandRepository) FindOneByDriveFolderID(driveFolderID string) (*entity.Band, error) {
 	bands, err := r.find(bson.M{"driveFolderId": driveFolderID})
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (r *BandRepository) FindOneByDriveFolderID(driveFolderID string) (*entities
 	return bands[0], nil
 }
 
-func (r *BandRepository) find(m bson.M) ([]*entities.Band, error) {
+func (r *BandRepository) find(m bson.M) ([]*entity.Band, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("bands")
 
 	pipeline := bson.A{
@@ -75,7 +75,7 @@ func (r *BandRepository) find(m bson.M) ([]*entities.Band, error) {
 		return nil, err
 	}
 
-	var bands []*entities.Band
+	var bands []*entity.Band
 	err = cur.All(context.TODO(), &bands)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (r *BandRepository) find(m bson.M) ([]*entities.Band, error) {
 	return bands, nil
 }
 
-func (r *BandRepository) UpdateOne(band entities.Band) (*entities.Band, error) {
+func (r *BandRepository) UpdateOne(band entity.Band) (*entity.Band, error) {
 	if band.ID.IsZero() {
 		band.ID = r.generateUniqueID()
 	}
@@ -114,7 +114,7 @@ func (r *BandRepository) UpdateOne(band entities.Band) (*entities.Band, error) {
 		return nil, result.Err()
 	}
 
-	var newBand *entities.Band
+	var newBand *entity.Band
 	err := result.Decode(&newBand)
 	if err != nil {
 		return nil, err

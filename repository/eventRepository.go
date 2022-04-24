@@ -1,8 +1,8 @@
-package repositories
+package repository
 
 import (
 	"context"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,7 +23,7 @@ func NewEventRepository(mongoClient *mongo.Client) *EventRepository {
 	}
 }
 
-func (r *EventRepository) FindAll() ([]*entities.Event, error) {
+func (r *EventRepository) FindAll() ([]*entity.Event, error) {
 	events, err := r.find(
 		bson.M{
 			"_id": bson.M{
@@ -43,7 +43,7 @@ func (r *EventRepository) FindAll() ([]*entities.Event, error) {
 	return events, nil
 }
 
-func (r *EventRepository) FindAllFromToday() ([]*entities.Event, error) {
+func (r *EventRepository) FindAllFromToday() ([]*entity.Event, error) {
 	now := time.Now()
 
 	return r.find(
@@ -60,7 +60,7 @@ func (r *EventRepository) FindAllFromToday() ([]*entities.Event, error) {
 	)
 }
 
-func (r *EventRepository) FindOneOldestByBandID(bandID primitive.ObjectID) (*entities.Event, error) {
+func (r *EventRepository) FindOneOldestByBandID(bandID primitive.ObjectID) (*entity.Event, error) {
 	event, err := r.find(
 		bson.M{
 			"bandId": bandID,
@@ -81,7 +81,7 @@ func (r *EventRepository) FindOneOldestByBandID(bandID primitive.ObjectID) (*ent
 	return event[0], err
 }
 
-func (r *EventRepository) FindManyFromTodayByBandID(bandID primitive.ObjectID) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyFromTodayByBandID(bandID primitive.ObjectID) ([]*entity.Event, error) {
 	now := time.Now()
 
 	return r.find(
@@ -99,7 +99,7 @@ func (r *EventRepository) FindManyFromTodayByBandID(bandID primitive.ObjectID) (
 	)
 }
 
-func (r *EventRepository) FindManyBetweenDatesByBandID(from time.Time, to time.Time, bandID primitive.ObjectID) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyBetweenDatesByBandID(from time.Time, to time.Time, bandID primitive.ObjectID) ([]*entity.Event, error) {
 	return r.find(
 		bson.M{
 			"bandId": bandID,
@@ -116,7 +116,7 @@ func (r *EventRepository) FindManyBetweenDatesByBandID(from time.Time, to time.T
 	)
 }
 
-func (r *EventRepository) FindManyByBandIDAndPageNumber(bandID primitive.ObjectID, pageNumber int) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyByBandIDAndPageNumber(bandID primitive.ObjectID, pageNumber int) ([]*entity.Event, error) {
 
 	return r.find(
 		bson.M{
@@ -136,7 +136,7 @@ func (r *EventRepository) FindManyByBandIDAndPageNumber(bandID primitive.ObjectI
 	)
 }
 
-func (r *EventRepository) FindManyUntilTodayByBandIDAndPageNumber(bandID primitive.ObjectID, pageNumber int) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyUntilTodayByBandIDAndPageNumber(bandID primitive.ObjectID, pageNumber int) ([]*entity.Event, error) {
 
 	return r.find(
 		bson.M{
@@ -159,7 +159,7 @@ func (r *EventRepository) FindManyUntilTodayByBandIDAndPageNumber(bandID primiti
 	)
 }
 
-func (r *EventRepository) FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(bandID primitive.ObjectID, weekday time.Weekday, pageNumber int) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(bandID primitive.ObjectID, weekday time.Weekday, pageNumber int) ([]*entity.Event, error) {
 
 	return r.find(
 		bson.M{
@@ -183,7 +183,7 @@ func (r *EventRepository) FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(band
 	)
 }
 
-func (r *EventRepository) FindManyUntilTodayByBandIDAndUserIDAndPageNumber(bandID primitive.ObjectID, userID int64, pageNumber int) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyUntilTodayByBandIDAndUserIDAndPageNumber(bandID primitive.ObjectID, userID int64, pageNumber int) ([]*entity.Event, error) {
 
 	return r.find(
 		bson.M{
@@ -207,7 +207,7 @@ func (r *EventRepository) FindManyUntilTodayByBandIDAndUserIDAndPageNumber(bandI
 	)
 }
 
-func (r *EventRepository) FindManyFromTodayByBandIDAndUserID(bandID primitive.ObjectID, userID int64, pageNumber int) ([]*entities.Event, error) {
+func (r *EventRepository) FindManyFromTodayByBandIDAndUserID(bandID primitive.ObjectID, userID int64, pageNumber int) ([]*entity.Event, error) {
 	now := time.Now()
 
 	return r.find(
@@ -232,7 +232,7 @@ func (r *EventRepository) FindManyFromTodayByBandIDAndUserID(bandID primitive.Ob
 	)
 }
 
-func (r *EventRepository) FindMultipleByIDs(IDs []primitive.ObjectID) ([]*entities.Event, error) {
+func (r *EventRepository) FindMultipleByIDs(IDs []primitive.ObjectID) ([]*entity.Event, error) {
 	return r.find(
 		bson.M{
 			"_id": bson.M{
@@ -247,7 +247,7 @@ func (r *EventRepository) FindMultipleByIDs(IDs []primitive.ObjectID) ([]*entiti
 	)
 }
 
-func (r *EventRepository) FindOneByID(ID primitive.ObjectID) (*entities.Event, error) {
+func (r *EventRepository) FindOneByID(ID primitive.ObjectID) (*entity.Event, error) {
 	events, err := r.find(bson.M{"_id": ID})
 	if err != nil {
 		return nil, err
@@ -256,7 +256,7 @@ func (r *EventRepository) FindOneByID(ID primitive.ObjectID) (*entities.Event, e
 	return events[0], nil
 }
 
-func (r *EventRepository) FindOneByNameAndTimeAndBandID(name string, t time.Time, bandID primitive.ObjectID) (*entities.Event, error) {
+func (r *EventRepository) FindOneByNameAndTimeAndBandID(name string, t time.Time, bandID primitive.ObjectID) (*entity.Event, error) {
 	events, err := r.find(
 		bson.M{
 			"name": name,
@@ -292,7 +292,7 @@ func (r *EventRepository) GetAlias(ctx context.Context, eventID primitive.Object
 		return "", result.Err()
 	}
 
-	var event *entities.Event
+	var event *entity.Event
 	err := result.Decode(&event)
 	if err != nil {
 		return "", err
@@ -301,7 +301,7 @@ func (r *EventRepository) GetAlias(ctx context.Context, eventID primitive.Object
 	return event.Alias(), nil
 }
 
-func (r *EventRepository) find(m bson.M, opts ...bson.M) ([]*entities.Event, error) {
+func (r *EventRepository) find(m bson.M, opts ...bson.M) ([]*entity.Event, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("events")
 
 	pipeline := bson.A{
@@ -522,7 +522,7 @@ func (r *EventRepository) find(m bson.M, opts ...bson.M) ([]*entities.Event, err
 		return nil, err
 	}
 
-	var events []*entities.Event
+	var events []*entity.Event
 	err = cur.All(context.TODO(), &events)
 	if err != nil {
 		return nil, err
@@ -535,7 +535,7 @@ func (r *EventRepository) find(m bson.M, opts ...bson.M) ([]*entities.Event, err
 	return events, nil
 }
 
-func (r *EventRepository) UpdateOne(event entities.Event) (*entities.Event, error) {
+func (r *EventRepository) UpdateOne(event entity.Event) (*entity.Event, error) {
 	if event.ID.IsZero() {
 		event.ID = r.generateUniqueID()
 	}
@@ -563,7 +563,7 @@ func (r *EventRepository) UpdateOne(event entities.Event) (*entities.Event, erro
 		return nil, result.Err()
 	}
 
-	var newEvent *entities.Event
+	var newEvent *entity.Event
 	err := result.Decode(&newEvent)
 	if err != nil {
 		return nil, err
@@ -579,7 +579,7 @@ func (r *EventRepository) DeleteOneByID(ID primitive.ObjectID) error {
 	return err
 }
 
-func (r *EventRepository) GetEventWithSongs(eventID primitive.ObjectID) (*entities.Event, error) {
+func (r *EventRepository) GetEventWithSongs(eventID primitive.ObjectID) (*entity.Event, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("events")
 
 	pipeline := bson.A{
@@ -635,7 +635,7 @@ func (r *EventRepository) GetEventWithSongs(eventID primitive.ObjectID) (*entiti
 		return nil, err
 	}
 
-	var events []*entities.Event
+	var events []*entity.Event
 	err = cur.All(context.TODO(), &events)
 	if err != nil {
 		return nil, err
@@ -715,7 +715,7 @@ func (r *EventRepository) PullSongID(eventID primitive.ObjectID, songID primitiv
 }
 
 // TODO: add band id
-func (r *EventRepository) GetMostFrequentEventNames() ([]*entities.EventNameFrequencies, error) {
+func (r *EventRepository) GetMostFrequentEventNames() ([]*entity.EventNameFrequencies, error) {
 
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("events")
 
@@ -734,7 +734,7 @@ func (r *EventRepository) GetMostFrequentEventNames() ([]*entities.EventNameFreq
 		return nil, nil
 	}
 
-	var frequencies []*entities.EventNameFrequencies
+	var frequencies []*entity.EventNameFrequencies
 	err = cur.All(context.TODO(), &frequencies)
 	if err != nil {
 		return nil, err

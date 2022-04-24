@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 )
 
-type HandlerFunc = func(h *Handler, c *ext.Context, user *entities.User) error
+type HandlerFunc = func(h *Handler, c *ext.Context, user *entity.User) error
 
 var handlers = make(map[int][]HandlerFunc, 0)
 

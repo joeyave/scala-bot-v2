@@ -36,6 +36,9 @@ var locales = map[string]map[string]string{
 	"button.like": {
 		"ru": "❤️‍🔥",
 	},
+	"button.unlike": {
+		"ru": "♡",
+	},
 	"button.calendar": {
 		"ru": "📆",
 	},
@@ -58,7 +61,7 @@ var locales = map[string]map[string]string{
 		"ru": "➕ Создать документ",
 	},
 	"button.createEvent": {
-		"ru": "  Добавить собрание",
+		"ru": "➕ Добавить собрание",
 	},
 	"button.chords": {
 		"ru": "🎶 Аккорды",

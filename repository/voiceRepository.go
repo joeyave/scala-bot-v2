@@ -1,8 +1,8 @@
-package repositories
+package repository
 
 import (
 	"context"
-	"github.com/joeyave/scala-bot-v2/entities"
+	"github.com/joeyave/scala-bot-v2/entity"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,15 +21,15 @@ func NewVoiceRepository(mongoClient *mongo.Client) *VoiceRepository {
 	}
 }
 
-func (r *VoiceRepository) FindOneByID(ID primitive.ObjectID) (*entities.Voice, error) {
+func (r *VoiceRepository) FindOneByID(ID primitive.ObjectID) (*entity.Voice, error) {
 	return r.findOne(bson.M{"_id": ID})
 }
 
-func (r *VoiceRepository) FindOneByFileID(fileID string) (*entities.Voice, error) {
+func (r *VoiceRepository) FindOneByFileID(fileID string) (*entity.Voice, error) {
 	return r.findOne(bson.M{"fileId": fileID})
 }
 
-func (r *VoiceRepository) UpdateOne(voice entities.Voice) (*entities.Voice, error) {
+func (r *VoiceRepository) UpdateOne(voice entity.Voice) (*entity.Voice, error) {
 	if voice.ID.IsZero() {
 		voice.ID = r.generateUniqueID()
 	}
@@ -56,7 +56,7 @@ func (r *VoiceRepository) UpdateOne(voice entities.Voice) (*entities.Voice, erro
 		return nil, result.Err()
 	}
 
-	var newVoice *entities.Voice
+	var newVoice *entity.Voice
 	err := result.Decode(&newVoice)
 	return newVoice, err
 }
@@ -68,7 +68,7 @@ func (r *VoiceRepository) DeleteOneByID(ID primitive.ObjectID) error {
 	return err
 }
 
-func (r *VoiceRepository) findOne(m bson.M) (*entities.Voice, error) {
+func (r *VoiceRepository) findOne(m bson.M) (*entity.Voice, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("voices")
 
 	result := collection.FindOne(context.TODO(), m)
@@ -76,7 +76,7 @@ func (r *VoiceRepository) findOne(m bson.M) (*entities.Voice, error) {
 		return nil, result.Err()
 	}
 
-	var voice *entities.Voice
+	var voice *entity.Voice
 	err := result.Decode(&voice)
 	return voice, err
 }

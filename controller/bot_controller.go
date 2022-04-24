@@ -5,33 +5,32 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
-	"github.com/joeyave/scala-bot-v2/entities"
-	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/keyboard"
-	"github.com/joeyave/scala-bot-v2/services"
+	"github.com/joeyave/scala-bot-v2/service"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/joeyave/scala-bot-v2/util"
 	"google.golang.org/api/drive/v3"
 	"strings"
 	"sync"
 )
 
 type BotController struct {
-	UserService       *services.UserService
-	DriveFileService  *services.DriveFileService
-	SongService       *services.SongService
-	VoiceService      *services.VoiceService
-	BandService       *services.BandService
-	MembershipService *services.MembershipService
-	EventService      *services.EventService
-	RoleService       *services.RoleService
+	UserService       *service.UserService
+	DriveFileService  *service.DriveFileService
+	SongService       *service.SongService
+	VoiceService      *service.VoiceService
+	BandService       *service.BandService
+	MembershipService *service.MembershipService
+	EventService      *service.EventService
+	RoleService       *service.RoleService
 	//OldHandler        *myhandlers.Handler
 }
 
 func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-	user := ctx.Data["user"].(*entities.User)
+	user := ctx.Data["user"].(*entity.User)
 
 	switch user.State.Name {
 	case state.GetEvents:
@@ -58,11 +57,12 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	user.Name = strings.TrimSpace(fmt.Sprintf("%s %s", ctx.EffectiveChat.FirstName, ctx.EffectiveChat.LastName))
 
-	if user.BandID == primitive.NilObjectID && user.State.Name != helpers.ChooseBandState && user.State.Name != helpers.CreateBandState {
-		user.State = entities.State{
-			Name: helpers.ChooseBandState,
-		}
-	}
+	// todo
+	//if user.BandID == primitive.NilObjectID && user.State.Name != helpers.ChooseBandState && user.State.Name != helpers.CreateBandState {
+	//	user.State = entity.State{
+	//		Name: helpers.ChooseBandState,
+	//	}
+	//}
 
 	ctx.Data["user"] = user
 
@@ -71,7 +71,7 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 func (c *BotController) UpdateUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-	user := ctx.Data["user"].(*entities.User)
+	user := ctx.Data["user"].(*entity.User)
 
 	_, err := c.UserService.UpdateOne(*user)
 	return err
@@ -80,14 +80,14 @@ func (c *BotController) UpdateUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 func (c *BotController) search(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-		user := ctx.Data["user"].(*entities.User)
+		user := ctx.Data["user"].(*entity.User)
 
 		if user.State.Name != state.Search {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: index,
 				Name:  state.Search,
 			}
-			user.Cache = entities.Cache{}
+			user.Cache = entity.Cache{}
 		}
 
 		switch index {
@@ -112,8 +112,8 @@ func (c *BotController) search(index int) handlers.Response {
 					user.Cache.NextPageToken = nil
 				}
 
-				query = helpers.CleanUpQuery(query)
-				songNames := helpers.SplitQueryByNewlines(query)
+				query = util.CleanUpText(query)
+				songNames := util.SplitTextByNewlines(query)
 
 				if len(songNames) > 1 {
 					user.Cache.SongNames = songNames
@@ -146,7 +146,7 @@ func (c *BotController) search(index int) handlers.Response {
 					return err
 				}
 
-				user.Cache.NextPageToken = &entities.NextPageToken{
+				user.Cache.NextPageToken = &entity.NextPageToken{
 					Value: nextPageToken,
 					Prev:  user.Cache.NextPageToken,
 				}
@@ -172,7 +172,7 @@ func (c *BotController) search(index int) handlers.Response {
 
 				likedSongs, likedSongErr := c.SongService.FindManyLiked(user.ID)
 
-				set := make(map[string]*entities.Band)
+				set := make(map[string]*entity.Band)
 				for i, driveFile := range driveFiles {
 
 					if user.Cache.Filter == txt.Get("button.globalSearch", ctx.EffectiveUser.LanguageCode) {
@@ -252,14 +252,14 @@ func (c *BotController) search(index int) handlers.Response {
 
 func (c *BotController) searchSetlist(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
-		user := ctx.Data["user"].(*entities.User)
+		user := ctx.Data["user"].(*entity.User)
 
 		if user.State.Name != state.SearchSetlist {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: index,
 				Name:  state.SearchSetlist,
 			}
-			user.Cache = entities.Cache{
+			user.Cache = entity.Cache{
 				SongNames: user.Cache.SongNames,
 			}
 		}
@@ -289,7 +289,9 @@ func (c *BotController) searchSetlist(index int) handlers.Response {
 
 				if len(driveFiles) == 0 {
 					markup := &gotgbot.ReplyKeyboardMarkup{
-						Keyboard:       helpers.CancelOrSkipKeyboard,
+						Keyboard: [][]gotgbot.KeyboardButton{
+							{{Text: txt.Get("button.cancel", ctx.EffectiveUser.LanguageCode)}, {Text: txt.Get("button.skip", ctx.EffectiveUser.LanguageCode)}},
+						},
 						ResizeKeyboard: true,
 					}
 
@@ -329,7 +331,7 @@ func (c *BotController) searchSetlist(index int) handlers.Response {
 		case 1:
 			{
 				switch ctx.EffectiveMessage.Text {
-				case helpers.Skip:
+				case txt.Get("button.skip", ctx.EffectiveUser.LanguageCode):
 					return c.searchSetlist(0)(bot, ctx)
 				}
 
@@ -349,9 +351,9 @@ func (c *BotController) searchSetlist(index int) handlers.Response {
 
 func (c *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
 
-	user := ctx.Data["user"].(*entities.User)
+	user := ctx.Data["user"].(*entity.User)
 
-	user.State = entities.State{}
+	user.State = entity.State{}
 
 	replyMarkup := &gotgbot.ReplyKeyboardMarkup{
 		Keyboard:       keyboard.Menu(ctx.EffectiveUser.LanguageCode),

@@ -8,8 +8,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/joeyave/scala-bot-v2/dto"
-	"github.com/joeyave/scala-bot-v2/entities"
-	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
@@ -19,14 +18,14 @@ import (
 	"time"
 )
 
-func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entities.Event) error {
+func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entity.Event) error {
 
-	user := ctx.Data["user"].(*entities.User)
+	user := ctx.Data["user"].(*entity.User)
 
 	html := c.EventService.ToHtmlStringByEvent(*event)
 
 	markup := gotgbot.InlineKeyboardMarkup{
-		InlineKeyboard: keyboard.EventInit(user, event, ctx.EffectiveUser.LanguageCode),
+		InlineKeyboard: keyboard.EventInit(event, user, ctx.EffectiveUser.LanguageCode),
 	}
 
 	_, err := ctx.EffectiveChat.SendMessage(bot, html, &gotgbot.SendMessageOpts{
@@ -45,14 +44,14 @@ func (c *BotController) CreateEvent(bot *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	user := ctx.Data["user"].(*entities.User)
+	user := ctx.Data["user"].(*entity.User)
 
 	eventDate, err := time.Parse("2006-01-02", data.Event.Date)
 	if err != nil {
 		return err
 	}
 
-	event := entities.Event{
+	event := entity.Event{
 		Time:   eventDate,
 		Name:   data.Event.Name,
 		BandID: user.BandID,
@@ -78,14 +77,14 @@ func (c *BotController) CreateEvent(bot *gotgbot.Bot, ctx *ext.Context) error {
 func (c *BotController) GetEvents(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-		user := ctx.Data["user"].(*entities.User)
+		user := ctx.Data["user"].(*entity.User)
 
 		if user.State.Name != state.GetEvents {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: index,
 				Name:  state.GetEvents,
 			}
-			user.Cache = entities.Cache{}
+			user.Cache = entity.Cache{}
 		}
 
 		switch index {
@@ -101,13 +100,12 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 					InputFieldPlaceholder: "Фраза из песни или список",
 				}
 
-				user.Cache.Buttons = helpers.GetWeekdayButtons(events)
+				user.Cache.Buttons = keyboard.GetEventsFilterButtons(events, ctx.EffectiveUser.LanguageCode)
 				markup.Keyboard = append(markup.Keyboard, user.Cache.Buttons)
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 				for _, event := range events {
-					buttonText := helpers.EventButton(event, user, false)
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
+					markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, false))
 				}
 
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}})
@@ -117,7 +115,7 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 					return err
 				}
 
-				user.Cache.Filter = "-" // todo: remove
+				//user.Cache.Filter = "-" // todo: remove
 
 				user.State.Index = 1
 
@@ -133,27 +131,22 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 					return c.filterEvents(0)(bot, ctx)
 
 				default:
-					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
+					if keyboard.IsWeekdayButton(ctx.EffectiveMessage.Text) {
 						return c.filterEvents(0)(bot, ctx)
 					}
 				}
 
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				eventName, eventTime, err := helpers.ParseEventButton(ctx.EffectiveMessage.Text)
+				eventName, eventTime, err := keyboard.ParseEventButton(ctx.EffectiveMessage.Text)
 				if err != nil {
 					return c.search(0)(bot, ctx)
 				}
 
 				foundEvent, err := c.EventService.FindOneByNameAndTimeAndBandID(eventName, eventTime, user.BandID)
 				if err != nil {
-					return c.GetEvents(0)(bot, ctx)
+					return c.search(0)(bot, ctx)
 				}
-
-				//event, err := c.EventService.FindOneByID(foundEvent.ID)
-				//if err != nil {
-				//	return err
-				//}
 
 				err = c.event(bot, ctx, foundEvent)
 				return err
@@ -166,14 +159,14 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 func (c *BotController) filterEvents(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-		user := ctx.Data["user"].(*entities.User)
+		user := ctx.Data["user"].(*entity.User)
 
 		if user.State.Name != state.FilterEvents {
-			user.State = entities.State{
+			user.State = entity.State{
 				Index: index,
 				Name:  state.FilterEvents,
 			}
-			user.Cache = entities.Cache{
+			user.Cache = entity.Cache{
 				Buttons: user.Cache.Buttons,
 			}
 		}
@@ -184,23 +177,23 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
 				if (ctx.EffectiveMessage.Text == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) ||
-					helpers.IsWeekdayString(ctx.EffectiveMessage.Text)) && user.Cache.Filter != txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
+					keyboard.IsWeekdayButton(ctx.EffectiveMessage.Text)) && user.Cache.Filter != txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
 					user.Cache.Filter = ctx.EffectiveMessage.Text
 				}
 
 				var (
-					events []*entities.Event
+					events []*entity.Event
 					err    error
 				)
 
 				if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
 					events, err = c.EventService.FindManyFromTodayByBandIDAndUserID(user.BandID, user.ID, user.Cache.PageIndex)
 				} else if user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
-					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
-						events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(ctx.EffectiveMessage.Text), user.Cache.PageIndex)
+					if keyboard.IsWeekdayButton(ctx.EffectiveMessage.Text) {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, keyboard.ParseWeekdayButton(ctx.EffectiveMessage.Text), user.Cache.PageIndex)
 						user.Cache.Query = ctx.EffectiveMessage.Text
-					} else if helpers.IsWeekdayString(user.Cache.Query) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode)) {
-						events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, helpers.GetWeekdayFromString(user.Cache.Query), user.Cache.PageIndex)
+					} else if keyboard.IsWeekdayButton(user.Cache.Query) && (ctx.EffectiveMessage.Text == txt.Get("button.next", ctx.EffectiveUser.LanguageCode) || ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode)) {
+						events, err = c.EventService.FindManyUntilTodayByBandIDAndWeekdayAndPageNumber(user.BandID, keyboard.ParseWeekdayButton(user.Cache.Query), user.Cache.PageIndex)
 					} else if ctx.EffectiveMessage.Text == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
 						events, err = c.EventService.FindManyUntilTodayByBandIDAndUserIDAndPageNumber(user.BandID, user.ID, user.Cache.PageIndex)
 						user.Cache.Query = ctx.EffectiveMessage.Text
@@ -208,10 +201,10 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 						events, err = c.EventService.FindManyUntilTodayByBandIDAndUserIDAndPageNumber(user.BandID, user.ID, user.Cache.PageIndex)
 					} else {
 						events, err = c.EventService.FindManyUntilTodayByBandIDAndPageNumber(user.BandID, user.Cache.PageIndex)
-						user.Cache.Buttons = helpers.GetWeekdayButtons(events)
+						user.Cache.Buttons = keyboard.GetEventsFilterButtons(events, ctx.EffectiveUser.LanguageCode)
 					}
-				} else if helpers.IsWeekdayString(user.Cache.Filter) {
-					events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, helpers.GetWeekdayFromString(user.Cache.Filter))
+				} else if keyboard.IsWeekdayButton(user.Cache.Filter) {
+					events, err = c.EventService.FindManyFromTodayByBandIDAndWeekday(user.BandID, keyboard.ParseWeekdayButton(user.Cache.Filter))
 				}
 				if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 					return err
@@ -238,15 +231,11 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 				}
 
 				for _, event := range events {
-
-					buttonText := ""
 					if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
-						buttonText = helpers.EventButton(event, user, true)
+						markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, true))
 					} else {
-						buttonText = helpers.EventButton(event, user, false)
+						markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, false))
 					}
-
-					markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: buttonText}})
 				}
 
 				if user.Cache.PageIndex != 0 {
@@ -277,7 +266,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 					user.Cache.PageIndex--
 					return c.filterEvents(0)(bot, ctx)
 				default:
-					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
+					if keyboard.IsWeekdayButton(ctx.EffectiveMessage.Text) {
 						user.Cache.PageIndex = 0
 						return c.filterEvents(0)(bot, ctx)
 					}
@@ -285,7 +274,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 
 				if strings.Contains(ctx.EffectiveMessage.Text, "〔") && strings.Contains(ctx.EffectiveMessage.Text, "〕") {
 					if user.Cache.Filter == txt.Get("button.archive", ctx.EffectiveUser.LanguageCode) {
-						if helpers.IsWeekdayString(strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "")) ||
+						if keyboard.IsWeekdayButton(strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "")) ||
 							strings.ReplaceAll(strings.ReplaceAll(ctx.EffectiveMessage.Text, "〔", ""), "〕", "") == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
 							return c.filterEvents(0)(bot, ctx)
 						} else {
@@ -298,7 +287,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				eventName, eventTime, err := helpers.ParseEventButton(ctx.EffectiveMessage.Text)
+				eventName, eventTime, err := keyboard.ParseEventButton(ctx.EffectiveMessage.Text)
 				if err != nil {
 					return c.search(0)(bot, ctx)
 				}
