@@ -130,12 +130,10 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 					return c.GetEvents(0)(bot, ctx)
 
 				case txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode), txt.Get("button.archive", ctx.EffectiveUser.LanguageCode):
-					ctx.Data["buttons"] = user.Cache.Buttons
 					return c.filterEvents(0)(bot, ctx)
 
 				default:
 					if helpers.IsWeekdayString(ctx.EffectiveMessage.Text) {
-						ctx.Data["buttons"] = user.Cache.Buttons
 						return c.filterEvents(0)(bot, ctx)
 					}
 				}
@@ -175,7 +173,9 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 				Index: index,
 				Name:  state.FilterEvents,
 			}
-			user.Cache = entities.Cache{}
+			user.Cache = entities.Cache{
+				Buttons: user.Cache.Buttons,
+			}
 		}
 
 		switch index {
@@ -220,10 +220,6 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 				markup := &gotgbot.ReplyKeyboardMarkup{
 					ResizeKeyboard:        true,
 					InputFieldPlaceholder: "Фраза из песни или список",
-				}
-
-				if len(user.Cache.Buttons) == 0 {
-					user.Cache.Buttons = ctx.Data["buttons"].([]gotgbot.KeyboardButton)
 				}
 
 				var buttons []gotgbot.KeyboardButton

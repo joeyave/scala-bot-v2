@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joeyave/scala-bot-v2/controller"
 	"github.com/joeyave/scala-bot-v2/entities"
-	myhandlers "github.com/joeyave/scala-bot-v2/handlers"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/repositories"
 	"github.com/joeyave/scala-bot-v2/services"
@@ -89,20 +88,20 @@ func main() {
 	roleRepository := repositories.NewRoleRepository(mongoClient)
 	roleService := services.NewRoleService(roleRepository)
 
-	handler := myhandlers.NewHandler(
-		bot,
-		userService,
-		driveFileService,
-		songService,
-		voiceService,
-		bandService,
-		membershipService,
-		eventService,
-		roleService,
-	)
+	//handler := myhandlers.NewHandler(
+	//	bot,
+	//	userService,
+	//	driveFileService,
+	//	songService,
+	//	voiceService,
+	//	bandService,
+	//	membershipService,
+	//	eventService,
+	//	roleService,
+	//)
 
 	botController := controller.BotController{
-		OldHandler:        handler,
+		//OldHandler:        handler,
 		UserService:       userService,
 		DriveFileService:  driveFileService,
 		SongService:       songService,
@@ -170,14 +169,14 @@ func main() {
 	//dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix("eventChords:"), botController.EventChords), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Text == txt.Get("button.song", msg.From.LanguageCode)
+		return msg.Text == txt.Get("button.songs", msg.From.LanguageCode)
 	}, botController.GetSongs(0)), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)
 
-	go handler.NotifyUser()
+	//go handler.NotifyUser() // todo
 
 	router := gin.New()
 	router.LoadHTMLGlob("tmpl/**/*.tmpl")

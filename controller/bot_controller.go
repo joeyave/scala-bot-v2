@@ -6,7 +6,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/joeyave/scala-bot-v2/entities"
-	myhandlers "github.com/joeyave/scala-bot-v2/handlers"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/services"
@@ -27,7 +26,7 @@ type BotController struct {
 	MembershipService *services.MembershipService
 	EventService      *services.EventService
 	RoleService       *services.RoleService
-	OldHandler        *myhandlers.Handler
+	//OldHandler        *myhandlers.Handler
 }
 
 func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context) error {

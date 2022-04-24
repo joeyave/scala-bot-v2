@@ -108,7 +108,8 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 					user.State = entities.State{
 						Name: helpers.CreateSongState,
 					}
-					return c.OldHandler.Enter(ctx, user)
+					return nil
+					//return c.OldHandler.Enter(ctx, user)
 				}
 
 				ctx.EffectiveChat.SendAction(bot, "typing")
@@ -186,7 +187,8 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 					user.State = entities.State{
 						Name: helpers.CreateSongState,
 					}
-					return c.OldHandler.Enter(ctx, user)
+					return nil
+					//return c.OldHandler.Enter(ctx, user)
 
 				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode), txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					return c.GetSongs(0)(bot, ctx)
