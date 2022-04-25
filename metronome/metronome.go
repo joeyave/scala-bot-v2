@@ -1,4 +1,4 @@
-package helpers
+package metronome
 
 var metronomeTracks = map[string]map[string]string{
 	"60": {

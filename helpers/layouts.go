@@ -40,7 +40,7 @@ func GetEventActionsKeyboard(user entity.User, event entity.Event) [][]gotgbot.I
 		}
 	}
 
-	if user.Role == Admin || member {
+	if user.Role == entity.AdminRole || member {
 		return [][]gotgbot.InlineKeyboardButton{
 			{
 				{Text: FindChords, CallbackData: AggregateCallbackData(EventActionsState, 1, "")},
@@ -61,7 +61,7 @@ func GetEventActionsKeyboard(user entity.User, event entity.Event) [][]gotgbot.I
 }
 
 func GetEditEventKeyboard(user entity.User) [][]gotgbot.InlineKeyboardButton {
-	if user.Role == Admin {
+	if user.Role == entity.AdminRole {
 		return [][]gotgbot.InlineKeyboardButton{
 			{
 				{Text: Setlist, CallbackData: AggregateCallbackData(DeleteEventSongState, 0, "")},

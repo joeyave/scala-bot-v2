@@ -9,6 +9,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/dto"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/keyboard"
+	"github.com/joeyave/scala-bot-v2/metronome"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
@@ -102,7 +103,7 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 
 				user.Cache.Buttons = keyboard.GetEventsStateFilterButtons(events, ctx.EffectiveUser.LanguageCode)
 				markup.Keyboard = append(markup.Keyboard, user.Cache.Buttons)
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
 
 				for _, event := range events {
 					markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, ctx.EffectiveUser.LanguageCode, false))
@@ -229,7 +230,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 				}
 
 				markup.Keyboard = append(markup.Keyboard, buttons)
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
 
 				for _, event := range events {
 					if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
@@ -334,4 +335,57 @@ func (c *BotController) EventSetlistDocs(bot *gotgbot.Bot, ctx *ext.Context) err
 
 	ctx.CallbackQuery.Answer(bot, nil)
 	return nil
+}
+
+func (c *BotController) EventSetlistMetronome(bot *gotgbot.Bot, ctx *ext.Context) error {
+	{
+
+		eventIDHex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+		eventID, err := primitive.ObjectIDFromHex(eventIDHex)
+		if err != nil {
+			return err
+		}
+		event, err := c.EventService.GetEventWithSongs(eventID)
+		if err != nil {
+			return err
+		}
+
+		var bigAlbum []gotgbot.InputMedia
+
+		for _, song := range event.Songs {
+			audio := &gotgbot.InputMediaAudio{
+				Media:   metronome.GetMetronomeTrackFileID(song.PDF.BPM, song.PDF.Time),
+				Caption: "↑ " + song.PDF.Name,
+			}
+
+			bigAlbum = append(bigAlbum, audio)
+		}
+
+		chunks := chunkAlbum(bigAlbum, 10)
+
+		for _, album := range chunks {
+			_, err := bot.SendMediaGroup(ctx.EffectiveChat.Id, album, nil)
+			if err != nil {
+				return err
+			}
+		}
+
+		ctx.CallbackQuery.Answer(bot, nil)
+		return nil
+	}
+}
+
+func (c *BotController) EditEventKeyboard(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	markup := gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: keyboard.EventEdit(user, ctx.EffectiveUser.LanguageCode),
+	}
+	_, _, err := ctx.EffectiveMessage.EditReplyMarkup(bot, &gotgbot.EditMessageReplyMarkupOpts{
+		ReplyMarkup: markup,
+	})
+
+	return err
 }

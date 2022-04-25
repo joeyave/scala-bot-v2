@@ -72,6 +72,24 @@ var locales = map[string]map[string]string{
 	"button.edit": {
 		"ru": "✍️ Редактировать",
 	},
+	"button.setlist": {
+		"ru": "📝 Список",
+	},
+	"button.members": {
+		"ru": "🙋‍♂️ Участники",
+	},
+	"button.notes": {
+		"ru": "✏️ Заметки",
+	},
+	"button.editDate": {
+		"ru": "🗓️ Изменить дату",
+	},
+	"button.delete": {
+		"ru": "🗑 Удалить",
+	},
+	"button.back": {
+		"ru": "↩︎ Назад",
+	},
 
 	"text.defaultPlaceholder": {
 		"ru": "Фраза из песни или список",

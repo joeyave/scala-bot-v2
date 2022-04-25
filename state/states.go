@@ -15,4 +15,6 @@ const (
 // Inline states.
 const (
 	EventSetlistDocs = iota + 1
+	EventSetlistMetronome
+	EditEventKeyboard
 )

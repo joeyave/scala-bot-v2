@@ -22,6 +22,19 @@ type User struct {
 	Band   *Band              `bson:"band,omitempty"`
 }
 
+func (u *User) IsAdmin() bool {
+	return u.Role == AdminRole
+}
+
+func (u *User) IsEventMember(event *Event) bool {
+	for _, membership := range event.Memberships {
+		if u.ID == membership.UserID {
+			return true
+		}
+	}
+	return false
+}
+
 type State struct {
 	Name  int `bson:"name,omitempty"`
 	Index int `bson:"index,omitempty"`

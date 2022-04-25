@@ -8,3 +8,7 @@ type Role struct {
 	Priority int                `bson:"priority,omitempty" json:"priority,omitempty"`
 	BandID   primitive.ObjectID `bson:"bandId,omitempty" json:"band_id,omitempty"`
 }
+
+const (
+	AdminRole = "Admin"
+)

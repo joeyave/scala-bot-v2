@@ -6,16 +6,16 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/callbackquery"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers/filters/message"
 	"github.com/gin-gonic/gin"
 	"github.com/joeyave/scala-bot-v2/controller"
-	"github.com/joeyave/scala-bot-v2/entity"
-	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/repository"
 	"github.com/joeyave/scala-bot-v2/service"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -29,6 +29,12 @@ import (
 )
 
 func main() {
+	out := zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.RFC3339,
+	}
+	log.Logger = zerolog.New(out).Level(zerolog.GlobalLevel()).With().Timestamp().Logger()
+
 	// Create bot from environment value.
 	bot, err := gotgbot.NewBot(os.Getenv("BOT_TOKEN"), &gotgbot.BotOpts{
 		Client:      http.Client{},
@@ -115,6 +121,7 @@ func main() {
 	}
 	webAppController := controller.WebAppController{
 		EventService: eventService,
+		UserService:  userService,
 		Bot:          bot,
 	}
 
@@ -122,34 +129,8 @@ func main() {
 	updater := ext.NewUpdater(&ext.UpdaterOpts{
 		ErrorLog: nil,
 		DispatcherOpts: ext.DispatcherOpts{
-			Error: func(b *gotgbot.Bot, ctx *ext.Context, err error) ext.DispatcherAction {
-				fmt.Println("an error occurred while handling update:", err.Error())
-
-				_, sendMsgErr := ctx.EffectiveChat.SendMessage(b, "Произошла ошибка. Поправим.", nil)
-				if sendMsgErr != nil {
-					log.Error().Err(sendMsgErr).Msg("Error!")
-					return ext.DispatcherActionEndGroups
-				}
-
-				user, findUserErr := userService.FindOneByID(ctx.EffectiveChat.Id)
-				if findUserErr != nil {
-					log.Error().Err(findUserErr).Msg("Error!")
-					return ext.DispatcherActionEndGroups
-				}
-
-				// todo: send message to the logs channel
-				log.Error().Err(err).Msg("Error!")
-
-				user.State = entity.State{Name: helpers.MainMenuState}
-				_, err = userService.UpdateOne(*user)
-				if findUserErr != nil {
-					log.Error().Err(findUserErr).Msg("Error!")
-					return ext.DispatcherActionEndGroups
-				}
-
-				return ext.DispatcherActionEndGroups
-			},
-			Panic:       nil,
+			Error:       botController.Error,
+			Panic:       nil, // todo
 			ErrorLog:    nil,
 			MaxRoutines: 0,
 		},
@@ -157,15 +138,18 @@ func main() {
 	dispatcher := updater.Dispatcher
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.RegisterUser), 0)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.All, botController.RegisterUser), 0)
 
 	// Plain keyboard.
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Text == txt.Get("button.menu", msg.From.LanguageCode) || msg.Text == txt.Get("button.cancel", msg.From.LanguageCode)
 	}, botController.Menu), 1)
-
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Text == txt.Get("button.schedule", msg.From.LanguageCode)
 	}, botController.GetEvents(0)), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Text == txt.Get("button.songs", msg.From.LanguageCode)
+	}, botController.GetSongs(0)), 1)
 
 	// Web app.
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
@@ -174,10 +158,8 @@ func main() {
 
 	// Inline keyboard.
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistDocs), botController.EventSetlistDocs), 1)
-
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
-		return msg.Text == txt.Get("button.songs", msg.From.LanguageCode)
-	}, botController.GetSongs(0)), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistMetronome), botController.EventSetlistMetronome), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EditEventKeyboard), botController.EditEventKeyboard), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
@@ -189,8 +171,9 @@ func main() {
 	router.LoadHTMLGlob("tmpl/**/*.tmpl")
 	router.Static("/assets", "./assets")
 
-	router.GET("/web-app/create-event", webAppController.CreateEvent)
-	router.GET("/web-app/edit-event/:id", webAppController.EditEvent)
+	router.GET("/web-app/events/create", webAppController.CreateEvent)
+	router.GET("/web-app/events/:id/edit", webAppController.EditEvent)
+	router.POST("/web-app/events/:id/edit/confirm", webAppController.EditEventConfirm)
 
 	go func() {
 		// Start receiving updates.

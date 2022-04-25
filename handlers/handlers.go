@@ -9,6 +9,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/metronome"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -285,7 +286,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 		user.State.Context.WeekdayButtons = helpers.GetWeekdayButtons(events)
 		markup.Keyboard = append(markup.Keyboard, user.State.Context.WeekdayButtons)
-		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
+		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
 
 		for _, event := range events {
 			buttonText := helpers.EventButton(event, user, false)
@@ -362,7 +363,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 			}
 
 			markup.Keyboard = append(markup.Keyboard, buttons)
-			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
+			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
 
 			for i := range markup.Keyboard[0] {
 				if markup.Keyboard[0][i].Text == user.State.Context.QueryType || (markup.Keyboard[0][i].Text == text && user.State.Context.QueryType == helpers.Archive) ||
@@ -692,76 +693,6 @@ func eventActionsHandler() (int, []HandlerFunc) {
 				return nil
 			}
 		}
-	})
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		c.EffectiveChat.SendAction(h.bot, "upload_document")
-
-		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
-		if err != nil {
-			return err
-		}
-
-		event, err := h.eventService.FindOneByID(eventID)
-		if err != nil {
-			return err
-		}
-
-		var driveFileIDs []string
-		for _, song := range event.Songs {
-			driveFileIDs = append(driveFileIDs, song.DriveFileID)
-		}
-
-		err = sendDriveFilesAlbum(h, c, user, driveFileIDs)
-		if err != nil {
-			return err
-		}
-
-		c.CallbackQuery.Answer(h.bot, nil)
-		return nil
-	})
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-		c.EffectiveChat.SendAction(h.bot, "upload_audio")
-
-		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
-		if err != nil {
-			return err
-		}
-
-		event, err := h.eventService.FindOneByID(eventID)
-		if err != nil {
-			return err
-		}
-
-		var bigAlbum []gotgbot.InputMedia
-
-		for _, song := range event.Songs {
-
-			audio := &gotgbot.InputMediaAudio{
-				Media:   helpers.GetMetronomeTrackFileID(song.PDF.BPM, song.PDF.Time),
-				Caption: "↑ " + song.PDF.Name,
-			}
-
-			bigAlbum = append(bigAlbum, audio)
-		}
-
-		const chunkSize = 10
-		chunks := chunkAlbumBy(bigAlbum, chunkSize)
-
-		for _, album := range chunks {
-			_, err := h.bot.SendMediaGroup(c.EffectiveChat.Id, album, nil)
-			if err != nil {
-				return err
-			}
-			if err != nil {
-				return err
-			}
-		}
-
-		c.CallbackQuery.Answer(h.bot, nil)
-		return nil
 	})
 
 	return helpers.EventActionsState, handlerFuncs

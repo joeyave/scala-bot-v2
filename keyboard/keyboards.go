@@ -3,7 +3,6 @@ package keyboard
 import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/joeyave/scala-bot-v2/entity"
-	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
@@ -45,22 +44,37 @@ func EventInit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
 			{Text: txt.Get("button.chords", lang), CallbackData: util.CallbackData(state.EventSetlistDocs, event.ID.Hex())},
-			{Text: txt.Get("button.metronome", lang), CallbackData: "eventMetronome:" + event.ID.Hex()},
+			{Text: txt.Get("button.metronome", lang), CallbackData: util.CallbackData(state.EventSetlistMetronome, event.ID.Hex())},
 		},
 	}
 
-	member := false
-	for _, membership := range event.Memberships {
-		if user.ID == membership.UserID {
-			member = true
-			break
-		}
+	if user.IsAdmin() || user.IsEventMember(event) {
+		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
+			//{Text: txt.Get("button.edit", lang), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/events/%s/edit", os.Getenv("HOST"), event.ID.Hex())}},
+			{Text: txt.Get("button.edit", lang), CallbackData: util.CallbackData(state.EditEventKeyboard, event.ID.Hex())},
+		})
 	}
 
-	if user.Role == helpers.Admin || member {
-		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
-			{Text: txt.Get("button.edit", lang), CallbackData: "todo"},
-		})
+	return keyboard
+}
+
+func EventEdit(user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
+
+	keyboard := [][]gotgbot.InlineKeyboardButton{
+		{
+			{Text: txt.Get("button.setlist", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.members", lang), CallbackData: "todo"},
+		},
+		{
+			{Text: txt.Get("button.notes", lang), CallbackData: "todo"},
+		},
+		{
+			{Text: txt.Get("button.editDate", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.delete", lang), CallbackData: "todo"},
+		},
+		{
+			{Text: txt.Get("button.back", lang), CallbackData: "todo"},
+		},
 	}
 
 	return keyboard

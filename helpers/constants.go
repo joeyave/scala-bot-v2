@@ -96,10 +96,5 @@ const (
 	Placeholder                 string = "Фраза из песни или список"
 )
 
-// Roles.
-const (
-	Admin string = "Admin"
-)
-
 var FilesChannelID int64
 var LogsChannelID int64

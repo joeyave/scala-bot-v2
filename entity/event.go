@@ -10,19 +10,19 @@ import (
 )
 
 type Event struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty"`
-	Time time.Time          `bson:"time,omitempty"`
-	Name string             `bson:"name,omitempty"`
+	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Time time.Time          `bson:"time,omitempty" json:"time"`
+	Name string             `bson:"name,omitempty" json:"name"`
 
-	Memberships []*Membership `bson:"memberships,omitempty"`
+	Memberships []*Membership `bson:"memberships,omitempty" json:"memberships"`
 
-	BandID primitive.ObjectID `bson:"bandId,omitempty"`
-	Band   *Band              `bson:"band,omitempty"`
+	BandID primitive.ObjectID `bson:"bandId,omitempty" json:"bandId"`
+	Band   *Band              `bson:"band,omitempty" json:"band"`
 
-	SongIDs []primitive.ObjectID `bson:"songIds,omitempty"`
-	Songs   []*Song              `bson:"songs,omitempty"`
+	SongIDs []primitive.ObjectID `bson:"songIds,omitempty" json:"songIds"`
+	Songs   []*Song              `bson:"songs,omitempty" json:"songs"`
 
-	Notes string `bson:"notes,omitempty"`
+	Notes string `bson:"notes,omitempty" json:"notes"`
 }
 
 func (e *Event) Alias(lang string) string {

@@ -11,6 +11,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/api/drive/v3"
 	"strings"
 	"sync"
@@ -50,7 +51,7 @@ func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context
 
 func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-	user, err := c.UserService.FindOneOrCreateByID(ctx.EffectiveChat.Id)
+	user, err := c.UserService.FindOneOrCreateByID(ctx.EffectiveUser.Id)
 	if err != nil {
 		return err
 	}
@@ -346,7 +347,7 @@ func (c *BotController) searchSetlist(index int) handlers.Response {
 	}
 }
 
-func (c *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
+func (c *BotController) Menu(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	user := ctx.Data["user"].(*entity.User)
 
@@ -357,7 +358,7 @@ func (c *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
 		ResizeKeyboard: true,
 	}
 
-	_, err := ctx.EffectiveChat.SendMessage(b, txt.Get("text.menu", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
+	_, err := ctx.EffectiveChat.SendMessage(bot, txt.Get("text.menu", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
 		ReplyMarkup: replyMarkup,
 	})
 	if err != nil {
@@ -365,6 +366,43 @@ func (c *BotController) Menu(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	return nil
+}
+
+func (c *BotController) Error(bot *gotgbot.Bot, ctx *ext.Context, botErr error) ext.DispatcherAction {
+
+	log.Error().Msgf("Error handling update: %v", botErr)
+
+	if ctx.CallbackQuery != nil {
+		_, err := ctx.CallbackQuery.Answer(bot, &gotgbot.AnswerCallbackQueryOpts{
+			Text: "Произошла ошибка. Поправим.",
+		})
+		if err != nil {
+			return 0
+		}
+	} else {
+		_, err := ctx.EffectiveChat.SendMessage(bot, "Произошла ошибка. Поправим.", nil)
+		if err != nil {
+			log.Error().Err(err).Msg("Error!")
+			return ext.DispatcherActionEndGroups
+		}
+	}
+
+	user, err := c.UserService.FindOneByID(ctx.EffectiveChat.Id)
+	if err != nil {
+		log.Error().Err(err).Msg("Error!")
+		return ext.DispatcherActionEndGroups
+	}
+
+	// todo: send message to the logs channel
+
+	user.State = entity.State{}
+	_, err = c.UserService.UpdateOne(*user)
+	if err != nil {
+		log.Error().Err(err).Msg("Error!")
+		return ext.DispatcherActionEndGroups
+	}
+
+	return ext.DispatcherActionEndGroups
 }
 
 func (c *BotController) songsAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFileIDs []string) error {
@@ -402,7 +440,7 @@ func (c *BotController) songsAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFile
 	}
 	waitGroup.Wait()
 
-	chunks := chunkAlbumBy(bigAlbum, 10)
+	chunks := chunkAlbum(bigAlbum, 10)
 
 	for _, album := range chunks {
 		_, err := bot.SendMediaGroup(ctx.EffectiveChat.Id, album, nil)
@@ -414,7 +452,7 @@ func (c *BotController) songsAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFile
 	return nil
 }
 
-func chunkAlbumBy(items []gotgbot.InputMedia, chunkSize int) (chunks [][]gotgbot.InputMedia) {
+func chunkAlbum(items []gotgbot.InputMedia, chunkSize int) (chunks [][]gotgbot.InputMedia) {
 	for chunkSize < len(items) {
 		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
 	}
