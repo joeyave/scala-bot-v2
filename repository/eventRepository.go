@@ -284,7 +284,7 @@ func (r *EventRepository) FindOneByNameAndTimeAndBandID(name string, t time.Time
 	return events[0], nil
 }
 
-func (r *EventRepository) GetAlias(ctx context.Context, eventID primitive.ObjectID) (string, error) {
+func (r *EventRepository) GetAlias(ctx context.Context, eventID primitive.ObjectID, lang string) (string, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("events")
 
 	result := collection.FindOne(ctx, bson.M{"_id": eventID})
@@ -298,7 +298,7 @@ func (r *EventRepository) GetAlias(ctx context.Context, eventID primitive.Object
 		return "", err
 	}
 
-	return event.Alias(), nil
+	return event.Alias(lang), nil
 }
 
 func (r *EventRepository) find(m bson.M, opts ...bson.M) ([]*entity.Event, error) {

@@ -14,9 +14,10 @@ import (
 	"time"
 )
 
-func EventButton(event *entity.Event, user *entity.User, showMemberships bool) []gotgbot.KeyboardButton {
+func EventButton(event *entity.Event, user *entity.User, lang string, showMemberships bool) []gotgbot.KeyboardButton {
 
-	text := fmt.Sprintf("%s (%s)", event.Name, lctime.Strftime("%A, %d.%m.%Y", event.Time))
+	t, _ := lctime.StrftimeLoc(util.IetfToIsoLangCode(lang), "%A, %d.%m.%Y", event.Time)
+	text := fmt.Sprintf("%s (%s)", event.Name, t)
 
 	if user != nil {
 		var memberships []string
@@ -62,12 +63,12 @@ type SongButtonOpts struct {
 	ShowLike  bool
 }
 
-func SongButton(song *entity.SongWithEvents, user *entity.User, opts *SongButtonOpts) []gotgbot.KeyboardButton {
+func SongButton(song *entity.SongWithEvents, user *entity.User, lang string, opts *SongButtonOpts) []gotgbot.KeyboardButton {
 	text := song.PDF.Name
 
 	if opts != nil {
 		if opts.ShowStats {
-			text += fmt.Sprintf(" (%s)", song.Caption())
+			text += fmt.Sprintf(" (%s)", song.Stats(lang))
 		}
 		if opts.ShowLike {
 			for _, userID := range song.Song.Likes {

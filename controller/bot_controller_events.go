@@ -11,6 +11,8 @@ import (
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
+	"github.com/joeyave/scala-bot-v2/util"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"time"
@@ -20,7 +22,7 @@ func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entity.
 
 	user := ctx.Data["user"].(*entity.User)
 
-	html := c.EventService.ToHtmlStringByEvent(*event) // todo: refactor
+	html := c.EventService.ToHtmlStringByEvent(*event, ctx.EffectiveUser.LanguageCode) // todo: refactor
 
 	markup := gotgbot.InlineKeyboardMarkup{
 		InlineKeyboard: keyboard.EventInit(event, user, ctx.EffectiveUser.LanguageCode),
@@ -103,7 +105,7 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/create-event"}}})
 
 				for _, event := range events {
-					markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, false))
+					markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, ctx.EffectiveUser.LanguageCode, false))
 				}
 
 				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}})
@@ -231,9 +233,9 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 
 				for _, event := range events {
 					if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {
-						markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, true))
+						markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, ctx.EffectiveUser.LanguageCode, true))
 					} else {
-						markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, false))
+						markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, ctx.EffectiveUser.LanguageCode, false))
 					}
 				}
 
@@ -303,4 +305,33 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 
 		return nil
 	}
+}
+
+// ------- Callback controllers -------
+
+func (c *BotController) EventSetlistDocs(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	eventIDHex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	eventID, err := primitive.ObjectIDFromHex(eventIDHex)
+	if err != nil {
+		return err
+	}
+	event, err := c.EventService.GetEventWithSongs(eventID)
+	if err != nil {
+		return err
+	}
+
+	var driveFileIDs []string
+	for _, song := range event.Songs {
+		driveFileIDs = append(driveFileIDs, song.DriveFileID)
+	}
+
+	err = c.songsAlbum(bot, ctx, driveFileIDs)
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
 }

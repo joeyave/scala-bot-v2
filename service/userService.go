@@ -48,10 +48,10 @@ func (s *UserService) UpdateOne(user entity.User) (*entity.User, error) {
 	return s.userRepository.UpdateOne(user)
 }
 
-func (s *UserService) FindManyByBandIDAndRoleID(bandID, roleID primitive.ObjectID) ([]*entity.UserExtra, error) {
+func (s *UserService) FindManyByBandIDAndRoleID(bandID, roleID primitive.ObjectID) ([]*entity.UserWithEvents, error) {
 	return s.userRepository.FindManyExtraByBandIDAndRoleID(bandID, roleID)
 }
 
-func (s *UserService) FindManyExtraByBandID(bandID primitive.ObjectID) ([]*entity.UserExtra, error) {
+func (s *UserService) FindManyExtraByBandID(bandID primitive.ObjectID) ([]*entity.UserWithEvents, error) {
 	return s.userRepository.FindManyExtraByBandID(bandID)
 }

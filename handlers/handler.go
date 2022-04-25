@@ -197,7 +197,7 @@ func (h *Handler) NotifyUser() {
 						continue
 					}
 
-					eventString := h.eventService.ToHtmlStringByEvent(*event)
+					eventString := h.eventService.ToHtmlStringByEvent(*event, "ru")
 					text := fmt.Sprintf("Привет. Ты учавствуешь в собрании через несколько дней! Вот план:\n\n%s", eventString)
 
 					_, err := h.bot.SendMessage(membership.UserID, text, &gotgbot.SendMessageOpts{

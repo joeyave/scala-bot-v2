@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
@@ -24,9 +25,9 @@ type Event struct {
 	Notes string `bson:"notes,omitempty"`
 }
 
-func (e *Event) Alias() string {
-	timeStr := lctime.Strftime("%A, %d.%m.%Y", e.Time)
-	return fmt.Sprintf("%s (%s)", e.Name, timeStr)
+func (e *Event) Alias(lang string) string {
+	t, _ := lctime.StrftimeLoc(util.IetfToIsoLangCode(lang), "%A, %d.%m.%Y", e.Time)
+	return fmt.Sprintf("%s (%s)", e.Name, t)
 }
 
 func (e *Event) Roles() string {

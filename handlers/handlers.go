@@ -77,7 +77,7 @@ func mainMenuHandler() (int, []HandlerFunc) {
 					continue
 				}
 
-				usersStr = fmt.Sprintf("%s\n\n%v", usersStr, user.String())
+				usersStr = fmt.Sprintf("%s\n\n%v", usersStr, user.String(ctx.EffectiveUser.LanguageCode))
 			}
 
 			_, err = c.EffectiveChat.SendMessage(h.bot, usersStr, &gotgbot.SendMessageOpts{
@@ -645,7 +645,7 @@ func eventActionsHandler() (int, []HandlerFunc) {
 			keyboard = user.State.Context.Map["keyboard"]
 		}
 
-		eventString, event, err := h.eventService.ToHtmlStringByID(eventID)
+		eventString, event, err := h.eventService.ToHtmlStringByID(eventID, ctx.EffectiveUser.LanguageCode)
 		if err != nil {
 			return err
 		}
@@ -661,7 +661,7 @@ func eventActionsHandler() (int, []HandlerFunc) {
 
 		q := user.State.CallbackData.Query()
 		q.Set("eventId", eventID.Hex())
-		q.Set("eventAlias", event.Alias())
+		q.Set("eventAlias", event.Alias(ctx.EffectiveUser.LanguageCode))
 		q.Del("index")
 		q.Del("driveFileIds")
 		user.State.CallbackData.RawQuery = q.Encode()
@@ -791,7 +791,7 @@ func changeSongOrderHandler() (int, []HandlerFunc) {
 				q.Add("driveFileIds", song.DriveFileID)
 			}
 
-			q.Set("eventAlias", event.Alias())
+			q.Set("eventAlias", event.Alias(ctx.EffectiveUser.LanguageCode))
 			q.Set("index", "-1")
 			user.State.CallbackData.RawQuery = q.Encode()
 		}
@@ -1027,7 +1027,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 		}
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: helpers.Back, CallbackData: helpers.AggregateCallbackData(helpers.DeleteEventMemberState, 0, "")}})
 
-		text := fmt.Sprintf("<b>%s</b>\n\n", event.Alias())
+		text := fmt.Sprintf("<b>%s</b>\n\n", event.Alias(ctx.EffectiveUser.LanguageCode))
 		if event.Roles() != "" {
 			text += fmt.Sprintf("%s\n\n", event.Roles())
 		}
@@ -1170,7 +1170,7 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 				now := time.Now().Local()
 				if event.Time.After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {
 					h.bot.SendMessage(userID, fmt.Sprintf("Привет. %s только что добавил тебя как %s в собрание %s!\n\nБолее подробную информацию можешь посмотреть в меню Расписание 📆.",
-						user.Name, role.Name, event.Alias()), &gotgbot.SendMessageOpts{
+						user.Name, role.Name, event.Alias(ctx.EffectiveUser.LanguageCode)), &gotgbot.SendMessageOpts{
 						ParseMode:             "HTML",
 						DisableWebPagePreview: true,
 					})
@@ -1207,7 +1207,7 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 			return err
 		}
 
-		eventAlias, err := h.eventService.GetAlias(context.Background(), eventID)
+		eventAlias, err := h.eventService.GetAlias(context.Background(), eventID, "")
 		if err != nil {
 			return err
 		}
@@ -1326,7 +1326,7 @@ func deleteEventMemberHandler() (int, []HandlerFunc) {
 				now := time.Now().Local()
 				if event.Time.After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {
 					h.bot.SendMessage(membership.UserID, fmt.Sprintf("Привет. %s только что удалил тебя как %s из собрания %s ☹️",
-						user.Name, role.Name, event.Alias()), &gotgbot.SendMessageOpts{
+						user.Name, role.Name, event.Alias(ctx.EffectiveUser.LanguageCode)), &gotgbot.SendMessageOpts{
 						ParseMode:             "HTML",
 						DisableWebPagePreview: true,
 					})
@@ -1641,7 +1641,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 
 			q := user.State.CallbackData.Query()
 			q.Set("eventId", eventID.Hex())
-			q.Set("eventAlias", event.Alias())
+			q.Set("eventAlias", event.Alias(ctx.EffectiveUser.LanguageCode))
 			q.Set("songs", string(songsJson))
 			q.Del("index")
 			q.Del("driveFileIds")
@@ -1680,7 +1680,7 @@ func deleteEventSongHandler() (int, []HandlerFunc) {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: helpers.AddSong, CallbackData: helpers.AggregateCallbackData(helpers.AddEventSongState, 0, "")}})
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: helpers.Back, CallbackData: helpers.AggregateCallbackData(helpers.EventActionsState, 0, "EditEventKeyboard")}})
 
-		str := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(), helpers.Setlist)
+		str := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(ctx.EffectiveUser.LanguageCode), helpers.Setlist)
 		// todo
 		c.EffectiveMessage.EditText(h.bot, helpers.AddCallbackData(str, user.State.CallbackData.String()), &gotgbot.EditMessageTextOpts{
 			ReplyMarkup:           markup,
@@ -2060,8 +2060,8 @@ func getSongsFromMongoHandler() (int, []HandlerFunc) {
 
 		for _, songExtra := range songs {
 			buttonText := songExtra.Song.PDF.Name
-			if songExtra.Caption() != "" {
-				buttonText += fmt.Sprintf(" (%s)", songExtra.Caption())
+			if songExtra.Stats(ctx.EffectiveUser.LanguageCode) != "" {
+				buttonText += fmt.Sprintf(" (%s)", songExtra.Stats(ctx.EffectiveUser.LanguageCode))
 			}
 
 			if user.State.Context.QueryType != helpers.LikedSongs {

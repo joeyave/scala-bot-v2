@@ -84,8 +84,8 @@ func (s *EventService) FindOneByNameAndTimeAndBandID(name string, time time.Time
 	return s.eventRepository.FindOneByNameAndTimeAndBandID(name, time, bandID)
 }
 
-func (s *EventService) GetAlias(ctx context.Context, eventID primitive.ObjectID) (string, error) {
-	return s.eventRepository.GetAlias(ctx, eventID)
+func (s *EventService) GetAlias(ctx context.Context, eventID primitive.ObjectID, lang string) (string, error) {
+	return s.eventRepository.GetAlias(ctx, eventID, lang)
 }
 
 func (s *EventService) UpdateOne(event entity.Event) (*entity.Event, error) {
@@ -117,18 +117,18 @@ func (s *EventService) DeleteOneByID(ID primitive.ObjectID) error {
 	return nil
 }
 
-func (s *EventService) ToHtmlStringByID(ID primitive.ObjectID) (string, *entity.Event, error) {
+func (s *EventService) ToHtmlStringByID(ID primitive.ObjectID, lang string) (string, *entity.Event, error) {
 
 	event, err := s.eventRepository.FindOneByID(ID)
 	if err != nil {
 		return "", nil, err
 	}
 
-	return s.ToHtmlStringByEvent(*event), event, nil
+	return s.ToHtmlStringByEvent(*event, lang), event, nil
 }
 
-func (s *EventService) ToHtmlStringByEvent(event entity.Event) string {
-	eventString := fmt.Sprintf("<b>%s</b>", event.Alias())
+func (s *EventService) ToHtmlStringByEvent(event entity.Event, lang string) string {
+	eventString := fmt.Sprintf("<b>%s</b>", event.Alias(lang))
 
 	var currRoleID primitive.ObjectID
 	for _, membership := range event.Memberships {

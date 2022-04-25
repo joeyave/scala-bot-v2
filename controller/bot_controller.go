@@ -77,19 +77,6 @@ func (c *BotController) UpdateUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 	return err
 }
 
-func prepareUserForHandlerWithCache(ctx *ext.Context, state, index int, cache entity.Cache) *entity.User {
-	user := ctx.Data["user"].(*entity.User)
-
-	if user.State.Name != state {
-		user.State = entity.State{
-			Index: index,
-			Name:  state,
-		}
-		user.Cache = cache
-	}
-	return user
-}
-
 func (c *BotController) search(index int) handlers.Response {
 	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
 
@@ -139,10 +126,6 @@ func (c *BotController) search(index int) handlers.Response {
 					_, err := ctx.EffectiveChat.SendMessage(bot, "Из запроса удаляются все числа, дефисы и скобки вместе с тем, что в них.", nil)
 					return err
 				}
-
-				//if user.Cache.nextPageToken == nil {
-				//	user.Cache.nextPageToken = &entities.nextPageToken{}
-				//}
 
 				var (
 					driveFiles    []*drive.File
@@ -280,6 +263,8 @@ func (c *BotController) searchSetlist(index int) handlers.Response {
 		case 0:
 			{
 				if len(user.Cache.SongNames) < 1 {
+					ctx.EffectiveChat.SendAction(bot, "upload_document")
+
 					err := c.songsAlbum(bot, ctx, user.Cache.DriveFileIDs)
 					if err != nil {
 						return err

@@ -4,7 +4,9 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
+	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
+	"github.com/joeyave/scala-bot-v2/util"
 )
 
 func Menu(lang string) [][]gotgbot.KeyboardButton {
@@ -42,7 +44,7 @@ func EventInit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.
 
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
-			{Text: txt.Get("button.chords", lang), CallbackData: "eventChords:" + event.ID.Hex()},
+			{Text: txt.Get("button.chords", lang), CallbackData: util.CallbackData(state.EventSetlistDocs, event.ID.Hex())},
 			{Text: txt.Get("button.metronome", lang), CallbackData: "eventMetronome:" + event.ID.Hex()},
 		},
 	}

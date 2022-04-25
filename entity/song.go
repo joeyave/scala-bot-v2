@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -51,9 +52,10 @@ type SongWithEvents struct {
 	Events []*Event `bson:"events,omitempty"`
 }
 
-func (s *SongWithEvents) Caption() string {
+func (s *SongWithEvents) Stats(lang string) string {
 	if len(s.Events) == 0 {
 		return "-, 0"
 	}
-	return fmt.Sprintf("%v, %d", lctime.Strftime("%d %b", s.Events[0].Time), len(s.Events))
+	t, _ := lctime.StrftimeLoc(util.IetfToIsoLangCode(lang), "%d %b", s.Events[0].Time)
+	return fmt.Sprintf("%v, %d", t, len(s.Events))
 }

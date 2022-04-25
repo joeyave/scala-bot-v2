@@ -1,9 +1,8 @@
 package state
 
+// Plain keyboard states.
 const (
-	zero = iota
-
-	GetEvents
+	GetEvents = iota + 1
 	FilterEvents
 
 	Search
@@ -11,4 +10,9 @@ const (
 
 	GetSongs
 	FilterSongs
+)
+
+// Inline states.
+const (
+	EventSetlistDocs = iota + 1
 )

@@ -174,7 +174,7 @@ func (r *UserRepository) UpdateOne(user entity.User) (*entity.User, error) {
 	return r.FindOneByID(newUser.ID)
 }
 
-func (r *UserRepository) FindManyExtraByBandIDAndRoleID(bandID primitive.ObjectID, roleID primitive.ObjectID) ([]*entity.UserExtra, error) {
+func (r *UserRepository) FindManyExtraByBandIDAndRoleID(bandID primitive.ObjectID, roleID primitive.ObjectID) ([]*entity.UserWithEvents, error) {
 	pipeline := bson.A{
 		bson.M{
 			"$match": bson.M{
@@ -275,7 +275,7 @@ func (r *UserRepository) FindManyExtraByBandIDAndRoleID(bandID primitive.ObjectI
 	return r.findWithExtra(pipeline)
 }
 
-func (r *UserRepository) FindManyExtraByBandID(bandID primitive.ObjectID) ([]*entity.UserExtra, error) {
+func (r *UserRepository) FindManyExtraByBandID(bandID primitive.ObjectID) ([]*entity.UserWithEvents, error) {
 	pipeline := bson.A{
 		bson.M{
 			"$match": bson.M{
@@ -383,7 +383,7 @@ func (r *UserRepository) FindManyExtraByBandID(bandID primitive.ObjectID) ([]*en
 	return r.findWithExtra(pipeline)
 }
 
-func (r *UserRepository) findWithExtra(pipeline bson.A) ([]*entity.UserExtra, error) {
+func (r *UserRepository) findWithExtra(pipeline bson.A) ([]*entity.UserWithEvents, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("users")
 
 	cur, err := collection.Aggregate(context.TODO(), pipeline)
@@ -391,7 +391,7 @@ func (r *UserRepository) findWithExtra(pipeline bson.A) ([]*entity.UserExtra, er
 		return nil, err
 	}
 
-	var users []*entity.UserExtra
+	var users []*entity.UserWithEvents
 	err = cur.All(context.TODO(), &users)
 	if err != nil {
 		return nil, err

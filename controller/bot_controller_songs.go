@@ -291,7 +291,7 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 						songButtonOpts.ShowLike = true
 					}
 
-					markup.Keyboard = append(markup.Keyboard, keyboard.SongButton(song, user, songButtonOpts))
+					markup.Keyboard = append(markup.Keyboard, keyboard.SongButton(song, user, ctx.EffectiveUser.LanguageCode, songButtonOpts))
 				}
 
 				if user.Cache.PageIndex != 0 {

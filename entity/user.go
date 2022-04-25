@@ -3,6 +3,7 @@ package entity
 import (
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
+	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/drive/v3"
@@ -59,13 +60,13 @@ func (t *NextPageToken) GetPrevValue() string {
 	return ""
 }
 
-type UserExtra struct {
-	User *User `bson:",inline"`
+type UserWithEvents struct {
+	User `bson:",inline"`
 
 	Events []*Event `bson:"events,omitempty"`
 }
 
-func (u *UserExtra) String() string {
+func (u *UserWithEvents) String(lang string) string {
 	str := fmt.Sprintf("<b><a href=\"tg://user?id=%d\">%s</a></b>\nВсего участий: %d", u.User.ID, u.User.Name, len(u.Events))
 
 	if len(u.Events) > 0 {
@@ -108,7 +109,8 @@ func (u *UserExtra) String() string {
 
 		str = fmt.Sprintf("%s (", str)
 		for _, k := range keys {
-			str = fmt.Sprintf("%s%s %d, ", str, lctime.Strftime("%a", mp2[k][0].Time), len(mp2[k]))
+			t, _ := lctime.StrftimeLoc(util.IetfToIsoLangCode(lang), "%a", mp2[k][0].Time)
+			str = fmt.Sprintf("%s%s %d, ", str, t, len(mp2[k]))
 		}
 		str = fmt.Sprintf("%s)", str[:len(str)-2])
 	}
