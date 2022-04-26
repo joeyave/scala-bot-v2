@@ -21,4 +21,7 @@ const (
 
 	EventSetlist
 	EventSetlistDeleteOrRecoverSong
+
+	EventMembers
+	EventMembersDeleteOrRecoverMember
 )

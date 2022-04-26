@@ -63,7 +63,7 @@ func EventEdit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
 			{Text: txt.Get("button.setlist", lang), CallbackData: util.CallbackData(state.EventSetlist, event.ID.Hex())},
-			{Text: txt.Get("button.members", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.members", lang), CallbackData: util.CallbackData(state.EventMembers, event.ID.Hex())},
 		},
 		{
 			{Text: txt.Get("button.notes", lang), CallbackData: "todo"},

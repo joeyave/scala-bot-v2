@@ -17,7 +17,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -424,7 +423,7 @@ func (c *BotController) eventSetlist(bot *gotgbot.Bot, ctx *ext.Context, event *
 	markup := gotgbot.InlineKeyboardMarkup{}
 
 	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.changeSongsOrder", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
-	for i, song := range songs {
+	for _, song := range songs {
 		isDeleted := true
 		for _, eventSong := range event.Songs {
 			if eventSong.ID == song.ID {
@@ -435,7 +434,7 @@ func (c *BotController) eventSetlist(bot *gotgbot.Bot, ctx *ext.Context, event *
 
 		text := song.PDF.Name
 		if isDeleted {
-			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventSetlistDeleteOrRecoverSong, event.ID.Hex()+":"+song.ID.Hex()+":recover:"+strconv.Itoa(i))}})
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventSetlistDeleteOrRecoverSong, event.ID.Hex()+":"+song.ID.Hex()+":recover")}})
 		} else {
 			text += " ✅"
 			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventSetlistDeleteOrRecoverSong, event.ID.Hex()+":"+song.ID.Hex()+":delete")}})
@@ -481,7 +480,7 @@ func (c *BotController) EventSetlist(bot *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	user.CallbackCache.SongsJson = string(songsJson)
+	user.CallbackCache.JsonString = string(songsJson)
 
 	return c.eventSetlist(bot, ctx, event, event.Songs)
 }
@@ -504,7 +503,7 @@ func (c *BotController) EventSetlistDeleteOrRecoverSong(bot *gotgbot.Bot, ctx *e
 	}
 
 	var cachedSongs []*entity.Song
-	err = json.Unmarshal([]byte(user.CallbackCache.SongsJson), &cachedSongs)
+	err = json.Unmarshal([]byte(user.CallbackCache.JsonString), &cachedSongs)
 	if err != nil {
 		return err
 	}
@@ -550,4 +549,124 @@ func (c *BotController) EventSetlistDeleteOrRecoverSong(bot *gotgbot.Bot, ctx *e
 	}
 
 	return c.eventSetlist(bot, ctx, event, cachedSongs)
+}
+
+func (c *BotController) eventMembers(bot *gotgbot.Bot, ctx *ext.Context, event *entity.Event, memberships []*entity.Membership) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	for _, membership := range memberships {
+		isDeleted := true
+		for _, eventMembership := range event.Memberships {
+			if eventMembership.ID == membership.ID {
+				isDeleted = false
+				break
+			}
+		}
+
+		text := membership.User.Name
+		if isDeleted {
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventMembersDeleteOrRecoverMember, event.ID.Hex()+":"+membership.ID.Hex()+":recover")}})
+		} else {
+			text += " ✅"
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventMembersDeleteOrRecoverMember, event.ID.Hex()+":"+membership.ID.Hex()+":delete")}})
+		}
+	}
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addMember", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":edit")}})
+
+	text := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(ctx.EffectiveUser.LanguageCode), txt.Get("button.members", ctx.EffectiveUser.LanguageCode))
+	text = user.CallbackCache.AddToText(text)
+
+	_, _, err := ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
+}
+
+func (c *BotController) EventMembers(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	hex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	eventID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return err
+	}
+
+	event, err := c.EventService.FindOneByID(eventID)
+	if err != nil {
+		return err
+	}
+
+	membershipsJson, err := json.Marshal(event.Memberships)
+	if err != nil {
+		return err
+	}
+
+	user.CallbackCache.JsonString = string(membershipsJson)
+
+	return c.eventMembers(bot, ctx, event, event.Memberships)
+}
+
+func (c *BotController) EventMembersDeleteOrRecoverMember(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	eventID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	membershipID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	var cachedMemberships []*entity.Membership
+	err = json.Unmarshal([]byte(user.CallbackCache.JsonString), &cachedMemberships)
+	if err != nil {
+		return err
+	}
+
+	switch split[2] {
+	case "delete":
+		err = c.MembershipService.DeleteOneByID(membershipID)
+		if err != nil {
+			return err
+		}
+	case "recover":
+		var membershipToRecover *entity.Membership
+		for _, cachedMembership := range cachedMemberships {
+			if membershipID == cachedMembership.ID {
+				membershipToRecover = cachedMembership
+				break
+			}
+		}
+
+		_, err := c.MembershipService.UpdateOne(*membershipToRecover)
+		if err != nil {
+			return err
+		}
+	}
+
+	event, err := c.EventService.FindOneByID(eventID)
+	if err != nil {
+		return err
+	}
+
+	return c.eventMembers(bot, ctx, event, cachedMemberships)
 }

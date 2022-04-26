@@ -96,6 +96,9 @@ var locales = map[string]map[string]string{
 	"button.addSong": {
 		"ru": "➕ Добавить песню",
 	},
+	"button.addMember": {
+		"ru": "➕ Добавить участника",
+	},
 
 	"text.defaultPlaceholder": {
 		"ru": "Фраза из песни или список",

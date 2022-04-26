@@ -46,7 +46,7 @@ func (e *Event) RolesString() string {
 			fmt.Fprintf(&b, "\n\n<b>%s:</b>", membership.Role.Name)
 		}
 
-		fmt.Sprintf("\n - <a href=\"tg://user?id=%d\">%s</a>", membership.User.ID, membership.User.Name)
+		fmt.Fprintf(&b, "\n - <a href=\"tg://user?id=%d\">%s</a>", membership.User.ID, membership.User.Name)
 	}
 
 	return b.String()

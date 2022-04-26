@@ -13,16 +13,16 @@ import (
 )
 
 type User struct {
-	ID   int64  `bson:"_id,omitempty"`
-	Name string `bson:"name,omitempty"`
-	Role string `bson:"role,omitempty"`
+	ID   int64  `bson:"_id,omitempty" json:"id,omitempty"`
+	Name string `bson:"name,omitempty" json:"name,omitempty"`
+	Role string `bson:"role,omitempty" json:"role,omitempty"`
 
-	State         State         `bson:"state,omitempty"`
-	Cache         Cache         `bson:"cache"`
-	CallbackCache CallbackCache `bson:"-"`
+	State         State         `bson:"state,omitempty" json:"state"`
+	Cache         Cache         `bson:"cache" json:"-"`
+	CallbackCache CallbackCache `bson:"-" json:"-"`
 
-	BandID primitive.ObjectID `bson:"bandId,omitempty"`
-	Band   *Band              `bson:"band,omitempty"`
+	BandID primitive.ObjectID `bson:"bandId,omitempty" json:"band_id,omitempty"`
+	Band   *Band              `bson:"band,omitempty" json:"-"`
 }
 
 func (u *User) IsAdmin() bool {
@@ -58,8 +58,8 @@ type Cache struct {
 }
 
 type CallbackCache struct {
-	EventID   string `schema:"eventId"`
-	SongsJson string `schema:"songsJson"`
+	EventID    string `schema:"eventId,omitempty"`
+	JsonString string `schema:"jsonString,omitempty"`
 }
 
 var encoder = schema.NewEncoder()
