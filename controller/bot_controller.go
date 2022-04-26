@@ -67,6 +67,15 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	ctx.Data["user"] = user
 
+	if ctx.CallbackQuery != nil {
+		for _, messageEntity := range ctx.CallbackQuery.Message.ParseEntities() {
+			fmt.Println(messageEntity)
+		}
+		for _, messageEntity := range ctx.CallbackQuery.Message.Entities {
+			fmt.Println(messageEntity)
+		}
+	}
+
 	return nil
 }
 

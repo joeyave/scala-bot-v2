@@ -157,9 +157,10 @@ func main() {
 	}, botController.CreateEvent), 1)
 
 	// Inline keyboard.
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventCB), botController.EventCB), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistDocs), botController.EventSetlistDocs), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistMetronome), botController.EventSetlistMetronome), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EditEventKeyboard), botController.EditEventKeyboard), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlist), botController.EventSetlist), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 

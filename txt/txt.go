@@ -90,6 +90,12 @@ var locales = map[string]map[string]string{
 	"button.back": {
 		"ru": "↩︎ Назад",
 	},
+	"button.changeSongsOrder": {
+		"ru": "🔄 Изменить порядок песен",
+	},
+	"button.addSong": {
+		"ru": "➕ Добавить песню",
+	},
 
 	"text.defaultPlaceholder": {
 		"ru": "Фраза из песни или список",
