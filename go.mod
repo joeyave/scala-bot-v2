@@ -6,6 +6,7 @@ require (
 	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.7
 	github.com/flowchartsman/retry v1.2.0
 	github.com/gin-gonic/gin v1.7.7
+	github.com/gorilla/schema v1.2.0
 	github.com/joeyave/chords-transposer v0.0.8
 	github.com/klauspost/lctime v0.1.0
 	github.com/rs/zerolog v1.26.1

@@ -219,7 +219,7 @@ func (h *Handler) NotifyUser() {
 func (h *Handler) Enter(c *ext.Context, user *entity.User) error {
 
 	if user.State.CallbackData == nil {
-		user.State.CallbackData, _ = url.Parse("t.me/callbackData")
+		user.State.CallbackData, _ = url.Parse("https://t.me/callbackData")
 	}
 
 	if c.CallbackQuery != nil {

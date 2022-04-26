@@ -3,10 +3,12 @@ package entity
 import (
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
+	"github.com/gorilla/schema"
 	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/drive/v3"
+	"net/url"
 	"sort"
 )
 
@@ -15,8 +17,9 @@ type User struct {
 	Name string `bson:"name,omitempty"`
 	Role string `bson:"role,omitempty"`
 
-	State State `bson:"state,omitempty"`
-	Cache Cache `bson:"cache"`
+	State         State         `bson:"state,omitempty"`
+	Cache         Cache         `bson:"cache"`
+	CallbackCache CallbackCache `bson:"-"`
 
 	BandID primitive.ObjectID `bson:"bandId,omitempty"`
 	Band   *Band              `bson:"band,omitempty"`
@@ -49,9 +52,23 @@ type Cache struct {
 
 	DriveFiles []*drive.File `bson:"drive_files,omitempty"`
 
-	NextPageToken *NextPageToken `json:"next_page_token,omitempty"`
+	NextPageToken *NextPageToken `bson:"next_page_token,omitempty"`
 	SongNames     []string       `bson:"song_names,omitempty"`
 	DriveFileIDs  []string       `bson:"drive_file_ids,omitempty"`
+}
+
+type CallbackCache struct {
+	EventID string `schema:"eventId"`
+}
+
+var encoder = schema.NewEncoder()
+
+func (c *CallbackCache) AddToText(text string) string {
+	values := url.Values{}
+	encoder.Encode(c, values)
+	u, _ := url.Parse(util.CallbackCacheURL)
+	u.RawQuery = values.Encode()
+	return fmt.Sprintf("%s\n\n<a href=\"%s\">&#8203;</a>", text, u.String())
 }
 
 type NextPageToken struct {

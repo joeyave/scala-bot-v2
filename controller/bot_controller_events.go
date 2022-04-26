@@ -416,6 +416,8 @@ func (c *BotController) EventCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 func (c *BotController) EventSetlist(bot *gotgbot.Bot, ctx *ext.Context) error {
 
+	user := ctx.Data["user"].(*entity.User)
+
 	hex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
 
 	eventID, err := primitive.ObjectIDFromHex(hex)
@@ -447,8 +449,8 @@ func (c *BotController) EventSetlist(bot *gotgbot.Bot, ctx *ext.Context) error {
 	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":edit")}})
 
 	text := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(ctx.EffectiveUser.LanguageCode), helpers.Setlist)
-
-	text += "<a href=\"t.me/callbackData\">&#8203;</a>"
+	user.CallbackCache.EventID = eventID.Hex()
+	text = user.CallbackCache.AddToText(text)
 
 	_, _, err = ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
 		ParseMode:             "HTML",

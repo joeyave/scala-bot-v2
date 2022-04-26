@@ -5,6 +5,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
+	"github.com/gorilla/schema"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/service"
@@ -13,6 +14,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/api/drive/v3"
+	"net/url"
 	"strings"
 	"sync"
 )
@@ -49,6 +51,8 @@ func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context
 	return c.search(user.State.Index)(bot, ctx)
 }
 
+var decoder = schema.NewDecoder()
+
 func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	user, err := c.UserService.FindOneOrCreateByID(ctx.EffectiveUser.Id)
@@ -65,16 +69,36 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 	//	}
 	//}
 
-	ctx.Data["user"] = user
-
 	if ctx.CallbackQuery != nil {
-		for _, messageEntity := range ctx.CallbackQuery.Message.ParseEntities() {
-			fmt.Println(messageEntity)
+		for _, e := range ctx.CallbackQuery.Message.Entities {
+			if strings.HasPrefix(e.Url, util.CallbackCacheURL) {
+				u, err := url.Parse(e.Url)
+				if err != nil {
+					return err
+				}
+				err = decoder.Decode(&user.CallbackCache, u.Query())
+				if err != nil {
+					return err
+				}
+				break
+			}
 		}
-		for _, messageEntity := range ctx.CallbackQuery.Message.Entities {
-			fmt.Println(messageEntity)
+		for _, e := range ctx.CallbackQuery.Message.CaptionEntities {
+			if strings.HasPrefix(e.Url, util.CallbackCacheURL) {
+				u, err := url.Parse(e.Url)
+				if err != nil {
+					return err
+				}
+				err = decoder.Decode(&user.CallbackCache, u.Query())
+				if err != nil {
+					return err
+				}
+				break
+			}
 		}
 	}
+
+	ctx.Data["user"] = user
 
 	return nil
 }

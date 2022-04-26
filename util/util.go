@@ -50,3 +50,5 @@ func ParseCallbackPayload(data string) string {
 	parsedData := strings.Split(data, ":")
 	return strings.Join(parsedData[1:], ":")
 }
+
+const CallbackCacheURL = "https://t.me/callbackCache"
