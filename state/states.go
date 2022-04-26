@@ -24,4 +24,8 @@ const (
 
 	EventMembers
 	EventMembersDeleteOrRecoverMember
+	EventMembersAddMemberChooseRole
+	EventMembersAddMemberChooseUser
+	EventMembersAddMember
+	EventMembersDeleteMember
 )

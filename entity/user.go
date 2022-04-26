@@ -58,7 +58,7 @@ type Cache struct {
 }
 
 type CallbackCache struct {
-	EventID    string `schema:"eventId,omitempty"`
+	EventIDHex string `schema:"eventId,omitempty"`
 	JsonString string `schema:"jsonString,omitempty"`
 }
 
@@ -96,6 +96,10 @@ type UserWithEvents struct {
 	User `bson:",inline"`
 
 	Events []*Event `bson:"events,omitempty"`
+}
+
+func (u *UserWithEvents) NameWithStats() string {
+	return fmt.Sprintf("%s (%v, %d)", u.User.Name, lctime.Strftime("%d %b", u.Events[0].Time), len(u.Events))
 }
 
 func (u *UserWithEvents) String(lang string) string {

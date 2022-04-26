@@ -132,7 +132,10 @@ func (s *EventService) ToHtmlStringByEvent(event entity.Event, lang string) stri
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "<b>%s</b>", event.Alias(lang))
-	fmt.Fprintf(&b, event.RolesString())
+	rolesString := event.RolesString()
+	if rolesString != "" {
+		fmt.Fprintf(&b, "\n\n%s", rolesString)
+	}
 
 	if len(event.Songs) > 0 {
 		fmt.Fprintf(&b, "\n\n<b>%s:</b>", txt.Get("button.setlist", lang))

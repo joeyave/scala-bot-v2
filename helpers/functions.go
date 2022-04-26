@@ -53,8 +53,3 @@ func JsonEscape(i string) string {
 
 	return string(b)
 }
-
-func AppendTickSymbol(text string) string {
-	text += " ✅"
-	return text
-}

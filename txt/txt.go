@@ -99,6 +99,9 @@ var locales = map[string]map[string]string{
 	"button.addMember": {
 		"ru": "➕ Добавить участника",
 	},
+	"button.loadMore": {
+		"ru": "👩‍👧‍👦 Загрузить еще",
+	},
 
 	"text.defaultPlaceholder": {
 		"ru": "Фраза из песни или список",
@@ -114,6 +117,12 @@ var locales = map[string]map[string]string{
 	},
 	"text.chooseSongOrTypeAnotherQuery": {
 		"ru": "Выбери песню по запросу %s или введи другое название:",
+	},
+	"text.chooseRoleForNewMember": {
+		"ru": "Выбери роль для нового участника:",
+	},
+	"text.chooseNewMember": {
+		"ru": "Выбери нового участника на роль %s:",
 	},
 	"text.nothingFound": {
 		"ru": "Ничего не найдено. Попробуй еще раз.",
@@ -141,7 +150,7 @@ func Get(key, lang string, a ...interface{}) string {
 	//case "uk":
 	//	return ukPrinter.Sprintf(key, a)
 	//}
-	return ruPrinter.Sprintf(key, a)
+	return ruPrinter.Sprintf(key, a...)
 }
 
 //var ukPrinter = message.NewPrinter(language.Ukrainian)

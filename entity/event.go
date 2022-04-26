@@ -49,7 +49,7 @@ func (e *Event) RolesString() string {
 		fmt.Fprintf(&b, "\n - <a href=\"tg://user?id=%d\">%s</a>", membership.User.ID, membership.User.Name)
 	}
 
-	return b.String()
+	return strings.TrimSpace(b.String())
 }
 
 func (e *Event) NotesString(lang string) string {

@@ -17,6 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -566,7 +567,7 @@ func (c *BotController) eventMembers(bot *gotgbot.Bot, ctx *ext.Context, event *
 			}
 		}
 
-		text := membership.User.Name
+		text := fmt.Sprintf("%s (%s)", membership.User.Name, membership.Role.Name)
 		if isDeleted {
 			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventMembersDeleteOrRecoverMember, event.ID.Hex()+":"+membership.ID.Hex()+":recover")}})
 		} else {
@@ -574,7 +575,7 @@ func (c *BotController) eventMembers(bot *gotgbot.Bot, ctx *ext.Context, event *
 			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventMembersDeleteOrRecoverMember, event.ID.Hex()+":"+membership.ID.Hex()+":delete")}})
 		}
 	}
-	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addMember", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addMember", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventMembersAddMemberChooseRole, event.ID.Hex())}})
 	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":edit")}})
 
 	text := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(ctx.EffectiveUser.LanguageCode), txt.Get("button.members", ctx.EffectiveUser.LanguageCode))
@@ -669,4 +670,218 @@ func (c *BotController) EventMembersDeleteOrRecoverMember(bot *gotgbot.Bot, ctx 
 	}
 
 	return c.eventMembers(bot, ctx, event, cachedMemberships)
+}
+
+func (c *BotController) EventMembersAddMemberChooseRole(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	hex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	eventID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return err
+	}
+
+	event, err := c.EventService.FindOneByID(eventID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	for _, role := range event.Band.Roles {
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: role.Name, CallbackData: util.CallbackData(state.EventMembersAddMemberChooseUser, event.ID.Hex()+":"+role.ID.Hex())}})
+	}
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventMembers, event.ID.Hex())}})
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "<b>%s</b>\n\n", event.Alias(ctx.EffectiveUser.LanguageCode))
+	rolesString := event.RolesString()
+	if rolesString != "" {
+		fmt.Fprintf(&b, "%s\n\n", rolesString)
+	}
+	b.WriteString(txt.Get("text.chooseRoleForNewMember", ctx.EffectiveUser.LanguageCode))
+
+	_, _, err = ctx.EffectiveMessage.EditText(bot, b.String(), &gotgbot.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
+	})
+	if err != nil {
+		return err
+	}
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
+}
+
+func (c *BotController) EventMembersAddMemberChooseUser(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	eventID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	roleID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	loadMore := false
+	if len(split) > 2 && split[2] == "more" {
+		loadMore = true
+	}
+
+	err = c.eventMembersAddMemberChooseUser(bot, ctx, eventID, roleID, loadMore)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *BotController) eventMembersAddMemberChooseUser(bot *gotgbot.Bot, ctx *ext.Context, eventID primitive.ObjectID, roleID primitive.ObjectID, loadMore bool) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	event, err := c.EventService.FindOneByID(eventID)
+	if err != nil {
+		return err
+	}
+
+	role, err := c.RoleService.FindOneByID(roleID)
+	if err != nil {
+		return err
+	}
+
+	usersWithEvents, err := c.UserService.FindManyByBandIDAndRoleID(event.BandID, roleID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	if loadMore == false {
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.loadMore", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventMembersAddMemberChooseUser, eventID.Hex()+":"+roleID.Hex()+":more")}})
+	}
+
+	for _, u := range usersWithEvents {
+		var text string
+		if len(u.Events) == 0 {
+			text = u.User.Name
+		} else {
+			text = u.NameWithStats()
+		}
+
+		isMember := false
+		var membership *entity.Membership
+		for _, eventMembership := range event.Memberships {
+			if eventMembership.RoleID == roleID && eventMembership.UserID == u.User.ID {
+				isMember = true
+				membership = eventMembership
+				break
+			}
+		}
+
+		if (len(u.Events) > 0 && time.Now().Sub(u.Events[0].Time) < 24*364/3*time.Hour) || loadMore == true {
+			if isMember {
+				text += " ✅"
+				markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventMembersDeleteMember, roleID.Hex()+":"+membership.ID.Hex())}})
+			} else {
+				markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventMembersAddMember, roleID.Hex()+":"+strconv.FormatInt(u.ID, 10))}})
+			}
+		}
+	}
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventMembersAddMemberChooseRole, eventID.Hex())}})
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "<b>%s</b>\n\n", event.Alias(ctx.EffectiveUser.LanguageCode))
+	rolesString := event.RolesString()
+	if rolesString != "" {
+		fmt.Fprintf(&b, "%s\n\n", rolesString)
+	}
+	b.WriteString(txt.Get("text.chooseNewMember", ctx.EffectiveUser.LanguageCode, role.Name))
+
+	user.CallbackCache.EventIDHex = eventID.Hex()
+	text := user.CallbackCache.AddToText(b.String())
+
+	_, _, err = ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
+}
+
+func (c *BotController) EventMembersAddMember(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	roleID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	userID, err := strconv.ParseInt(split[1], 10, 64)
+	if err != nil {
+		return err
+	}
+
+	eventID, err := primitive.ObjectIDFromHex(user.CallbackCache.EventIDHex)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.MembershipService.UpdateOne(entity.Membership{
+		EventID: eventID,
+		UserID:  userID,
+		RoleID:  roleID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.eventMembersAddMemberChooseUser(bot, ctx, eventID, roleID, false)
+}
+
+func (c *BotController) EventMembersDeleteMember(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	roleID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	membershipID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	eventID, err := primitive.ObjectIDFromHex(user.CallbackCache.EventIDHex)
+	if err != nil {
+		return err
+	}
+
+	err = c.MembershipService.DeleteOneByID(membershipID)
+	if err != nil {
+		return err
+	}
+
+	return c.eventMembersAddMemberChooseUser(bot, ctx, eventID, roleID, false)
 }
