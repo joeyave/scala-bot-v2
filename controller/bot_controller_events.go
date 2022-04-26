@@ -9,7 +9,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
 	"github.com/joeyave/scala-bot-v2/dto"
 	"github.com/joeyave/scala-bot-v2/entity"
-	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/metronome"
 	"github.com/joeyave/scala-bot-v2/state"
@@ -18,6 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -392,26 +392,72 @@ func (c *BotController) EventCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
+	html, event, err := c.EventService.ToHtmlStringByID(eventID, ctx.EffectiveUser.LanguageCode)
+	if err != nil {
+		return err
+	}
+
 	markup := gotgbot.InlineKeyboardMarkup{}
 
 	if len(split) > 1 {
 		switch split[1] {
 		case "edit":
-			markup.InlineKeyboard = keyboard.EventEdit(eventID, user, ctx.EffectiveUser.LanguageCode)
+			markup.InlineKeyboard = keyboard.EventEdit(event, user, ctx.EffectiveUser.LanguageCode)
 		default:
-			event, err := c.EventService.FindOneByID(eventID)
-			if err != nil {
-				return err
-			}
 			markup.InlineKeyboard = keyboard.EventInit(event, user, ctx.EffectiveUser.LanguageCode)
 		}
 	}
 
-	_, _, err = ctx.EffectiveMessage.EditReplyMarkup(bot, &gotgbot.EditMessageReplyMarkupOpts{
-		ReplyMarkup: markup,
+	_, _, err = ctx.EffectiveMessage.EditText(bot, html, &gotgbot.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
 	})
 
 	return err
+}
+
+func (c *BotController) eventSetlist(bot *gotgbot.Bot, ctx *ext.Context, event *entity.Event, songs []*entity.Song) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.changeSongsOrder", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
+	for i, song := range songs {
+		isDeleted := true
+		for _, eventSong := range event.Songs {
+			if eventSong.ID == song.ID {
+				isDeleted = false
+				break
+			}
+		}
+
+		text := song.PDF.Name
+		if isDeleted {
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventSetlistDeleteOrRecoverSong, event.ID.Hex()+":"+song.ID.Hex()+":recover:"+strconv.Itoa(i))}})
+		} else {
+			text += " ✅"
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.EventSetlistDeleteOrRecoverSong, event.ID.Hex()+":"+song.ID.Hex()+":delete")}})
+		}
+	}
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addSong", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":edit")}})
+
+	text := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(ctx.EffectiveUser.LanguageCode), txt.Get("button.setlist", ctx.EffectiveUser.LanguageCode))
+	text = user.CallbackCache.AddToText(text)
+
+	_, _, err := ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
 }
 
 func (c *BotController) EventSetlist(bot *gotgbot.Bot, ctx *ext.Context) error {
@@ -430,63 +476,78 @@ func (c *BotController) EventSetlist(bot *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	markup := gotgbot.InlineKeyboardMarkup{}
-
-	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.changeSongsOrder", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
-	for _, song := range event.Songs {
-		text := song.PDF.Name
-
-		for _, eventSong := range event.Songs {
-			if eventSong.ID == song.ID {
-				text += " ✅"
-				break
-			}
-		}
-
-		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: "todo"}})
-	}
-	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addSong", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
-	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":edit")}})
-
-	text := fmt.Sprintf("<b>%s</b>\n\n%s:", event.Alias(ctx.EffectiveUser.LanguageCode), helpers.Setlist)
-	user.CallbackCache.EventID = eventID.Hex()
-	text = user.CallbackCache.AddToText(text)
-
-	_, _, err = ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
-		ParseMode:             "HTML",
-		DisableWebPagePreview: true,
-		ReplyMarkup:           markup,
-	})
+	songsJson, err := json.Marshal(event.Songs)
 	if err != nil {
 		return err
 	}
 
-	ctx.CallbackQuery.Answer(bot, nil)
+	user.CallbackCache.SongsJson = string(songsJson)
 
-	//var songs []*entity.Song
-	//if payload != "deleted" {
-	//
-	//	songsJson, err := json.Marshal(event.Songs)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	q := user.State.CallbackData.Query()
-	//	q.Set("eventId", eventID.Hex())
-	//	q.Set("eventAlias", event.Alias(ctx.EffectiveUser.LanguageCode))
-	//	q.Set("songs", string(songsJson))
-	//	q.Del("index")
-	//	q.Del("driveFileIds")
-	//	user.State.CallbackData.RawQuery = q.Encode()
-	//
-	//	songs = event.Songs
-	//} else {
-	//	songsJson := user.State.CallbackData.Query().Get("songs")
-	//
-	//	err := json.Unmarshal([]byte(songsJson), &songs)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
-	return nil
+	return c.eventSetlist(bot, ctx, event, event.Songs)
+}
+
+func (c *BotController) EventSetlistDeleteOrRecoverSong(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	eventID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	songID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	var cachedSongs []*entity.Song
+	err = json.Unmarshal([]byte(user.CallbackCache.SongsJson), &cachedSongs)
+	if err != nil {
+		return err
+	}
+
+	switch split[2] {
+	case "delete":
+		err = c.EventService.PullSongID(eventID, songID)
+		if err != nil {
+			return err
+		}
+	case "recover":
+		event, err := c.EventService.GetEventWithSongs(eventID)
+		if err != nil {
+			return err
+		}
+
+		pos := 0
+		for _, song := range cachedSongs {
+			for _, eventSong := range event.Songs {
+				if song.ID == eventSong.ID {
+					pos++
+					break
+				}
+			}
+			if song.ID == songID {
+				break
+			}
+		}
+
+		err = c.EventService.PushSongID(eventID, songID)
+		if err != nil {
+			return err
+		}
+		err = c.EventService.ChangeSongIDPosition(eventID, songID, pos)
+		if err != nil {
+			return err
+		}
+	}
+
+	event, err := c.EventService.GetEventWithSongs(eventID)
+	if err != nil {
+		return err
+	}
+
+	return c.eventSetlist(bot, ctx, event, cachedSongs)
 }

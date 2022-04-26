@@ -20,4 +20,5 @@ const (
 	EventSetlistMetronome
 
 	EventSetlist
+	EventSetlistDeleteOrRecoverSong
 )

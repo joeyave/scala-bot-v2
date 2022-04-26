@@ -959,8 +959,8 @@ func addEventMemberHandler() (int, []HandlerFunc) {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: helpers.Back, CallbackData: helpers.AggregateCallbackData(helpers.DeleteEventMemberState, 0, "")}})
 
 		text := fmt.Sprintf("<b>%s</b>\n\n", event.Alias(ctx.EffectiveUser.LanguageCode))
-		if event.Roles() != "" {
-			text += fmt.Sprintf("%s\n\n", event.Roles())
+		if event.RolesString() != "" {
+			text += fmt.Sprintf("%s\n\n", event.RolesString())
 		}
 		text += "Выбери роль для нового участника:"
 

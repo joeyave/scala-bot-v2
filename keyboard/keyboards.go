@@ -6,7 +6,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func Menu(lang string) [][]gotgbot.KeyboardButton {
@@ -59,11 +58,11 @@ func EventInit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.
 	return keyboard
 }
 
-func EventEdit(eventID primitive.ObjectID, user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
+func EventEdit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
 
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
-			{Text: txt.Get("button.setlist", lang), CallbackData: util.CallbackData(state.EventSetlist, eventID.Hex())},
+			{Text: txt.Get("button.setlist", lang), CallbackData: util.CallbackData(state.EventSetlist, event.ID.Hex())},
 			{Text: txt.Get("button.members", lang), CallbackData: "todo"},
 		},
 		{
@@ -74,7 +73,7 @@ func EventEdit(eventID primitive.ObjectID, user *entity.User, lang string) [][]g
 			{Text: txt.Get("button.delete", lang), CallbackData: "todo"},
 		},
 		{
-			{Text: txt.Get("button.back", lang), CallbackData: util.CallbackData(state.EventCB, eventID.Hex()+":init")},
+			{Text: txt.Get("button.back", lang), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")},
 		},
 	}
 

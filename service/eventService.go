@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/repository"
+	"github.com/joeyave/scala-bot-v2/txt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
 	"sync"
@@ -128,24 +129,13 @@ func (s *EventService) ToHtmlStringByID(ID primitive.ObjectID, lang string) (str
 }
 
 func (s *EventService) ToHtmlStringByEvent(event entity.Event, lang string) string {
-	eventString := fmt.Sprintf("<b>%s</b>", event.Alias(lang))
 
-	var currRoleID primitive.ObjectID
-	for _, membership := range event.Memberships {
-		if membership.User == nil {
-			continue
-		}
-
-		if currRoleID != membership.RoleID {
-			currRoleID = membership.RoleID
-			eventString = fmt.Sprintf("%s\n\n<b>%s:</b>", eventString, membership.Role.Name)
-		}
-
-		eventString = fmt.Sprintf("%s\n - <a href=\"tg://user?id=%d\">%s</a>", eventString, membership.User.ID, membership.User.Name)
-	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "<b>%s</b>", event.Alias(lang))
+	fmt.Fprintf(&b, event.RolesString())
 
 	if len(event.Songs) > 0 {
-		eventString = fmt.Sprintf("%s\n\n<b>%s:</b>", eventString, "📝 Список")
+		fmt.Fprintf(&b, "\n\n<b>%s:</b>", txt.Get("button.setlist", lang))
 
 		var waitGroup sync.WaitGroup
 		waitGroup.Add(len(event.Songs))
@@ -153,27 +143,24 @@ func (s *EventService) ToHtmlStringByEvent(event entity.Event, lang string) stri
 		for i := range event.Songs {
 			go func(i int) {
 				defer waitGroup.Done()
-
 				driveFile, err := s.driveFileService.FindOneByID(event.Songs[i].DriveFileID)
 				if err != nil {
 					return
 				}
-
-				songName := fmt.Sprintf("%d. <a href=\"%s\">%s</a>  (%s)",
-					i+1, driveFile.WebViewLink, driveFile.Name, event.Songs[i].Caption())
+				songName := fmt.Sprintf("%d. <a href=\"%s\">%s</a>  (%s)", i+1, driveFile.WebViewLink, driveFile.Name, event.Songs[i].Caption())
 				songNames[i] = songName
 			}(i)
 		}
 		waitGroup.Wait()
 
-		eventString += "\n" + strings.Join(songNames, "\n")
+		fmt.Fprintf(&b, "\n%s", strings.Join(songNames, "\n"))
 	}
 
 	if event.Notes != "" {
-		eventString += "\n\n<b>✏️ Заметки:</b>\n" + event.Notes
+		fmt.Fprintf(&b, "\n\n%s", event.NotesString(lang))
 	}
 
-	return eventString
+	return b.String()
 }
 
 func (s *EventService) GetMostFrequentEventNames() ([]*entity.EventNameFrequencies, error) {

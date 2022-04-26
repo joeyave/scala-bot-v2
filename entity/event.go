@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -30,8 +31,9 @@ func (e *Event) Alias(lang string) string {
 	return fmt.Sprintf("%s (%s)", e.Name, t)
 }
 
-func (e *Event) Roles() string {
-	str := ""
+func (e *Event) RolesString() string {
+
+	var b strings.Builder
 
 	var currRoleID primitive.ObjectID
 	for _, membership := range e.Memberships {
@@ -41,13 +43,17 @@ func (e *Event) Roles() string {
 
 		if currRoleID != membership.RoleID {
 			currRoleID = membership.RoleID
-			str = fmt.Sprintf("%s\n\n<b>%s:</b>", str, membership.Role.Name)
+			fmt.Fprintf(&b, "\n\n<b>%s:</b>", membership.Role.Name)
 		}
 
-		str = fmt.Sprintf("%s\n - <a href=\"tg://user?id=%d\">%s</a>", str, membership.User.ID, membership.User.Name)
+		fmt.Sprintf("\n - <a href=\"tg://user?id=%d\">%s</a>", membership.User.ID, membership.User.Name)
 	}
 
-	return strings.TrimSpace(str)
+	return b.String()
+}
+
+func (e *Event) NotesString(lang string) string {
+	return fmt.Sprintf("<b>%s:</b>\n%s", txt.Get("button.notes", lang), e.Notes)
 }
 
 type EventNameFrequencies struct {
