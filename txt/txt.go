@@ -93,6 +93,9 @@ var locales = map[string]map[string]string{
 	"button.changeSongsOrder": {
 		"ru": "🔄 Изменить порядок песен",
 	},
+	"button.eventEditEtc": {
+		"ru": "Дата, заметки, порядок песен...",
+	},
 	"button.addSong": {
 		"ru": "➕ Добавить песню",
 	},

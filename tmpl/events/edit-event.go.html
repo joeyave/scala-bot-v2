@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+{{template "global/header" .}}
+<body>
+<div class="container">
+    <h1>
+        Редактировать собрание
+    </h1>
+
+    <form id="event-form">
+        {{/*        <label for="name">ID</label>*/}}
+        {{/*        <div class="mb-3">*/}}
+        {{/*            <input type="text" class="form-control" id="id" disabled>*/}}
+        {{/*        </div>*/}}
+        <label for="name">Название</label>
+        <div class="mb-3">
+            <input type="text" class="form-control" id="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="date">Дата</label>
+            <input type="date" class="form-control" id="date" required>
+        </div>
+        <div class="mb-3">
+            <label for="date">Заметки</label>
+            <textarea type="text" class="form-control" id="notes"></textarea>
+        </div>
+        <div class="songs-wrapper">
+            <label>Песни</label>
+            {{ range $i, $song := .Event.Songs }}
+                <div class="item">
+                    <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
+                    <i class="fas fa-bars"></i>
+                </div>
+            {{ end }}
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript">
+    let event = JSON.parse("{{ .EventJS }}");
+    let messageId = {{ .MessageID }};
+    let chatId = {{ .ChatID }};
+</script>
+<script type="text/javascript" src="/assets/js/events/edit-event.js"></script>
+</body>
+</html>

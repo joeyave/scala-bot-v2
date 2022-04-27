@@ -32,11 +32,28 @@ func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entity.
 		InlineKeyboard: keyboard.EventInit(event, user, ctx.EffectiveUser.LanguageCode),
 	}
 
-	_, err := ctx.EffectiveChat.SendMessage(bot, html, &gotgbot.SendMessageOpts{
-		ReplyMarkup:           markup,
-		DisableWebPagePreview: true,
+	msg, err := ctx.EffectiveChat.SendMessage(bot, html, &gotgbot.SendMessageOpts{
 		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
 	})
+	if err != nil {
+		return err
+	}
+
+	user.CallbackCache.ChatID = msg.Chat.Id
+	user.CallbackCache.MessageID = msg.MessageId
+	text := user.CallbackCache.AddToText(html)
+
+	_, _, err = msg.EditText(bot, text, &gotgbot.EditMessageTextOpts{
+		ParseMode:             "HTML",
+		DisableWebPagePreview: true,
+		ReplyMarkup:           markup,
+	})
+	if err != nil {
+		return err
+	}
+
 	return err
 }
 
@@ -402,13 +419,19 @@ func (c *BotController) EventCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 	if len(split) > 1 {
 		switch split[1] {
 		case "edit":
-			markup.InlineKeyboard = keyboard.EventEdit(event, user, ctx.EffectiveUser.LanguageCode)
+			markup.InlineKeyboard = keyboard.EventEdit(event, user, user.CallbackCache.ChatID, user.CallbackCache.MessageID, ctx.EffectiveUser.LanguageCode)
 		default:
 			markup.InlineKeyboard = keyboard.EventInit(event, user, ctx.EffectiveUser.LanguageCode)
 		}
 	}
 
-	_, _, err = ctx.EffectiveMessage.EditText(bot, html, &gotgbot.EditMessageTextOpts{
+	user.CallbackCache = entity.CallbackCache{
+		MessageID: user.CallbackCache.MessageID,
+		ChatID:    user.CallbackCache.ChatID,
+	}
+	text := user.CallbackCache.AddToText(html)
+
+	_, _, err = ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
 		ParseMode:             "HTML",
 		DisableWebPagePreview: true,
 		ReplyMarkup:           markup,
@@ -423,7 +446,7 @@ func (c *BotController) eventSetlist(bot *gotgbot.Bot, ctx *ext.Context, event *
 
 	markup := gotgbot.InlineKeyboardMarkup{}
 
-	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.changeSongsOrder", ctx.EffectiveUser.LanguageCode), CallbackData: "todo"}})
+	//markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.changeSongsOrder", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/events/%s/edit?messageId=%d&chatId=%d", os.Getenv("HOST"), event.ID.Hex(), user.CallbackCache.MessageID, user.CallbackCache.ChatID)}}})
 	for _, song := range songs {
 		isDeleted := true
 		for _, eventSong := range event.Songs {

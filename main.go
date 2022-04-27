@@ -17,12 +17,14 @@ import (
 	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"google.golang.org/api/docs/v1"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+	"html/template"
 	"net/http"
 	"os"
 	"time"
@@ -176,10 +178,18 @@ func main() {
 	//go handler.NotifyUser() // todo
 
 	router := gin.New()
-	router.LoadHTMLGlob("tmpl/**/*.tmpl")
+	router.SetFuncMap(template.FuncMap{
+		"hex": func(id primitive.ObjectID) string {
+			return id.Hex()
+		},
+	})
+
+	router.LoadHTMLGlob("tmpl/**/*.go.html")
 	router.Static("/assets", "./assets")
 
+	router.Use()
 	router.GET("/web-app/events/create", webAppController.CreateEvent)
+
 	router.GET("/web-app/events/:id/edit", webAppController.EditEvent)
 	router.POST("/web-app/events/:id/edit/confirm", webAppController.EditEventConfirm)
 

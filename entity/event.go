@@ -23,7 +23,7 @@ type Event struct {
 	SongIDs []primitive.ObjectID `bson:"songIds,omitempty" json:"songIds"`
 	Songs   []*Song              `bson:"songs,omitempty" json:"songs"`
 
-	Notes string `bson:"notes,omitempty" json:"notes"`
+	Notes string `bson:"notes" json:"notes"`
 }
 
 func (e *Event) Alias(lang string) string {

@@ -60,6 +60,9 @@ type Cache struct {
 type CallbackCache struct {
 	EventIDHex string `schema:"eventId,omitempty"`
 	JsonString string `schema:"jsonString,omitempty"`
+
+	ChatID    int64 `schema:"chatId,omitempty"`
+	MessageID int64 `schema:"messageId,omitempty"`
 }
 
 var encoder = schema.NewEncoder()
@@ -69,8 +72,8 @@ func (c *CallbackCache) AddToText(text string) string {
 	encoder.Encode(c, values)
 	u, _ := url.Parse(util.CallbackCacheURL)
 	u.RawQuery = values.Encode()
-	return fmt.Sprintf("%s\n\n<a href=\"%s\">cache</a>", text, u.String())
-	//return fmt.Sprintf("%s\n\n<a href=\"%s\">&#8203;</a>", text, u.String())
+	//return fmt.Sprintf("%s\n\n<a href=\"%s\">cache</a>", text, u.String())
+	return fmt.Sprintf("%s\n\n<a href=\"%s\">&#8203;</a>", text, u.String())
 }
 
 type NextPageToken struct {

@@ -1,11 +1,13 @@
 package keyboard
 
 import (
+	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
+	"os"
 )
 
 func Menu(lang string) [][]gotgbot.KeyboardButton {
@@ -58,18 +60,21 @@ func EventInit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.
 	return keyboard
 }
 
-func EventEdit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
+func EventEdit(event *entity.Event, user *entity.User, chatID int64, messageID int64, lang string) [][]gotgbot.InlineKeyboardButton {
 
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
 			{Text: txt.Get("button.setlist", lang), CallbackData: util.CallbackData(state.EventSetlist, event.ID.Hex())},
 			{Text: txt.Get("button.members", lang), CallbackData: util.CallbackData(state.EventMembers, event.ID.Hex())},
 		},
+		//{
+		//	{Text: txt.Get("button.notes", lang), CallbackData: "todo"},
+		//},
 		{
-			{Text: txt.Get("button.notes", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.eventEditEtc", lang), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/events/%s/edit?messageId=%d&chatId=%d", os.Getenv("HOST"), event.ID.Hex(), messageID, chatID)}},
 		},
 		{
-			{Text: txt.Get("button.editDate", lang), CallbackData: "todo"},
+			//{Text: txt.Get("button.editDate", lang), CallbackData: "todo"},
 			{Text: txt.Get("button.delete", lang), CallbackData: "todo"},
 		},
 		{
