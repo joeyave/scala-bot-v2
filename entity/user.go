@@ -52,10 +52,11 @@ type Cache struct {
 
 	DriveFiles []*drive.File `bson:"drive_files,omitempty"`
 
-	NextPageToken *NextPageToken `bson:"next_page_token,omitempty"`
-	SongNames     []string       `bson:"song_names,omitempty"`
-	DriveFileIDs  []string       `bson:"drive_file_ids,omitempty"`
-	Voice         *Voice         `bson:"voice,omitempty"`
+	NextPageToken *NextPageToken     `bson:"next_page_token,omitempty"`
+	SongNames     []string           `bson:"song_names,omitempty"`
+	DriveFileIDs  []string           `bson:"drive_file_ids,omitempty"`
+	Voice         *Voice             `bson:"voice,omitempty"`
+	SongID        primitive.ObjectID `bson:"song_id,omitempty"`
 }
 
 type CallbackCache struct {

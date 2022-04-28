@@ -11,7 +11,8 @@ const (
 	GetSongs
 	FilterSongs
 
-	SongVoicesAddVoice
+	SongVoicesCreateVoice
+	SongTagsCreateTag
 )
 
 // Inline states.
@@ -35,8 +36,12 @@ const (
 	SongLike
 
 	SongVoices
-	SongVoicesAddVoiceAskForAudio
+	SongVoicesCreateVoiceAskForAudio
 	SongVoice
 	SongVoiceDeleteConfirm
 	SongVoiceDelete
+
+	SongTags
+	SongTagsAddTag
+	SongTagsCreateTagAskForName
 )

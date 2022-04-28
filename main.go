@@ -178,10 +178,14 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongCB), botController.SongCB), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongLike), botController.SongLike), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoices), botController.SongVoices), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoicesAddVoiceAskForAudio), botController.SongVoicesAddVoiceAskForAudio), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoicesCreateVoiceAskForAudio), botController.SongVoicesAddVoiceAskForAudio), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoice), botController.SongVoice), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoiceDeleteConfirm), botController.SongVoiceDeleteConfirm), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoiceDelete), botController.SongVoiceDelete), 1)
+
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongTags), botController.SongTags), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongTagsAddTag), botController.SongTagsAddTag), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongTagsCreateTagAskForName), botController.SongTagsCreateTagAskForName), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 

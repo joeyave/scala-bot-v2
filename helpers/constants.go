@@ -42,7 +42,6 @@ const (
 // Buttons constants.
 const (
 	Skip                        string = "⏩ Пропустить"
-	CreateTag                   string = "➕ Создать тег"
 	AppendSection               string = "В конец документа"
 	CreateBand                  string = "Создать свою группу"
 	CopyToMyBand                string = "🖨 Копировать песню в свою группу"

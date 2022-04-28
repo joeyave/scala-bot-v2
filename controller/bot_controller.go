@@ -46,8 +46,10 @@ func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context
 		return c.filterSongs(user.State.Index)(bot, ctx)
 	case state.SearchSetlist:
 		return c.searchSetlist(user.State.Index)(bot, ctx)
-	case state.SongVoicesAddVoice:
-		return c.SongVoicesAddVoice(user.State.Index)(bot, ctx)
+	case state.SongVoicesCreateVoice:
+		return c.SongVoicesCreateVoice(user.State.Index)(bot, ctx)
+	case state.SongTagsCreateTag:
+		return c.SongTagsCreateTag(bot, ctx)
 	}
 
 	return c.search(user.State.Index)(bot, ctx)

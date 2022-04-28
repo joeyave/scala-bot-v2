@@ -132,6 +132,9 @@ var locales = map[string]map[string]string{
 	"button.yes": {
 		"ru": "✅ Да",
 	},
+	"button.createTag": {
+		"ru": "➕ Создать тег",
+	},
 
 	"button.addVoice": {
 		"ru": "➕ Добавить партию",
@@ -175,6 +178,9 @@ var locales = map[string]map[string]string{
 	},
 	"text.sendVoiceName": {
 		"ru": "Отправь мне название этой партии.",
+	},
+	"text.sendTagName": {
+		"ru": "Введи название тега:",
 	},
 	"text.voiceDeleteConfirm": {
 		"ru": "Удалить эту партию?",

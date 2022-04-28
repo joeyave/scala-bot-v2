@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
+	"sort"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -520,6 +521,8 @@ func (r *SongRepository) GetTags() ([]string, error) {
 	for i, v := range frequencies {
 		tags[i] = v.Tag
 	}
+
+	sort.Strings(tags)
 
 	return tags, nil
 }
