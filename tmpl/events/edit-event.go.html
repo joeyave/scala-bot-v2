@@ -38,14 +38,14 @@
 
         <label>Песни</label>
         <div class="item btn" id="add-song-button">
-            <span class="text">Добавить песню</span>
+            <span class="text"><b>Добавить песню</b>e</span>
             <i id="delete-song-icon" class="fas fa-plus"></i>
         </div>
         <div id="songs" class="songs">
             {{ range $i, $song := .Event.Songs }}
                 <div class="item">
                     <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
-                    <i data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
+                    <i id="delete-song-icon" data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
                 </div>
             {{ end }}
         </div>

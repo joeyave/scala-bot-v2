@@ -20,7 +20,7 @@ type Event struct {
 	BandID primitive.ObjectID `bson:"bandId,omitempty" json:"bandId"`
 	Band   *Band              `bson:"band,omitempty" json:"band"`
 
-	SongIDs []primitive.ObjectID `bson:"songIds,omitempty" json:"songIds"`
+	SongIDs []primitive.ObjectID `bson:"songIds" json:"songIds"`
 	Songs   []*Song              `bson:"songs,omitempty" json:"songs"`
 
 	Notes string `bson:"notes" json:"notes"`

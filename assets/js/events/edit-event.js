@@ -80,13 +80,12 @@ import InstantSearch from "./../../instant_search/js/InstantSearch.js";
         document.getElementById("song-search-input").focus()
     }
 
-    let deleteSongButtons = songsElement.getElementsByClassName("fa-trash-alt")
-    for (let i = 0; i < deleteSongButtons.length; i++) {
-        deleteSongButtons[i].onclick = (e) => {
+    document.addEventListener("click", (e) => {
+        if (e.target.id === "delete-song-icon") {
             e.target.parentElement.remove()
             Telegram.WebApp.MainButton.show()
         }
-    }
+    })
 
     let form = document.getElementById('event-form');
 
