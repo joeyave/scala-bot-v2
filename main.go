@@ -175,6 +175,8 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventMembersAddMember), botController.EventMembersAddMember), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventMembersDeleteMember), botController.EventMembersDeleteMember), 1)
 
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongLike), botController.SongLike), 1)
+
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)

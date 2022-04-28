@@ -28,4 +28,6 @@ const (
 	EventMembersAddMemberChooseUser
 	EventMembersAddMember
 	EventMembersDeleteMember
+
+	SongLike
 )

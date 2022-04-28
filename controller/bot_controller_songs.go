@@ -381,6 +381,44 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 	}
 }
 
+func (c *BotController) SongCB(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	hex := split[0]
+	songID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return err
+	}
+
+	song, err := c.SongService.FindOneByID(songID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	if len(split) > 1 {
+		switch split[1] {
+		case "edit":
+			markup.InlineKeyboard = keyboard.SongEdit(song, user, ctx.EffectiveUser.LanguageCode)
+		default:
+			markup.InlineKeyboard = keyboard.SongInit(song, user, ctx.EffectiveUser.LanguageCode)
+		}
+	}
+
+	_, _, err = ctx.EffectiveMessage.EditReplyMarkup(bot, &gotgbot.EditMessageReplyMarkupOpts{
+		ReplyMarkup: markup,
+	})
+
+	ctx.CallbackQuery.Answer(bot, nil)
+
+	return err
+}
+
 func (c BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	user := ctx.Data["user"].(*entity.User)
