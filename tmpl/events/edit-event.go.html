@@ -37,9 +37,10 @@
 
 
         <label>Песни</label>
-        <div class="item btn" id="add-song-button">
-            <span class="text"><b>Добавить песню</b>e</span>
-            <i id="delete-song-icon" class="fas fa-plus"></i>
+        <div class="mb-2">
+            <div class="btn btn-light w-100" id="add-song-button">
+                <i class="fas fa-plus"></i> Добавить песню
+            </div>
         </div>
         <div id="songs" class="songs">
             {{ range $i, $song := .Event.Songs }}

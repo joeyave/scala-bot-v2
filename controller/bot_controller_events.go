@@ -437,6 +437,8 @@ func (c *BotController) EventCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 		ReplyMarkup:           markup,
 	})
 
+	ctx.CallbackQuery.Answer(bot, nil)
+
 	return err
 }
 
