@@ -105,6 +105,37 @@ var locales = map[string]map[string]string{
 	"button.loadMore": {
 		"ru": "👩‍👧‍👦 Загрузить еще",
 	},
+	"button.docLink": {
+		"ru": "📎 Ссылка на документ",
+	},
+	"button.voices": {
+		"ru": "Партии",
+	},
+	"button.tags": {
+		"ru": "🔖 Теги",
+	},
+	"button.transpose": {
+		"ru": "🎛 Транспонировать",
+	},
+	"button.style": {
+		"ru": "🎨 Стилизовать",
+	},
+	"button.changeBpm": {
+		"ru": "🥁 Изменить BPM",
+	},
+	"button.lyrics": {
+		"ru": "🔤 Слова",
+	},
+	"button.copyToMyBand": {
+		"ru": "🖨 Копировать песню в свою группу",
+	},
+	"button.yes": {
+		"ru": "✅ Да",
+	},
+
+	"button.addVoice": {
+		"ru": "➕ Добавить партию",
+	},
 
 	"text.defaultPlaceholder": {
 		"ru": "Фраза из песни или список",
@@ -124,6 +155,9 @@ var locales = map[string]map[string]string{
 	"text.chooseRoleForNewMember": {
 		"ru": "Выбери роль для нового участника:",
 	},
+	"text.chooseVoice": {
+		"ru": "Выбери партию:",
+	},
 	"text.chooseNewMember": {
 		"ru": "Выбери нового участника на роль %s:",
 	},
@@ -135,6 +169,15 @@ var locales = map[string]map[string]string{
 	},
 	"text.menu": {
 		"ru": "Меню:",
+	},
+	"text.sendAudioOrVoice": {
+		"ru": "Отправь мне аудио или голосовое сообщение.",
+	},
+	"text.sendVoiceName": {
+		"ru": "Отправь мне название этой партии.",
+	},
+	"text.voiceDeleteConfirm": {
+		"ru": "Удалить эту партию?",
 	},
 }
 

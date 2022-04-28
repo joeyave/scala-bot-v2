@@ -419,7 +419,7 @@ func (c *BotController) SongCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 	return err
 }
 
-func (c BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
+func (c *BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	user := ctx.Data["user"].(*entity.User)
 
@@ -461,4 +461,300 @@ func (c BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	ctx.CallbackQuery.Answer(bot, nil)
 	return nil
+}
+
+func (c *BotController) SongVoices(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	songID, err := primitive.ObjectIDFromHex(payload)
+	if err != nil {
+		return err
+	}
+
+	err2 := c.songVoices(bot, ctx, songID)
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
+
+func (c *BotController) songVoices(bot *gotgbot.Bot, ctx *ext.Context, songID primitive.ObjectID) error {
+	song, err := c.SongService.FindOneByID(songID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	for _, voice := range song.Voices {
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: voice.Name, CallbackData: util.CallbackData(state.SongVoice, song.ID.Hex()+":"+voice.ID.Hex())}})
+	}
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addVoice", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongVoicesAddVoiceAskForAudio, song.ID.Hex())}})
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")}})
+
+	_, _, err = ctx.EffectiveMessage.EditCaption(bot, &gotgbot.EditMessageCaptionOpts{
+		Caption:     txt.Get("text.chooseVoice", ctx.EffectiveUser.LanguageCode),
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *BotController) SongVoicesAddVoiceAskForAudio(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	songID, err := primitive.ObjectIDFromHex(payload)
+	if err != nil {
+		return err
+	}
+
+	markup := &gotgbot.ReplyKeyboardMarkup{
+		Keyboard:       [][]gotgbot.KeyboardButton{{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}}},
+		ResizeKeyboard: true,
+	}
+	_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.sendAudioOrVoice", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	user.State = entity.State{
+		Name: state.SongVoicesAddVoice,
+	}
+	user.Cache = entity.Cache{
+		Voice: &entity.Voice{SongID: songID},
+	}
+
+	_, err = c.UserService.UpdateOne(*user)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *BotController) SongVoicesAddVoice(index int) handlers.Response {
+	return func(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+		user := ctx.Data["user"].(*entity.User)
+
+		if user.State.Name != state.SongVoicesAddVoice {
+			user.State = entity.State{
+				Index: index,
+				Name:  state.SongVoicesAddVoice,
+			}
+			user.Cache = entity.Cache{
+				Voice: user.Cache.Voice,
+			}
+		}
+
+		switch index {
+		case 0:
+			{
+				ctx.EffectiveChat.SendAction(bot, "typing")
+
+				fileID := ctx.EffectiveMessage.Voice.FileId
+				if fileID == "" {
+					fileID = ctx.EffectiveMessage.Audio.FileId
+				}
+
+				user.Cache.Voice.FileID = fileID
+
+				markup := &gotgbot.ReplyKeyboardMarkup{
+					Keyboard:       [][]gotgbot.KeyboardButton{{{Text: txt.Get("button.menu", ctx.EffectiveUser.LanguageCode)}}},
+					ResizeKeyboard: true,
+				}
+				_, err := ctx.EffectiveChat.SendMessage(bot, txt.Get("text.sendVoiceName", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
+					ReplyMarkup: markup,
+				})
+				if err != nil {
+					return err
+				}
+
+				user.State.Index = 1
+				return nil
+			}
+		case 1:
+			{
+				user.Cache.Voice.Name = ctx.EffectiveMessage.Text
+
+				_, err := c.VoiceService.UpdateOne(*user.Cache.Voice)
+				if err != nil {
+					return err
+				}
+
+				_, err = ctx.EffectiveChat.SendMessage(bot, "Добавление завершено.", nil) // todo: move text to txt
+				if err != nil {
+					return err
+				}
+
+				song, err := c.SongService.FindOneByID(user.Cache.Voice.SongID)
+				if err != nil {
+					return err
+				}
+				err = c.song(bot, ctx, song.DriveFileID)
+				if err != nil {
+					return err
+				}
+				return c.Menu(bot, ctx)
+			}
+		}
+		return nil
+	}
+}
+
+func (c *BotController) SongVoice(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	songID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	voiceID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	song, err := c.SongService.FindOneByID(songID)
+	if err != nil {
+		return err
+	}
+
+	voice, err := c.VoiceService.FindOneByID(voiceID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: [][]gotgbot.InlineKeyboardButton{
+			{
+				{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())},
+				{Text: txt.Get("button.delete", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongVoiceDeleteConfirm, song.ID.Hex()+":"+voice.ID.Hex())},
+			},
+		},
+	}
+
+	if voice.AudioFileID == "" {
+		f, err := bot.GetFile(voice.FileID)
+		if err != nil {
+			return err
+		}
+
+		reader, err := helpers.File(bot, f)
+		if err != nil {
+			return err
+		}
+
+		msg, _, err := ctx.EffectiveMessage.EditMedia(bot, &gotgbot.InputMediaAudio{
+			Media: gotgbot.NamedFile{
+				File:     reader,
+				FileName: voice.Name,
+			},
+			ParseMode: "HTML",
+			Performer: song.PDF.Name,
+			Title:     voice.Name,
+		}, &gotgbot.EditMessageMediaOpts{
+			ReplyMarkup: markup,
+		})
+		if err != nil {
+			return err
+		}
+
+		voice.AudioFileID = msg.Audio.FileId
+		_, err = c.VoiceService.UpdateOne(*voice)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, _, err := ctx.EffectiveMessage.EditMedia(bot, &gotgbot.InputMediaAudio{
+			Media:     voice.AudioFileID, // todo
+			ParseMode: "HTML",
+			Performer: song.PDF.Name,
+			Title:     voice.Name,
+		}, &gotgbot.EditMessageMediaOpts{
+			ReplyMarkup: markup,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
+}
+
+func (c *BotController) SongVoiceDeleteConfirm(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	songID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	voiceID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	markup.InlineKeyboard = [][]gotgbot.InlineKeyboardButton{
+		{
+			{Text: txt.Get("button.cancel", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongVoice, songID.Hex()+":"+voiceID.Hex())},
+			{Text: txt.Get("button.yes", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongVoiceDelete, songID.Hex()+":"+voiceID.Hex())},
+		},
+	}
+
+	_, _, err = ctx.EffectiveMessage.EditCaption(bot,
+		&gotgbot.EditMessageCaptionOpts{
+			Caption:     txt.Get("text.voiceDeleteConfirm", ctx.EffectiveUser.LanguageCode),
+			ReplyMarkup: markup,
+		})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *BotController) SongVoiceDelete(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	songID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	voiceID, err := primitive.ObjectIDFromHex(split[1])
+	if err != nil {
+		return err
+	}
+
+	err = c.VoiceService.DeleteOne(voiceID)
+	if err != nil {
+		return err
+	}
+
+	return c.songVoices(bot, ctx, songID)
 }

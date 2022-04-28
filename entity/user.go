@@ -55,6 +55,7 @@ type Cache struct {
 	NextPageToken *NextPageToken `bson:"next_page_token,omitempty"`
 	SongNames     []string       `bson:"song_names,omitempty"`
 	DriveFileIDs  []string       `bson:"drive_file_ids,omitempty"`
+	Voice         *Voice         `bson:"voice,omitempty"`
 }
 
 type CallbackCache struct {

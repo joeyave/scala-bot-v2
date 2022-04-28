@@ -10,6 +10,8 @@ const (
 
 	GetSongs
 	FilterSongs
+
+	SongVoicesAddVoice
 )
 
 // Inline states.
@@ -29,5 +31,12 @@ const (
 	EventMembersAddMember
 	EventMembersDeleteMember
 
+	SongCB
 	SongLike
+
+	SongVoices
+	SongVoicesAddVoiceAskForAudio
+	SongVoice
+	SongVoiceDeleteConfirm
+	SongVoiceDelete
 )

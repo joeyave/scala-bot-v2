@@ -42,14 +42,7 @@ const (
 // Buttons constants.
 const (
 	Skip                        string = "⏩ Пропустить"
-	Voices                      string = "Партии"
-	Tags                        string = "🔖 Теги"
 	CreateTag                   string = "➕ Создать тег"
-	Transpose                   string = "🎛 Транспонировать"
-	Style                       string = "🎨 Стилизовать"
-	ChangeSongBPM               string = "🥁 Изменить BPM"
-	AddLyricsPage               string = "🔤 Слова"
-	Yes                         string = "✅ Да"
 	AppendSection               string = "В конец документа"
 	CreateBand                  string = "Создать свою группу"
 	CopyToMyBand                string = "🖨 Копировать песню в свою группу"
@@ -67,7 +60,6 @@ const (
 	NextPage                    string = "→"
 	PrevPage                    string = "←"
 	Today                       string = "⏰"
-	LinkToTheDoc                string = "📎 Ссылка на документ"
 	Setlist                     string = "📝 Список"
 	Like                        string = "❤️‍🔥"
 	Placeholder                 string = "Фраза из песни или список"
