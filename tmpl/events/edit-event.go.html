@@ -3,35 +3,56 @@
 {{template "global/header" .}}
 <body>
 <div class="container">
+    <div id="search-overlay" class="overlay">
+        <div id="search" class="instant-search">
+            <div class="instant-search__input-container">
+                <input id="song-search-input" class="instant-search__input" type="text" spellcheck="false"
+                       placeholder="Добавить песню">
+                <i class="material-icons instant-search__icon">search</i>
+            </div>
+        </div>
+    </div>
     <h1>
         Редактировать собрание
     </h1>
-
     <form id="event-form">
         {{/*        <label for="name">ID</label>*/}}
         {{/*        <div class="mb-3">*/}}
         {{/*            <input type="text" class="form-control" id="id" disabled>*/}}
         {{/*        </div>*/}}
-        <label for="name">Название</label>
         <div class="mb-3">
+            <label for="name">Название</label>
             <input type="text" class="form-control" id="name" required>
         </div>
         <div class="mb-3">
             <label for="date">Дата</label>
             <input type="date" class="form-control" id="date" required>
         </div>
-        <div class="mb-3">
-            <label for="date">Заметки</label>
-            <textarea type="text" class="form-control" id="notes"></textarea>
+
+        {{/*        <label for="name-and-date">Название и дата</label>*/}}
+        {{/*        <div id="name-and-date" class="input-group mb-3 w-00">*/}}
+        {{/*            <input type="text" class="form-control w-75" id="name" placeholder="Название" required>*/}}
+        {{/*            <input type="date" class="form-control w-25" id="date" required>*/}}
+        {{/*        </div>*/}}
+
+
+        <label>Песни</label>
+        <div class="item btn" id="add-song-button">
+            <span class="text">Добавить песню</span>
+            <i id="delete-song-icon" class="fas fa-plus"></i>
         </div>
-        <div class="songs-wrapper">
-            <label>Песни</label>
+        <div id="songs" class="songs">
             {{ range $i, $song := .Event.Songs }}
                 <div class="item">
                     <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
-                    <i class="fas fa-bars"></i>
+                    <i data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
                 </div>
             {{ end }}
+        </div>
+
+        <div class="mb-3">
+            <label for="date">Заметки</label>
+            <textarea type="text" class="form-control" id="notes"></textarea>
         </div>
     </form>
 </div>
@@ -41,6 +62,6 @@
     let messageId = {{ .MessageID }};
     let chatId = {{ .ChatID }};
 </script>
-<script type="text/javascript" src="/assets/js/events/edit-event.js"></script>
+<script type="module" src="/assets/js/events/edit-event.js"></script>
 </body>
 </html>

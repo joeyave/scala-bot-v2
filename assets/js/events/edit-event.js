@@ -1,16 +1,92 @@
+import InstantSearch from "./../../instant_search/js/InstantSearch.js";
+
 (function () {
     Telegram.WebApp.expand()
 
-    const dragArea = document.querySelector(".songs-wrapper");
+    let searchOverlayElement = document.getElementById("search-overlay")
+    searchOverlayElement.onclick = (e) => {
+        if (e.target !== searchOverlayElement) return;
+        searchOverlayElement.style.display = "none"
+    }
 
-    new Sortable(dragArea, {
-        handle: ".fa-bars",  // Drag handle selector within list items
-        draggable: ".item",  // Specifies which items inside the element should be draggable
+    const songsElement = document.getElementById("songs");
+
+    new Sortable(songsElement, {
+        // handle: ".item",  // Drag handle selector within list items
+        // draggable: ".item",  // Specifies which items inside the element should be draggable
+        delay: 150,
+        delayOnTouchOnly: true,
         animation: 0,
         onUpdate: function (/**Event*/evt) {
             Telegram.WebApp.MainButton.show()
         },
     });
+
+    const searchElement = document.querySelector("#search");
+    new InstantSearch(searchElement, {
+        searchUrl: new URL("/api/drive-files/search", window.location.origin),
+        queryParam: "q",
+        responseParser: (responseData) => {
+            return responseData.results;
+        },
+        templateFunction: (result) => {
+            return `
+            <div class="instant-search__title">${result.name}</div>
+<!--            <p class="instant-search__paragraph">${result.occupation}</p>-->
+        `;
+        },
+        resultEventListener: (result) => {
+            return [
+                "click", async () => {
+                    let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
+                        method: "get",
+                        headers: {'Content-Type': 'application/json'},
+                    })
+
+                    let data = await resp.json()
+
+                    console.log(data)
+
+                    Telegram.WebApp.MainButton.show()
+                    searchOverlayElement.style.display = "none";
+
+                    let songs = document.getElementById("songs").getElementsByTagName("span")
+                    console.log(songs)
+
+                    let exists = false
+                    for (let i = 0; i < songs.length; i++) {
+                        let songId = songs[i].getAttribute("data-song-id")
+                        if (songId === data.song.id) {
+                            exists = true
+                            break
+                        }
+                    }
+                    if (!exists) {
+                        songsElement.insertAdjacentHTML("afterbegin",
+                            `<div class="item">
+                            <span class="text" data-song-id=${data.song.id}>${result.name}</span>
+                            <i id="delete-song-icon" class="fas fa-trash-alt"></i>
+                        </div>`
+                        );
+                    }
+                }
+            ]
+        }
+    });
+
+    let addSongButton = document.getElementById("add-song-button")
+    addSongButton.onclick = () => {
+        searchOverlayElement.style.display = "block"
+        document.getElementById("song-search-input").focus()
+    }
+
+    let deleteSongButtons = songsElement.getElementsByClassName("fa-trash-alt")
+    for (let i = 0; i < deleteSongButtons.length; i++) {
+        deleteSongButtons[i].onclick = (e) => {
+            e.target.parentElement.remove()
+            Telegram.WebApp.MainButton.show()
+        }
+    }
 
     let form = document.getElementById('event-form');
 
@@ -38,7 +114,7 @@
         }
 
         let songIds = []
-        let items = dragArea.getElementsByTagName("span")
+        let items = songsElement.getElementsByTagName("span")
         for (let i = 0; i < items.length; i++) {
             let songId = items[i].getAttribute("data-song-id")
             songIds.push(songId)

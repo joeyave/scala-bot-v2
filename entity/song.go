@@ -8,7 +8,7 @@ import (
 )
 
 type Song struct {
-	ID primitive.ObjectID `bson:"_id,omitempty"`
+	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 
 	DriveFileID string `bson:"driveFileId,omitempty" json:"-"`
 
