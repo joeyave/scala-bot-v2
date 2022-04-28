@@ -11,6 +11,8 @@ import (
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
+	"github.com/joeyave/scala-bot-v2/util"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/api/drive/v3"
 	"strings"
@@ -377,4 +379,48 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 
 		return nil
 	}
+}
+
+func (c BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	split := strings.Split(payload, ":")
+
+	songID, err := primitive.ObjectIDFromHex(split[0])
+	if err != nil {
+		return err
+	}
+
+	switch split[1] {
+	case "like":
+		err := c.SongService.Like(songID, user.ID)
+		if err != nil {
+			return err
+		}
+	case "dislike":
+		err := c.SongService.Dislike(songID, user.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	song, err := c.SongService.FindOneByID(songID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+	markup.InlineKeyboard = keyboard.SongInit(song, user, ctx.EffectiveUser.LanguageCode)
+
+	_, _, err = ctx.EffectiveMessage.EditReplyMarkup(bot, &gotgbot.EditMessageReplyMarkupOpts{
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
 }

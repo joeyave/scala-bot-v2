@@ -103,7 +103,7 @@ func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 
 	if liked {
 		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
-			{Text: txt.Get("button.like", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.like", lang), CallbackData: util.CallbackData(state.Song)},
 		})
 	} else {
 		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{
