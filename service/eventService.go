@@ -166,8 +166,8 @@ func (s *EventService) ToHtmlStringByEvent(event entity.Event, lang string) stri
 	return b.String()
 }
 
-func (s *EventService) GetMostFrequentEventNames() ([]*entity.EventNameFrequencies, error) {
-	return s.eventRepository.GetMostFrequentEventNames()
+func (s *EventService) GetMostFrequentEventNames(bandID primitive.ObjectID, limit int) ([]*entity.EventNameFrequencies, error) {
+	return s.eventRepository.GetMostFrequentEventNames(bandID, limit)
 }
 
 func (s *EventService) GetEventWithSongs(eventID primitive.ObjectID) (*entity.Event, error) {

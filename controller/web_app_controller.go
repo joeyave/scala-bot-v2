@@ -41,9 +41,15 @@ func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 		return
 	}
 
+	eventNames, err := h.EventService.GetMostFrequentEventNames(bandID, 4)
+	if err != nil {
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "edit-event.go.html", gin.H{
-		"EventJS": string(eventJsonBytes),
-		"Action":  "create",
+		"EventNames": eventNames,
+		"EventJS":    string(eventJsonBytes),
+		"Action":     "create",
 	})
 }
 
@@ -68,12 +74,18 @@ func (h *WebAppController) EditEvent(ctx *gin.Context) {
 		return
 	}
 
+	eventNames, err := h.EventService.GetMostFrequentEventNames(event.BandID, 4)
+	if err != nil {
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "edit-event.go.html", gin.H{
-		"MessageID": messageID,
-		"ChatID":    chatID,
-		"Event":     event,
-		"EventJS":   string(eventJsonBytes),
-		"Action":    "edit",
+		"MessageID":  messageID,
+		"ChatID":     chatID,
+		"EventNames": eventNames,
+		"Event":      event,
+		"EventJS":    string(eventJsonBytes),
+		"Action":     "edit",
 	})
 }
 

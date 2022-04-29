@@ -33,7 +33,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         resultEventListener: (result) => {
             return [
                 "click", async () => {
-                overlayElement.classList.add("overlay--hidden")
+                    overlayElement.classList.add("overlay--hidden")
 
                     let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
                         method: "get",
@@ -87,10 +87,11 @@ window.addEventListener('DOMContentLoaded', (e) => {
         overlayElement.classList.add("overlay--hidden")
     }
 
-    addSongButton.onclick = () => {
+    addSongButton.addEventListener("click", () => {
+        console.log("click")
         overlayElement.classList.remove("overlay--hidden")
         document.getElementById("song-search-input").focus()
-    }
+    })
 
     document.addEventListener("click", (e) => {
         if (e.target.id === "delete-song-icon") {
@@ -108,7 +109,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         Telegram.WebApp.MainButton.setText("Сохранить")
 
         name.value = event.name;
-        date.valueAsDate = Date.parse(event.time);
+        date.value = new Date(event.time).toISOString().substring(0, 10);
         notes.value = event.notes;
 
         Telegram.WebApp.MainButton.onClick(async function () {
@@ -146,7 +147,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
     function createEvent() {
         Telegram.WebApp.MainButton.setText("Создать")
 
-        date.valueAsDate = new Date();
+        date.value = new Date().toISOString().substring(0, 10);
 
         Telegram.WebApp.MainButton.onClick(function () {
 

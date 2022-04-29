@@ -715,19 +715,21 @@ func (r *EventRepository) PullSongID(eventID primitive.ObjectID, songID primitiv
 }
 
 // TODO: add band id
-func (r *EventRepository) GetMostFrequentEventNames() ([]*entity.EventNameFrequencies, error) {
+func (r *EventRepository) GetMostFrequentEventNames(bandID primitive.ObjectID, limit int) ([]*entity.EventNameFrequencies, error) {
 
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("events")
 
 	pipeline := bson.A{
 		bson.M{
 			"$match": bson.M{
+				"bandId": bandID,
 				"_id": bson.M{
 					"$gte": primitive.NewObjectIDFromTimestamp(time.Now().AddDate(0, -3, 0)),
 				},
 			},
 		},
 		bson.M{"$sortByCount": "$name"},
+		bson.M{"$limit": limit},
 	}
 	cur, err := collection.Aggregate(context.TODO(), pipeline)
 	if err != nil {

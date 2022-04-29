@@ -17,9 +17,16 @@
 
     <form id="event-form">
 
-        <div class="mb-3">
-{{/*            <label for="name">Название</label>*/}}
-            <input type="text" class="form-control" id="name" required>
+        <div class="mb-2 mt-2">
+            {{/*            <label for="name">Название</label>*/}}
+            <input type="text" class="form-control header-input" id="name" list="suggestions" placeholder="Название"
+                   required>
+
+            <datalist id="suggestions">
+                {{ range $i, $name := .EventNames }}
+                <option value="{{ $name.Name }}">
+                    {{ end }}
+            </datalist>
         </div>
 
         <div class="mb-3">
