@@ -9,7 +9,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
-	"github.com/joeyave/scala-bot-v2/metronome"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -286,7 +285,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 
 		user.State.Context.WeekdayButtons = helpers.GetWeekdayButtons(events)
 		markup.Keyboard = append(markup.Keyboard, user.State.Context.WeekdayButtons)
-		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
+		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create?bandId=" + user.Band.ID.Hex()}}})
 
 		for _, event := range events {
 			buttonText := helpers.EventButton(event, user, false)
@@ -363,7 +362,7 @@ func getEventsHandler() (int, []HandlerFunc) {
 			}
 
 			markup.Keyboard = append(markup.Keyboard, buttons)
-			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
+			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: "➕ Добавить собрание", WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "web-app/events/create?bandId=" + user.Band.ID.Hex()}}})
 
 			for i := range markup.Keyboard[0] {
 				if markup.Keyboard[0][i].Text == user.State.Context.QueryType || (markup.Keyboard[0][i].Text == text && user.State.Context.QueryType == helpers.Archive) ||

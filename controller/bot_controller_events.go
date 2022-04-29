@@ -7,7 +7,6 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext/handlers"
-	"github.com/joeyave/scala-bot-v2/dto"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/metronome"
@@ -59,25 +58,17 @@ func (c *BotController) event(bot *gotgbot.Bot, ctx *ext.Context, event *entity.
 
 func (c *BotController) CreateEvent(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-	var data *dto.CreateEventData
-	err := json.Unmarshal([]byte(ctx.EffectiveMessage.WebAppData.Data), &data)
+	var event *entity.Event
+	err := json.Unmarshal([]byte(ctx.EffectiveMessage.WebAppData.Data), &event)
 	if err != nil {
 		return err
 	}
 
 	user := ctx.Data["user"].(*entity.User)
 
-	eventDate, err := time.Parse("2006-01-02", data.Event.Date)
-	if err != nil {
-		return err
-	}
+	event.BandID = user.BandID
 
-	event := entity.Event{
-		Time:   eventDate,
-		Name:   data.Event.Name,
-		BandID: user.BandID,
-	}
-	createdEvent, err := c.EventService.UpdateOne(event)
+	createdEvent, err := c.EventService.UpdateOne(*event)
 	if err != nil {
 		return err
 	}
@@ -123,7 +114,7 @@ func (c *BotController) GetEvents(index int) handlers.Response {
 
 				user.Cache.Buttons = keyboard.GetEventsStateFilterButtons(events, ctx.EffectiveUser.LanguageCode)
 				markup.Keyboard = append(markup.Keyboard, user.Cache.Buttons)
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create?bandId=" + user.Band.ID.Hex()}}})
 
 				for _, event := range events {
 					markup.Keyboard = append(markup.Keyboard, keyboard.EventButton(event, user, ctx.EffectiveUser.LanguageCode, false))
@@ -250,7 +241,7 @@ func (c *BotController) filterEvents(index int) handlers.Response {
 				}
 
 				markup.Keyboard = append(markup.Keyboard, buttons)
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create"}}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createEvent", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: os.Getenv("HOST") + "/web-app/events/create?bandId=" + user.Band.ID.Hex()}}})
 
 				for _, event := range events {
 					if user.Cache.Filter == txt.Get("button.eventsWithMe", ctx.EffectiveUser.LanguageCode) {

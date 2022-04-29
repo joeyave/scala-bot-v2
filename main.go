@@ -124,6 +124,7 @@ func main() {
 	webAppController := controller.WebAppController{
 		EventService: eventService,
 		UserService:  userService,
+		BandService:  bandService,
 		Bot:          bot,
 	}
 	driveFileController := controller.DriveFileController{
@@ -200,8 +201,8 @@ func main() {
 		},
 	})
 
-	router.LoadHTMLGlob("tmpl/**/*.go.html")
-	router.Static("/assets", "./assets")
+	router.LoadHTMLGlob("webapp/templates/**/*.go.html")
+	router.Static("/webapp/assets", "./webapp/assets")
 
 	router.Use()
 	router.GET("/web-app/events/create", webAppController.CreateEvent)

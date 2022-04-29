@@ -1,11 +1,10 @@
-.instant-search {
-    z-index: 2;
-    position: relative;
-    top: 20px;
-    width: 90%;
-    margin: auto;
-    /*max-width: 250px;*/
-}
+/*.instant-search {*/
+/*    position: relative;*/
+/*    top: 20px;*/
+/*    width: 90%;*/
+/*    margin: auto;*/
+/*    !*max-width: 250px;*!*/
+/*}*/
 
 .instant-search,
 .instant-search * {
@@ -36,7 +35,7 @@
         width: 50%;
     }
     100% {
-        width: 100%;
+        width: 95%;
     }
 }
 
@@ -68,7 +67,7 @@
 }
 
 .instant-search__results-container {
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
     visibility: hidden;
     opacity: 0;

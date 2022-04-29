@@ -16,10 +16,35 @@ type WebAppController struct {
 	Bot          *gotgbot.Bot
 	EventService *service.EventService
 	UserService  *service.UserService
+	BandService  *service.BandService
 }
 
 func (h *WebAppController) CreateEvent(ctx *gin.Context) {
-	ctx.HTML(http.StatusOK, "create-event.go.html", gin.H{})
+
+	hex := ctx.Query("bandId")
+	bandID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return
+	}
+
+	band, err := h.BandService.FindOneByID(bandID)
+	if err != nil {
+		return
+	}
+
+	event := &entity.Event{
+		BandID: bandID,
+		Band:   band,
+	}
+	eventJsonBytes, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+
+	ctx.HTML(http.StatusOK, "edit-event.go.html", gin.H{
+		"EventJS": string(eventJsonBytes),
+		"Action":  "create",
+	})
 }
 
 func (h *WebAppController) EditEvent(ctx *gin.Context) {
@@ -48,6 +73,7 @@ func (h *WebAppController) EditEvent(ctx *gin.Context) {
 		"ChatID":    chatID,
 		"Event":     event,
 		"EventJS":   string(eventJsonBytes),
+		"Action":    "edit",
 	})
 }
 

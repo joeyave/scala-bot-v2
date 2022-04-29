@@ -95,7 +95,7 @@ class InstantSearch {
 
         anchorElement.addEventListener("click", () => {
             this.elements.input.value = "";
-            this.populateResults([]);
+            // this.populateResults([]); // todo
         })
         anchorElement.addEventListener(...this.options.resultEventListener(result))
 
@@ -117,6 +117,8 @@ class InstantSearch {
         const url = new URL(this.options.searchUrl.toString());
 
         url.searchParams.set(this.options.queryParam, query);
+
+        console.log(url)
 
         this.setLoading(true);
 
