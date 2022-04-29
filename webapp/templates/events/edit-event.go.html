@@ -5,20 +5,19 @@
 <body>
 <div class="container">
 
-    <div id="search-overlay" class="overlay overlay--hidden">
-        <div id="search" class="instant-search">
-            <div class="instant-search__input-container">
-                <input id="song-search-input" class="instant-search__input" type="text" spellcheck="false"
-                       placeholder="Добавить песню">
-                <i class="material-icons instant-search__icon">search</i>
-            </div>
-        </div>
-    </div>
+    {{/*    <div id="search-overlay" class="overlay overlay--hidden">*/}}
+    {{/*        <div id="search" class="instant-search">*/}}
+    {{/*            <div class="instant-search__input-container">*/}}
+    {{/*                <input id="song-search-input" class="instant-search__input" type="text" spellcheck="false"*/}}
+    {{/*                       placeholder="Добавить песню">*/}}
+    {{/*                <i class="material-icons instant-search__icon">search</i>*/}}
+    {{/*            </div>*/}}
+    {{/*        </div>*/}}
+    {{/*    </div>*/}}
 
     <form id="event-form">
 
-        <div class="mb-2 mt-2">
-            {{/*            <label for="name">Название</label>*/}}
+        <div class=" mt-2">
             <input type="text" class="form-control header-input" id="name" list="suggestions" placeholder="Название"
                    required>
 
@@ -29,28 +28,45 @@
             </datalist>
         </div>
 
-        <div class="mb-3">
-            <label for="date">Дата</label>
-            <input type="date" class="form-control" id="date" required>
+        <div class="d-flex flex-row mb-3">
+            <input type="date" class="date-input" id="date" required>
         </div>
 
         <div class="mb-3">
             <label>Песни</label>
-            <div class="btn btn-light w-100 mb-2" id="add-song-button"><i class="fas fa-plus"></i> Добавить песню</div>
+            {{/*            <a class="text-black" data-bs-toggle="collapse" href="#collapseExample" role="button"*/}}
+            {{/*               aria-expanded="true" aria-controls="collapseExample">Скрыть</a>*/}}
 
-            <div id="songs" class="sortable-list">
-                {{ range $i, $song := .Event.Songs }}
-                    <div class="item">
-                        <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
-                        <i id="delete-song-icon" data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
+            <div class="collapse show" id="collapseExample">
+                {{/*                <div class="btn btn-light w-100 mb-2" id="add-song-button"><i class="fas fa-plus"></i> Добавить песню*/}}
+                {{/*                </div>*/}}
+
+                <div id="search" class="instant-search">
+                    <div class="instant-search__input-container">
+                        <input id="song-search-input" class="instant-search__input" type="text"
+                               spellcheck="false"
+                               placeholder="Добавить песню">
+                        <i class="fa fa-search"></i>
                     </div>
-                {{ end }}
+                </div>
+
+                <div id="songs" class="sortable-list">
+                    {{ range $i, $song := .Event.Songs }}
+                        <div class="item">
+                            <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
+                            <i id="delete-song-icon" data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
+                        </div>
+                    {{ end }}
+                </div>
+                <div class="form-text">Песни можно перетаскивать.</div>
             </div>
         </div>
 
         <div class="mb-3">
             <label for="notes">Заметки</label>
-            <textarea type="text" class="form-control" id="notes"></textarea>
+            <div class="grow-wrap">
+                <textarea type="text" class="form-control" id="notes"></textarea>
+            </div>
         </div>
     </form>
 </div>

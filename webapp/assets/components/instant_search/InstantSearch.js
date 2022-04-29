@@ -95,7 +95,7 @@ class InstantSearch {
 
         anchorElement.addEventListener("click", () => {
             this.elements.input.value = "";
-            // this.populateResults([]); // todo
+            this.populateResults([]);
         })
         anchorElement.addEventListener(...this.options.resultEventListener(result))
 

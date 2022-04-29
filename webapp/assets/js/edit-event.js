@@ -12,7 +12,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
     new Sortable(songsElement, {
         delay: 150,
         delayOnTouchOnly: true,
-        animation: 0,
+        animation: 100,
         onUpdate: function (/**Event*/evt) {
             Telegram.WebApp.MainButton.show()
         },
@@ -33,7 +33,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         resultEventListener: (result) => {
             return [
                 "click", async () => {
-                    overlayElement.classList.add("overlay--hidden")
+                    // overlayElement.classList.add("overlay--hidden")
 
                     let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
                         method: "get",
@@ -82,16 +82,16 @@ window.addEventListener('DOMContentLoaded', (e) => {
     }
 
     // Adding listeners.
-    overlayElement.onclick = (e) => {
-        if (e.target !== overlayElement) return
-        overlayElement.classList.add("overlay--hidden")
-    }
+    // overlayElement.onclick = (e) => {
+    //     if (e.target !== overlayElement) return
+    //     overlayElement.classList.add("overlay--hidden")
+    // }
 
-    addSongButton.addEventListener("click", () => {
-        console.log("click")
-        overlayElement.classList.remove("overlay--hidden")
-        document.getElementById("song-search-input").focus()
-    })
+    // addSongButton.addEventListener("click", () => {
+    //     console.log("click")
+    //     overlayElement.classList.remove("overlay--hidden")
+    //     document.getElementById("song-search-input").focus()
+    // })
 
     document.addEventListener("click", (e) => {
         if (e.target.id === "delete-song-icon") {

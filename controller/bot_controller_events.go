@@ -690,7 +690,7 @@ func (c *BotController) EventMembersDeleteOrRecoverMember(bot *gotgbot.Bot, ctx 
 
 func (c *BotController) EventMembersAddMemberChooseRole(bot *gotgbot.Bot, ctx *ext.Context) error {
 
-	//user := ctx.Data["user"].(*entity.User)
+	user := ctx.Data["user"].(*entity.User)
 
 	hex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
 
@@ -719,7 +719,9 @@ func (c *BotController) EventMembersAddMemberChooseRole(bot *gotgbot.Bot, ctx *e
 	}
 	b.WriteString(txt.Get("text.chooseRoleForNewMember", ctx.EffectiveUser.LanguageCode))
 
-	_, _, err = ctx.EffectiveMessage.EditText(bot, b.String(), &gotgbot.EditMessageTextOpts{
+	text := user.CallbackCache.AddToText(b.String())
+
+	_, _, err = ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
 		ParseMode:             "HTML",
 		DisableWebPagePreview: true,
 		ReplyMarkup:           markup,
