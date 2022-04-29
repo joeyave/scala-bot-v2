@@ -33,8 +33,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         resultEventListener: (result) => {
             return [
                 "click", async () => {
-                    overlayElement.style.visibility = "hidden";
-                    overlayElement.style.opacity = 0;
+                overlayElement.classList.add("overlay--hidden")
 
                     let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
                         method: "get",
@@ -85,15 +84,11 @@ window.addEventListener('DOMContentLoaded', (e) => {
     // Adding listeners.
     overlayElement.onclick = (e) => {
         if (e.target !== overlayElement) return
-        // overlayElement.style.display = "none"
-        overlayElement.style.visibility = "hidden"
-        overlayElement.style.opacity = 0;
+        overlayElement.classList.add("overlay--hidden")
     }
 
     addSongButton.onclick = () => {
-        // overlayElement.style.display = "block"
-        overlayElement.style.visibility = "visible"
-        overlayElement.style.opacity = 1;
+        overlayElement.classList.remove("overlay--hidden")
         document.getElementById("song-search-input").focus()
     }
 

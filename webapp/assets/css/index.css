@@ -7,13 +7,16 @@
   height: 100%;
   width: 100%;
   display: block;
-  visibility: hidden;
-  opacity: 0;
   position: fixed;
   z-index: 100;
   top: 0;
   left: 0;
   transition: visibility 0s, opacity 0.1s linear;
+}
+
+.overlay--hidden {
+  visibility: hidden;
+  opacity: 0;
 }
 
 .instant-search {
