@@ -40,8 +40,9 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 "bpm": bpm.value,
                 "time": time.value,
                 "tags": Array.from(tags.selectedOptions).map(({value}, i) => {
-                    if (i === 0) return
-                    return value
+                    if (i !== 0) {
+                        return value
+                    }
                 })
             })
 
@@ -67,10 +68,9 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 "bpm": bpm.value,
                 "time": time.value,
                 "tags": Array.from(tags.selectedOptions).map(({value}, i) => {
-                    if (i === 0) {
-                        return
+                    if (i !== 0) {
+                        return value
                     }
-                    return value
                 })
             })
 
