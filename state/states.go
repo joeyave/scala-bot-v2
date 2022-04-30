@@ -12,7 +12,6 @@ const (
 	FilterSongs
 
 	SongVoicesCreateVoice
-	SongTagsCreateTag
 )
 
 // Inline states.
@@ -40,8 +39,4 @@ const (
 	SongVoice
 	SongVoiceDeleteConfirm
 	SongVoiceDelete
-
-	SongTags
-	SongTagsAddTag
-	SongTagsCreateTagAskForName
 )

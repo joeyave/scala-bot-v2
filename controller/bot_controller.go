@@ -48,8 +48,6 @@ func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context
 		return c.searchSetlist(user.State.Index)(bot, ctx)
 	case state.SongVoicesCreateVoice:
 		return c.SongVoicesCreateVoice(user.State.Index)(bot, ctx)
-	case state.SongTagsCreateTag:
-		return c.SongTagsCreateTag(bot, ctx)
 	}
 
 	return c.search(user.State.Index)(bot, ctx)
@@ -465,12 +463,12 @@ func (c *BotController) songsAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFile
 
 				bigAlbum[i] = gotgbot.InputMediaDocument{
 					Media:   gotgbot.NamedFile{File: *reader, FileName: fmt.Sprintf("%s.pdf", song.PDF.Name)},
-					Caption: song.Caption(),
+					Caption: song.Meta(),
 				}
 			} else {
 				bigAlbum[i] = gotgbot.InputMediaDocument{
 					Media:   song.PDF.TgFileID,
-					Caption: song.Caption(),
+					Caption: song.Meta(),
 				}
 			}
 		}(i)

@@ -74,8 +74,10 @@
 <script type="text/javascript">
     const action = {{ .Action }};
     let event = JSON.parse("{{ .EventJS }}");
+
     const messageId = {{ .MessageID }};
     const chatId = {{ .ChatID }};
+    const userId = {{ .UserID }};
 </script>
 <script type="module" src="/webapp/assets/js/edit-event.js"></script>
 </body>

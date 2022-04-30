@@ -5,6 +5,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/util"
 	"github.com/klauspost/lctime"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strings"
 )
 
 type Song struct {
@@ -37,8 +38,13 @@ type PDF struct {
 	WebViewLink string `bson:"webViewLink,omitempty"`
 }
 
-func (s *Song) Caption() string {
+func (s *Song) Meta() string {
 	return fmt.Sprintf("%s, %s, %s", s.PDF.Key, s.PDF.BPM, s.PDF.Time)
+}
+
+func (s *Song) Caption() string {
+	caption := fmt.Sprintf("%s, %s", s.Meta(), strings.Join(s.Tags, ","))
+	return strings.Trim(caption, ", ")
 }
 
 type SongTagFrequencies struct {

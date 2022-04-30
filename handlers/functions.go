@@ -35,7 +35,7 @@ func SendDriveFileToUser(h *Handler, c *ext.Context, user *entity.User, driveFil
 
 			message, _, err := h.bot.EditMessageMedia(gotgbot.InputMediaDocument{
 				Media:     gotgbot.NamedFile{File: *reader, FileName: fmt.Sprintf("%s.pdf", driveFile.Name)},
-				Caption:   helpers.AddCallbackData(song.Caption()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
+				Caption:   helpers.AddCallbackData(song.Meta()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
 				ParseMode: "HTML",
 			}, &gotgbot.EditMessageMediaOpts{
 				ChatId:      c.CallbackQuery.Message.Chat.Id,
@@ -50,7 +50,7 @@ func SendDriveFileToUser(h *Handler, c *ext.Context, user *entity.User, driveFil
 				File:     *reader,
 				FileName: fmt.Sprintf("%s.pdf", driveFile.Name),
 			}, &gotgbot.SendDocumentOpts{
-				Caption:     helpers.AddCallbackData(song.Caption()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
+				Caption:     helpers.AddCallbackData(song.Meta()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
 				ParseMode:   "HTML",
 				ReplyMarkup: markup,
 			})
@@ -62,7 +62,7 @@ func SendDriveFileToUser(h *Handler, c *ext.Context, user *entity.User, driveFil
 		if c.CallbackQuery != nil {
 			message, _, err := h.bot.EditMessageMedia(gotgbot.InputMediaDocument{
 				Media:     song.PDF.TgFileID,
-				Caption:   helpers.AddCallbackData(song.Caption()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
+				Caption:   helpers.AddCallbackData(song.Meta()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
 				ParseMode: "HTML",
 			}, &gotgbot.EditMessageMediaOpts{
 				ChatId:      c.CallbackQuery.Message.Chat.Id,
@@ -73,7 +73,7 @@ func SendDriveFileToUser(h *Handler, c *ext.Context, user *entity.User, driveFil
 		} else {
 
 			message, err := h.bot.SendDocument(c.EffectiveChat.Id, song.PDF.TgFileID, &gotgbot.SendDocumentOpts{
-				Caption:     helpers.AddCallbackData(song.Caption()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
+				Caption:     helpers.AddCallbackData(song.Meta()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
 				ParseMode:   "HTML",
 				ReplyMarkup: markup,
 			})
@@ -174,12 +174,12 @@ func sendDriveFilesAlbum(h *Handler, ctx *ext.Context, user *entity.User, driveF
 
 				bigAlbum[i] = gotgbot.InputMediaDocument{
 					Media:   gotgbot.NamedFile{File: *reader, FileName: fmt.Sprintf("%s.pdf", song.PDF.Name)},
-					Caption: song.Caption(),
+					Caption: song.Meta(),
 				}
 			} else {
 				bigAlbum[i] = gotgbot.InputMediaDocument{
 					Media:   song.PDF.TgFileID,
-					Caption: song.Caption(),
+					Caption: song.Meta(),
 				}
 			}
 		}(i)

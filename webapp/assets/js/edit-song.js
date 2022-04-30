@@ -12,6 +12,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
     let lyrics = document.getElementById("lyrics")
     autosize(lyrics)
 
+    form.addEventListener("submit", (e) => e.preventDefault())
     form.addEventListener('input', function (event) {
         Telegram.WebApp.MainButton.show()
     })
@@ -38,7 +39,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 "key": key.value,
                 "bpm": bpm.value,
                 "time": time.value,
-                "tags": Array.from(tags.selectedOptions).map(({value, i}) => {
+                "tags": Array.from(tags.selectedOptions).map(({value}, i) => {
                     if (i === 0) return
                     return value
                 })
@@ -61,17 +62,19 @@ window.addEventListener('DOMContentLoaded', (e) => {
             }
 
             let data = JSON.stringify({
-                "name": name, value,
+                "name": name.value,
                 "key": key.value,
                 "bpm": bpm.value,
                 "time": time.value,
-                "tags": Array.from(tags.selectedOptions).map(({value, i}) => {
-                    if (i === 0) return
+                "tags": Array.from(tags.selectedOptions).map(({value}, i) => {
+                    if (i === 0) {
+                        return
+                    }
                     return value
                 })
             })
 
-            await fetch(`/web-app/songs/${event.id}/edit/confirm?queryId=${Telegram.WebApp.initDataUnsafe.query_id}&messageId=${messageId}&chatId=${chatId}`, {
+            await fetch(`/web-app/songs/${song.id}/edit/confirm?queryId=${Telegram.WebApp.initDataUnsafe.query_id}&messageId=${messageId}&chatId=${chatId}&userId=${userId}`, {
                 method: "POST",
                 headers: {'Content-Type': 'application/json'},
                 body: data,

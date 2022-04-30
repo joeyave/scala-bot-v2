@@ -193,10 +193,6 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoiceDeleteConfirm), botController.SongVoiceDeleteConfirm), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongVoiceDelete), botController.SongVoiceDelete), 1)
 
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongTags), botController.SongTags), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongTagsAddTag), botController.SongTagsAddTag), 1)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SongTagsCreateTagAskForName), botController.SongTagsCreateTagAskForName), 1)
-
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)

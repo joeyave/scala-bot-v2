@@ -150,7 +150,7 @@ func (s *EventService) ToHtmlStringByEvent(event entity.Event, lang string) stri
 				if err != nil {
 					return
 				}
-				songName := fmt.Sprintf("%d. <a href=\"%s\">%s</a>  (%s)", i+1, driveFile.WebViewLink, driveFile.Name, event.Songs[i].Caption())
+				songName := fmt.Sprintf("%d. <a href=\"%s\">%s</a>  (%s)", i+1, driveFile.WebViewLink, driveFile.Name, event.Songs[i].Meta())
 				songNames[i] = songName
 			}(i)
 		}

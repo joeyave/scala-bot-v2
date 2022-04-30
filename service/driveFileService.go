@@ -378,6 +378,11 @@ func (s *DriveFileService) AddLyricsPage(ID string) (*drive.File, error) {
 	return s.FindOneByID(ID)
 }
 
+func (s *DriveFileService) Rename(ID string, newName string) error {
+	_, err := s.driveRepository.Files.Update(ID, &drive.File{Name: newName}).Do()
+	return err
+}
+
 func (s *DriveFileService) ReplaceAllTextByRegex(ID string, regex *regexp.Regexp, replaceText string) (int64, error) {
 	res, err := s.driveRepository.Files.Export(ID, "text/plain").Download()
 	if err != nil {
@@ -1092,11 +1097,12 @@ func (s *DriveFileService) GetText(ID string) string {
 				}
 			}
 		}
-		//sb.WriteString("\n")
 	}
 
-	return sb.String()
+	return newLinesRegex.ReplaceAllString(sb.String(), "\n\n")
 }
+
+var newLinesRegex = regexp.MustCompile(`\n{3,}`)
 
 func composeStyleRequests(content []*docs.StructuralElement, segmentID string) []*docs.Request {
 	requests := make([]*docs.Request, 0)

@@ -92,10 +92,7 @@ func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 	if song.BandID == user.BandID {
 		keyboard = [][]gotgbot.InlineKeyboardButton{
 			{
-				{Text: txt.Get("button.edit", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")},
-			},
-			{
-				{Text: txt.Get("button.voices", lang), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())},
+				{Text: txt.Get("button.more", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")},
 			},
 		}
 
@@ -127,11 +124,12 @@ func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 	return keyboard
 }
 
-func SongEdit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
+func SongEdit(song *entity.Song, user *entity.User, chatID, messageID int64, lang string) [][]gotgbot.InlineKeyboardButton {
 
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
 			{Text: txt.Get("button.docLink", lang), Url: song.PDF.WebViewLink},
+			{Text: txt.Get("button.voices", lang), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())},
 		},
 		//{
 		//{Text: txt.Get("button.tags", lang), CallbackData: util.CallbackData(state.SongTags, song.ID.Hex())},
@@ -141,7 +139,7 @@ func SongEdit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 			{Text: txt.Get("button.style", lang), CallbackData: "todo"},
 		},
 		{
-			{Text: "Другое", WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/songs/%s/edit?userId=%d", os.Getenv("HOST"), song.ID.Hex(), user.ID)}},
+			{Text: txt.Get("button.edit", lang), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/songs/%s/edit?userId=%d&messageId=%d&chatId=%d", os.Getenv("HOST"), song.ID.Hex(), user.ID, messageID, chatID)}},
 		},
 		//{
 		//	{Text: txt.Get("button.changeBpm", lang), CallbackData: "todo"},

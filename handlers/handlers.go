@@ -769,7 +769,7 @@ func changeSongOrderHandler() (int, []HandlerFunc) {
 			}
 
 			songName := fmt.Sprintf("%d. <a href=\"%s\">%s</a>  (%s)",
-				i+1, song.PDF.WebViewLink, song.PDF.Name, song.Caption())
+				i+1, song.PDF.WebViewLink, song.PDF.Name, song.Meta())
 			songsStr += songName + "\n"
 		}
 
@@ -781,7 +781,7 @@ func changeSongOrderHandler() (int, []HandlerFunc) {
 		}
 
 		for _, song := range songs {
-			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: fmt.Sprintf("%s (%s)", song.PDF.Name, song.Caption()), CallbackData: helpers.AggregateCallbackData(state, index, song.DriveFileID)}})
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: fmt.Sprintf("%s (%s)", song.PDF.Name, song.Meta()), CallbackData: helpers.AggregateCallbackData(state, index, song.DriveFileID)}})
 		}
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: helpers.End, CallbackData: helpers.AggregateCallbackData(helpers.DeleteEventSongState, 0, "")}})
 
@@ -2586,7 +2586,7 @@ func addSongTagHandler() (int, []HandlerFunc) {
 		if c.CallbackQuery != nil {
 			_, _, err = c.EffectiveMessage.EditCaption(h.bot,
 				&gotgbot.EditMessageCaptionOpts{
-					Caption:     helpers.AddCallbackData(song.Caption()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
+					Caption:     helpers.AddCallbackData(song.Meta()+"\n"+strings.Join(song.Tags, ", "), user.State.CallbackData.String()),
 					ReplyMarkup: markup,
 					ParseMode:   "HTML",
 				})
@@ -3161,7 +3161,7 @@ func getVoicesHandler() (int, []HandlerFunc) {
 		}
 		getCaption := func() string {
 			if song != nil {
-				return song.Caption() + "\n" + strings.Join(song.Tags, ", ")
+				return song.Meta() + "\n" + strings.Join(song.Tags, ", ")
 			} else {
 				return "-"
 			}

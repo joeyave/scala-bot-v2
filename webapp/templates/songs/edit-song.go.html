@@ -57,8 +57,12 @@
 
 <script type="text/javascript">
     const action = {{ .Action }};
+
     const messageId = {{ .MessageID }};
     const chatId = {{ .ChatID }};
+    const userId = {{ .UserID }};
+
+    const song = JSON.parse("{{ .SongJS }}");
 </script>
 <script type="text/javascript" src="/webapp/assets/js/edit-song.js"></script>
 </body>

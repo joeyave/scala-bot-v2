@@ -10,8 +10,10 @@ import (
 	"github.com/joeyave/scala-bot-v2/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type WebAppController struct {
@@ -57,57 +59,6 @@ func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 		"EventNames": eventNames,
 		"EventJS":    string(eventJsonBytes),
 		"Action":     "create",
-	})
-}
-
-type Tag struct {
-	Name       string
-	IsSelected bool
-}
-
-func (h *WebAppController) CreateSong(ctx *gin.Context) {
-
-	hex := ctx.Query("userId")
-	userID, err := strconv.ParseInt(hex, 10, 64)
-	if err != nil {
-		return
-	}
-
-	user, err := h.UserService.FindOneByID(userID)
-	if err != nil {
-		return
-	}
-
-	allTags, err := h.SongService.GetTags(user.BandID)
-	if err != nil {
-		return
-	}
-
-	var songTags []*Tag
-	for _, tag := range allTags {
-		songTags = append(songTags, &Tag{Name: tag, IsSelected: false})
-	}
-	//band, err := h.BandService.FindOneByID(bandID)
-	//if err != nil {
-	//	return
-	//}
-
-	//event := &entity.Event{
-	//	BandID: bandID,
-	//	Band:   band,
-	//}
-	//eventJsonBytes, err := json.Marshal(event)
-	//if err != nil {
-	//	return
-	//}
-
-	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
-		//"EventJS":    string(eventJsonBytes),
-		"Keys":   valuesForSelect("?", keys),
-		"BPMs":   bpmsForSelect("?"),
-		"Times":  valuesForSelect("?", times),
-		"Tags":   songTags,
-		"Action": "create",
 	})
 }
 
@@ -205,18 +156,39 @@ func (h *WebAppController) EditEventConfirm(ctx *gin.Context) {
 		ReplyMarkup:           markup,
 	})
 
-	//_, err = h.EventService.FindOneByID(eventID)
-	//if err != nil {
-	//	return
-	//}
-	//
-	//queryID := ctx.Query("queryId")
-	//
-	//h.Bot.AnswerWebAppQuery(queryID, nil) // todo
-	//
-	//fmt.Println("got callback from web app")
-
 	ctx.Status(http.StatusOK)
+}
+
+func (h *WebAppController) CreateSong(ctx *gin.Context) {
+
+	hex := ctx.Query("userId")
+	userID, err := strconv.ParseInt(hex, 10, 64)
+	if err != nil {
+		return
+	}
+
+	user, err := h.UserService.FindOneByID(userID)
+	if err != nil {
+		return
+	}
+
+	allTags, err := h.SongService.GetTags(user.BandID)
+	if err != nil {
+		return
+	}
+
+	var songTags []*SelectEntity
+	for _, tag := range allTags {
+		songTags = append(songTags, &SelectEntity{Name: tag, IsSelected: false})
+	}
+
+	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
+		"Keys":   valuesForSelect("?", keys, "Key"),
+		"BPMs":   valuesForSelect("?", bpms, "BPM"),
+		"Times":  valuesForSelect("?", times, "Time"),
+		"Tags":   songTags,
+		"Action": "create",
+	})
 }
 
 func (h *WebAppController) EditSong(ctx *gin.Context) {
@@ -257,7 +229,7 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		return
 	}
 
-	var songTags []*Tag
+	var songTags []*SelectEntity
 	for _, tag := range allTags {
 		isSelected := false
 		for _, songTag := range song.Tags {
@@ -266,7 +238,7 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 				break
 			}
 		}
-		songTags = append(songTags, &Tag{Name: tag, IsSelected: isSelected})
+		songTags = append(songTags, &SelectEntity{Name: tag, IsSelected: isSelected})
 	}
 
 	lyrics := h.DriveFileService.GetText(song.DriveFileID)
@@ -274,23 +246,43 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
 		"MessageID": messageID,
 		"ChatID":    chatID,
+		"UserID":    userID,
 
-		"Keys":   valuesForSelect(strings.TrimSpace(song.PDF.Key), keys),
-		"BPMs":   bpmsForSelect(strings.TrimSpace(song.PDF.BPM)),
-		"Times":  valuesForSelect(strings.TrimSpace(song.PDF.Time), times),
+		"Keys":   valuesForSelect(strings.TrimSpace(song.PDF.Key), keys, "Key"),
+		"BPMs":   valuesForSelect(strings.TrimSpace(song.PDF.BPM), bpms, "BPM"),
+		"Times":  valuesForSelect(strings.TrimSpace(song.PDF.Time), times, "Time"),
 		"Tags":   songTags,
 		"Lyrics": lyrics,
 
 		"Song":   song,
 		"SongJS": string(songJsonBytes),
+
 		"Action": "edit",
 	})
 }
 
+type EditSongData struct {
+	Name string   `json:"name"`
+	Key  string   `json:"key"`
+	BPM  string   `json:"bpm"`
+	Time string   `json:"time"`
+	Tags []string `json:"tags"`
+}
+
+var keyRegex = regexp.MustCompile(`(?i)key:(.*?);`)
+var bpmRegex = regexp.MustCompile(`(?i)bpm:(.*?);`)
+var timeRegex = regexp.MustCompile(`(?i)time:(.*?);`)
+
 func (h *WebAppController) EditSongConfirm(ctx *gin.Context) {
 
 	hex := ctx.Param("id")
-	eventID, err := primitive.ObjectIDFromHex(hex)
+	songID, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return
+	}
+
+	userIDStr := ctx.Query("userId")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		return
 	}
@@ -306,61 +298,105 @@ func (h *WebAppController) EditSongConfirm(ctx *gin.Context) {
 		return
 	}
 
-	var event *entity.Event
-	err = ctx.ShouldBindJSON(&event)
-	if err != nil {
-		return
-	}
-	event.ID = eventID
-
-	updatedEvent, err := h.EventService.UpdateOne(*event)
+	var data *EditSongData
+	err = ctx.ShouldBindJSON(&data)
 	if err != nil {
 		return
 	}
 
-	html := h.EventService.ToHtmlStringByEvent(*updatedEvent, "ru")
+	song, err := h.SongService.FindOneByID(songID)
 	if err != nil {
 		return
 	}
 
-	user, err := h.UserService.FindOneByID(chatID)
+	song.Tags = data.Tags
+
+	if song.PDF.Name != data.Name {
+		err := h.DriveFileService.Rename(song.DriveFileID, data.Name)
+		if err != nil {
+			return
+		}
+		song.PDF.Name = data.Name
+	}
+
+	if song.PDF.Key != data.Key {
+		_, err := h.DriveFileService.ReplaceAllTextByRegex(song.DriveFileID, keyRegex, fmt.Sprintf("KEY: %s;", data.Key))
+		if err != nil {
+			return
+		}
+		song.PDF.Key = data.Key
+	}
+
+	if song.PDF.BPM != data.BPM {
+		_, err := h.DriveFileService.ReplaceAllTextByRegex(song.DriveFileID, bpmRegex, fmt.Sprintf("BPM: %s;", data.BPM))
+		if err != nil {
+			return
+		}
+		song.PDF.BPM = data.BPM
+	}
+
+	if song.PDF.Time != data.Time {
+		_, err := h.DriveFileService.ReplaceAllTextByRegex(song.DriveFileID, timeRegex, fmt.Sprintf("TIME: %s;", data.Time))
+		if err != nil {
+			return
+		}
+		song.PDF.Time = data.Time
+	}
+
+	fakeTime, _ := time.Parse("2006", "2006")
+	song.PDF.ModifiedTime = fakeTime.Format(time.RFC3339)
+
+	song, err = h.SongService.UpdateOne(*song)
 	if err != nil {
 		return
 	}
 
-	markup := gotgbot.InlineKeyboardMarkup{}
-	markup.InlineKeyboard = keyboard.EventEdit(event, user, chatID, messageID, "ru")
+	user, err := h.UserService.FindOneByID(userID)
+	if err != nil {
+		return
+	}
 
 	user.CallbackCache = entity.CallbackCache{
-		MessageID: messageID,
 		ChatID:    chatID,
+		MessageID: messageID,
+		UserID:    userID,
 	}
-	text := user.CallbackCache.AddToText(html)
+	caption := user.CallbackCache.AddToText(song.Caption())
 
-	_, _, err = h.Bot.EditMessageText(text, &gotgbot.EditMessageTextOpts{
-		ChatId:                chatID,
-		MessageId:             messageID,
-		ParseMode:             "HTML",
-		DisableWebPagePreview: true,
-		ReplyMarkup:           markup,
+	reader, err := h.DriveFileService.DownloadOneByID(song.DriveFileID)
+	if err != nil {
+		return
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: keyboard.SongEdit(song, user, chatID, messageID, "ru"),
+	}
+
+	_, _, err = h.Bot.EditMessageMedia(gotgbot.InputMediaDocument{
+		Media: gotgbot.NamedFile{
+			File:     *reader,
+			FileName: fmt.Sprintf("%s.pdf", song.PDF.Name),
+		},
+		Caption:   caption,
+		ParseMode: "HTML",
+	}, &gotgbot.EditMessageMediaOpts{
+		ChatId:      chatID,
+		MessageId:   messageID,
+		ReplyMarkup: markup,
 	})
-
-	//_, err = h.EventService.FindOneByID(eventID)
-	//if err != nil {
-	//	return
-	//}
-	//
-	//queryID := ctx.Query("queryId")
-	//
-	//h.Bot.AnswerWebAppQuery(queryID, nil) // todo
-	//
-	//fmt.Println("got callback from web app")
 
 	ctx.Status(http.StatusOK)
 }
 
 var keys = []string{"C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"}
 var times = []string{"4/4", "3/4", "6/8", "2/2"}
+var bpms []string
+
+func init() {
+	for i := 60; i < 180; i++ {
+		bpms = append(bpms, strconv.Itoa(i))
+	}
+}
 
 type SelectEntity struct {
 	Name       string
@@ -368,50 +404,28 @@ type SelectEntity struct {
 	IsSelected bool
 }
 
-func valuesForSelect(songKey string, values []string) []*SelectEntity {
-	var keysForSelect []*SelectEntity
-
-	exists := false
-	for _, key := range values {
-		if songKey == key {
-			exists = true
-			break
-		}
-	}
-	if !exists {
-		if songKey == "" || songKey == "?" {
-			keysForSelect = append(keysForSelect, &SelectEntity{Name: "Key", Value: "?", IsSelected: true})
-		} else {
-			keysForSelect = append(keysForSelect, &SelectEntity{Name: songKey, Value: songKey, IsSelected: true})
-		}
+func valuesForSelect(songVal string, values []string, name string) []*SelectEntity {
+	keysForSelect := []*SelectEntity{
+		{
+			Name:       name,
+			Value:      "?",
+			IsSelected: false,
+		},
 	}
 
+	somethingWasSelected := false
 	for _, key := range values {
-		keysForSelect = append(keysForSelect, &SelectEntity{Name: key, Value: key, IsSelected: key == songKey})
+		if key == songVal {
+			somethingWasSelected = true
+		}
+		keysForSelect = append(keysForSelect, &SelectEntity{Name: key, Value: key, IsSelected: key == songVal})
+	}
+
+	if !somethingWasSelected && songVal == "" || songVal == "?" {
+		keysForSelect[0].IsSelected = true
+	} else if !somethingWasSelected {
+		keysForSelect = append(keysForSelect, &SelectEntity{Name: songVal, Value: songVal, IsSelected: true})
 	}
 
 	return keysForSelect
-}
-
-func bpmsForSelect(songBPM string) []*SelectEntity {
-	var bpmsForSelect []*SelectEntity
-
-	songBPMInt, err := strconv.Atoi(songBPM)
-	if err != nil || songBPMInt < 60 || songBPMInt > 180 {
-		bpmsForSelect = append(bpmsForSelect, &SelectEntity{
-			IsSelected: true,
-			Name:       "BPM",
-			Value:      "?",
-		})
-	}
-
-	for i := 60; i < 180; i++ {
-		bpmsForSelect = append(bpmsForSelect, &SelectEntity{
-			IsSelected: songBPMInt == i,
-			Name:       strconv.Itoa(i),
-			Value:      strconv.Itoa(i),
-		})
-	}
-
-	return bpmsForSelect
 }
