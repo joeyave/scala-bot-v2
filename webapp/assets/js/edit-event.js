@@ -57,7 +57,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                         }
                     }
                     if (!exists) {
-                        songsElement.insertAdjacentHTML("afterbegin",
+                        songsElement.insertAdjacentHTML("beforeend",
                             `<div class="item">
                             <span class="text" data-song-id=${data.song.id}>${result.name}</span>
                             <i id="delete-song-icon" class="fas fa-trash-alt"></i>

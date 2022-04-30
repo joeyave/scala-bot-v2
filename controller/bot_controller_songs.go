@@ -175,7 +175,6 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 		switch index {
 		case 0:
 			{
-
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
 				if ctx.EffectiveMessage.Text == txt.Get("button.prev", ctx.EffectiveUser.LanguageCode) && user.Cache.NextPageToken.GetPrevValue() != "" {
