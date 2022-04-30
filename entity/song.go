@@ -10,17 +10,17 @@ import (
 type Song struct {
 	ID primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 
-	DriveFileID string `bson:"driveFileId,omitempty" json:"-"`
+	DriveFileID string `bson:"driveFileId,omitempty" json:"driveFileId"`
 
-	BandID primitive.ObjectID `bson:"bandId,omitempty" json:"-"`
-	Band   *Band              `bson:"band,omitempty" json:"-"`
+	BandID primitive.ObjectID `bson:"bandId,omitempty" json:"bandId"`
+	Band   *Band              `bson:"band,omitempty" json:"band"`
 
 	PDF PDF `bson:"pdf,omitempty" json:"pdf"`
 
 	Voices []*Voice `bson:"voices,omitempty" json:"-"`
 
 	Likes []int64  `bson:"likes,omitempty" json:"-"`
-	Tags  []string `bson:"tags,omitempty" json:"-"`
+	Tags  []string `bson:"tags" json:"tags"`
 }
 
 type PDF struct {

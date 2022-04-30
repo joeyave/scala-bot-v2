@@ -13,5 +13,11 @@
     <orderEntry type="library" name="Sortable" level="application" />
     <orderEntry type="library" name="instantsearch.js" level="application" />
     <orderEntry type="library" name="algoliasearch" level="application" />
+    <orderEntry type="library" name="tinymce" level="application" />
+    <orderEntry type="library" name="@yaireo" level="application" />
+    <orderEntry type="library" name="@yaireo/tagify" level="application" />
+    <orderEntry type="library" name="tags" level="application" />
+    <orderEntry type="library" name="autosize.js" level="application" />
+    <orderEntry type="library" name="normalize.css" level="application" />
   </component>
 </module>

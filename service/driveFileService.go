@@ -161,18 +161,21 @@ func (s *DriveFileService) CreateOne(newFile *drive.File, lyrics string, key str
 			}
 		}
 
+		// https://stackoverflow.com/questions/71749779/consent-is-required-to-transfer-ownership-of-a-file-to-another-user-google-driv
+		// https://developers.google.com/drive/api/guides/manage-sharing
 		if folderOwnerPermission != nil {
 			permission := &drive.Permission{
 				EmailAddress: folderOwnerPermission.EmailAddress,
-				Role:         "owner",
+				Role:         "writer",
+				PendingOwner: true,
 				Type:         "user",
 			}
-			_, err = s.driveRepository.Permissions.
+			s.driveRepository.Permissions.
 				Create(newFile.Id, permission).
-				TransferOwnership(true).Do()
-			if err != nil {
-				return nil, err
-			}
+				TransferOwnership(false).Do()
+			//if err != nil {
+			//	return nil, err
+			//}
 		}
 	}
 
@@ -1066,6 +1069,33 @@ func composeCloneWithoutChordsRequests(content []*docs.StructuralElement, index 
 	}
 
 	return requests
+}
+
+func (s *DriveFileService) GetText(ID string) string {
+
+	doc, err := s.docsRepository.Documents.Get(ID).Do()
+	if err != nil {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	for _, item := range doc.Body.Content {
+		if item.SectionBreak != nil && item.SectionBreak.SectionStyle != nil && item.SectionBreak.SectionStyle.SectionType == "NEXT_PAGE" {
+			break
+		}
+
+		if item.Paragraph != nil && item.Paragraph.Elements != nil {
+			for _, element := range item.Paragraph.Elements {
+				if element.TextRun != nil && element.TextRun.Content != "" {
+					sb.WriteString(element.TextRun.Content)
+				}
+			}
+		}
+		//sb.WriteString("\n")
+	}
+
+	return sb.String()
 }
 
 func composeStyleRequests(content []*docs.StructuralElement, segmentID string) []*docs.Request {

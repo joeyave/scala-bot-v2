@@ -94,6 +94,9 @@ func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 			{
 				{Text: txt.Get("button.edit", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")},
 			},
+			{
+				{Text: txt.Get("button.voices", lang), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())},
+			},
 		}
 
 		liked := false
@@ -130,18 +133,20 @@ func SongEdit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 		{
 			{Text: txt.Get("button.docLink", lang), Url: song.PDF.WebViewLink},
 		},
-		{
-			{Text: txt.Get("button.voices", lang), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())},
-			{Text: txt.Get("button.tags", lang), CallbackData: util.CallbackData(state.SongTags, song.ID.Hex())},
-		},
+		//{
+		//{Text: txt.Get("button.tags", lang), CallbackData: util.CallbackData(state.SongTags, song.ID.Hex())},
+		//},
 		{
 			{Text: txt.Get("button.transpose", lang), CallbackData: "todo"},
 			{Text: txt.Get("button.style", lang), CallbackData: "todo"},
 		},
 		{
-			{Text: txt.Get("button.changeBpm", lang), CallbackData: "todo"},
-			{Text: txt.Get("button.lyrics", lang), CallbackData: "todo"},
+			{Text: "Другое", WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/songs/%s/edit?userId=%d", os.Getenv("HOST"), song.ID.Hex(), user.ID)}},
 		},
+		//{
+		//	{Text: txt.Get("button.changeBpm", lang), CallbackData: "todo"},
+		//	{Text: txt.Get("button.lyrics", lang), CallbackData: "todo"},
+		//},
 		{
 			{Text: txt.Get("button.back", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":init")},
 		},

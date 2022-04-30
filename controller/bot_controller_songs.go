@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -15,8 +16,64 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/api/drive/v3"
+	"os"
 	"strings"
 )
+
+type CreateSongData struct {
+	Name   string   `json:"name"`
+	Key    string   `json:"key"`
+	BPM    string   `json:"bpm"`
+	Time   string   `json:"time"`
+	Lyrics string   `json:"lyrics"`
+	Tags   []string `json:"tags"`
+}
+
+func (c *BotController) CreateSong(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	var data *CreateSongData
+	err := json.Unmarshal([]byte(ctx.EffectiveMessage.WebAppData.Data), &data)
+	if err != nil {
+		return err
+	}
+
+	user := ctx.Data["user"].(*entity.User)
+
+	file := &drive.File{
+		Name:     data.Name,
+		Parents:  []string{user.Band.DriveFolderID},
+		MimeType: "application/vnd.google-apps.document",
+	}
+	driveFile, err := c.DriveFileService.CreateOne(file, data.Lyrics, data.Key, data.BPM, data.Time)
+	if err != nil {
+		return err
+	}
+
+	driveFile, err = c.DriveFileService.StyleOne(driveFile.Id)
+	if err != nil {
+		return err
+	}
+
+	c.SongService.UpdateOne(entity.Song{
+		DriveFileID: driveFile.Id,
+		BandID:      user.BandID,
+		PDF: entity.PDF{
+			Name:        data.Name,
+			Key:         data.Key,
+			BPM:         data.BPM,
+			Time:        data.Time,
+			WebViewLink: driveFile.WebViewLink,
+		},
+		Tags: data.Tags,
+	})
+
+	err = c.song(bot, ctx, driveFile.Id)
+	if err != nil {
+		return err
+	}
+
+	return c.GetSongs(0)(bot, ctx)
+}
 
 func (c *BotController) song(bot *gotgbot.Bot, ctx *ext.Context, driveFileID string) error {
 
@@ -104,14 +161,6 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 		switch index {
 		case 0:
 			{
-				// todo
-				if ctx.EffectiveMessage.Text == txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode) {
-					user.State = entity.State{
-						Name: helpers.CreateSongState,
-					}
-					return nil
-					//return c.OldHandler.Enter(ctx, user)
-				}
 
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
@@ -146,7 +195,8 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 				}
 
 				markup.Keyboard = append(markup.Keyboard, keyboard.GetSongsStateFilterButtons(ctx.EffectiveUser.LanguageCode))
-				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode)}})
+				markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/songs/create?userId=%d", os.Getenv("HOST"), user.ID)}}})
+				//markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/songs/create?userId=%d", os.Getenv("HOST"), user.ID)}}})
 
 				likedSongs, likedSongErr := c.SongService.FindManyLiked(user.ID)
 
@@ -176,14 +226,6 @@ func (c *BotController) GetSongs(index int) handlers.Response {
 		case 1:
 			{
 				switch ctx.EffectiveMessage.Text {
-
-				// todo
-				case txt.Get("button.createDoc", ctx.EffectiveUser.LanguageCode):
-					user.State = entity.State{
-						Name: helpers.CreateSongState,
-					}
-					return nil
-					//return c.OldHandler.Enter(ctx, user)
 
 				case txt.Get("button.next", ctx.EffectiveUser.LanguageCode), txt.Get("button.prev", ctx.EffectiveUser.LanguageCode):
 					return c.GetSongs(0)(bot, ctx)
@@ -344,7 +386,7 @@ func (c *BotController) filterSongs(index int) handlers.Response {
 			{
 				ctx.EffectiveChat.SendAction(bot, "typing")
 
-				tags, err := c.SongService.GetTags()
+				tags, err := c.SongService.GetTags(user.BandID)
 				if err != nil {
 					return err
 				}
@@ -780,12 +822,15 @@ func (c *BotController) SongTags(bot *gotgbot.Bot, ctx *ext.Context) error {
 }
 
 func (c *BotController) songTags(bot *gotgbot.Bot, ctx *ext.Context, songID primitive.ObjectID) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
 	song, err := c.SongService.FindOneByID(songID)
 	if err != nil {
 		return err
 	}
 
-	tags, err := c.SongService.GetTags()
+	tags, err := c.SongService.GetTags(user.BandID)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+{{template "global/header" .}}
+
+<body>
+
+<div class="container">
+    <form id="form">
+        <div class="mt-2 mb-3">
+            <input type="text" class="form-control header-input" id="name" list="suggestions" placeholder="Название"
+                   value="{{ .Song.PDF.Name }}"
+                   autocomplete="off" required>
+            <select id="key">
+                {{ range $i, $key := .Keys }}
+                    {{ if $key.IsSelected }}
+                        <option selected value="{{ $key.Value }}">{{ $key.Name }}</option>
+                    {{ else}}
+                        <option value="{{ $key.Value }}">{{ $key.Name }}</option>
+                    {{ end }}
+                {{ end }}
+            </select>
+            <select id="bpm">
+                {{ range $i, $key := .BPMs }}
+                    {{ if $key.IsSelected }}
+                        <option selected value="{{ $key.Value }}">{{ $key.Name }}</option>
+                    {{ else}}
+                        <option value="{{ $key.Value }}">{{ $key.Name }}</option>
+                    {{ end }}
+                {{ end }}
+            </select>
+            <select id="time">
+                {{ range $i, $key := .Times }}
+                    {{ if $key.IsSelected }}
+                        <option selected value="{{ $key.Value }}">{{ $key.Name }}</option>
+                    {{ else}}
+                        <option value="{{ $key.Value }}">{{ $key.Name }}</option>
+                    {{ end }}
+                {{ end }}
+            </select>
+            <select id="tags" multiple>
+                <option selected disabled hidden>Теги</option>
+                {{ range $i, $tag := .Tags }}
+                    {{ if $tag.IsSelected}}
+                        <option value="{{ $tag.Name }}" selected>{{$tag.Name}}</option>
+                    {{else}}
+                        <option value="{{ $tag.Name }}">{{$tag.Name}}</option>
+                    {{end}}
+                {{ end }}
+            </select>
+        </div>
+        <div>
+            <textarea id="lyrics" class="form-control lyrics-input">{{ .Lyrics }}</textarea>
+        </div>
+    </form>
+
+</div>
+
+<script type="text/javascript">
+    const action = {{ .Action }};
+    const messageId = {{ .MessageID }};
+    const chatId = {{ .ChatID }};
+</script>
+<script type="text/javascript" src="/webapp/assets/js/edit-song.js"></script>
+</body>
+</html>

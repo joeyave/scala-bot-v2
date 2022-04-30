@@ -494,10 +494,11 @@ func (r *SongRepository) findWithExtra(m bson.M, opts ...bson.M) ([]*entity.Song
 	return songs, err
 }
 
-func (r *SongRepository) GetTags() ([]string, error) {
+func (r *SongRepository) GetTags(bandID primitive.ObjectID) ([]string, error) {
 	collection := r.mongoClient.Database(os.Getenv("MONGODB_DATABASE_NAME")).Collection("songs")
 
 	pipeline := bson.A{
+		bson.M{"$match": bson.M{"bandId": bandID}},
 		bson.M{"$unwind": "$tags"},
 		bson.M{"$sortByCount": "$tags"},
 	}

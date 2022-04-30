@@ -122,10 +122,16 @@ func main() {
 		RoleService:       roleService,
 	}
 	webAppController := controller.WebAppController{
-		EventService: eventService,
-		UserService:  userService,
-		BandService:  bandService,
-		Bot:          bot,
+		Bot: bot,
+
+		UserService:       userService,
+		DriveFileService:  driveFileService,
+		SongService:       songService,
+		VoiceService:      voiceService,
+		BandService:       bandService,
+		MembershipService: membershipService,
+		EventService:      eventService,
+		RoleService:       roleService,
 	}
 	driveFileController := controller.DriveFileController{
 		DriveFileService: driveFileService,
@@ -162,6 +168,9 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.WebAppData != nil && msg.WebAppData.ButtonText == txt.Get("button.createEvent", msg.From.LanguageCode)
 	}, botController.CreateEvent), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.WebAppData != nil && msg.WebAppData.ButtonText == txt.Get("button.createDoc", msg.From.LanguageCode)
+	}, botController.CreateSong), 1)
 
 	// Inline keyboard.
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventCB), botController.EventCB), 1)
@@ -199,6 +208,13 @@ func main() {
 		"hex": func(id primitive.ObjectID) string {
 			return id.Hex()
 		},
+		"seq": func(from, to int) []int {
+			var items []int
+			for i := from; i < to; i++ {
+				items = append(items, i)
+			}
+			return items
+		},
 	})
 
 	router.LoadHTMLGlob("webapp/templates/**/*.go.html")
@@ -206,9 +222,13 @@ func main() {
 
 	router.Use()
 	router.GET("/web-app/events/create", webAppController.CreateEvent)
+	router.GET("/web-app/songs/create", webAppController.CreateSong)
 
 	router.GET("/web-app/events/:id/edit", webAppController.EditEvent)
 	router.POST("/web-app/events/:id/edit/confirm", webAppController.EditEventConfirm)
+
+	router.GET("/web-app/songs/:id/edit", webAppController.EditSong)
+	router.POST("/web-app/songs/:id/edit/confirm", webAppController.EditSongConfirm)
 
 	router.GET("/api/drive-files/search", driveFileController.Search)
 	router.GET("/api/songs/find-by-drive-file-id", driveFileController.FindByDriveFileID)
