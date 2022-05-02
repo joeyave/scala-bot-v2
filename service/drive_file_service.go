@@ -18,14 +18,14 @@ import (
 )
 
 type DriveFileService struct {
-	driveRepository *drive.Service
-	docsRepository  *docs.Service
+	driveClient    *drive.Service
+	docsRepository *docs.Service
 }
 
 func NewDriveFileService(driveRepository *drive.Service, docsRepository *docs.Service) *DriveFileService {
 	return &DriveFileService{
-		driveRepository: driveRepository,
-		docsRepository:  docsRepository,
+		driveClient:    driveRepository,
+		docsRepository: docsRepository,
 	}
 }
 
@@ -33,7 +33,7 @@ func (s *DriveFileService) FindAllByFolderID(folderID string, nextPageToken stri
 
 	q := fmt.Sprintf(`trashed = false and mimeType = 'application/vnd.google-apps.document' and '%s' in parents`, folderID)
 
-	res, err := s.driveRepository.Files.List().
+	res, err := s.driveClient.Files.List().
 		Q(q).
 		Fields("nextPageToken, files(id, name, modifiedTime, webViewLink, parents)").
 		PageSize(helpers.SongsPageSize).PageToken(nextPageToken).Do()
@@ -56,7 +56,7 @@ func (s *DriveFileService) FindSomeByFullTextAndFolderID(name string, folderID s
 		q += fmt.Sprintf(` and '%s' in parents`, folderID)
 	}
 
-	res, err := s.driveRepository.Files.List().
+	res, err := s.driveClient.Files.List().
 		// Use this for precise search.
 		// Q(fmt.Sprintf("fullText contains '\"%s\"'", name)).
 		Q(q).
@@ -81,7 +81,7 @@ func (s *DriveFileService) FindOneByNameAndFolderID(name string, folderID string
 		q += fmt.Sprintf(` and '%s' in parents`, folderID)
 	}
 
-	res, err := s.driveRepository.Files.List().
+	res, err := s.driveClient.Files.List().
 		Q(q).
 		Fields("nextPageToken, files(id, name, modifiedTime, webViewLink, parents)").
 		PageSize(1).Do()
@@ -101,7 +101,7 @@ func (s *DriveFileService) FindOneByID(ID string) (*drive.File, error) {
 
 	var driveFile *drive.File
 	err := retrier.Run(func() error {
-		_driveFile, err := s.driveRepository.Files.Get(ID).Fields("id, name, modifiedTime, webViewLink, parents").Do()
+		_driveFile, err := s.driveClient.Files.Get(ID).Fields("id, name, modifiedTime, webViewLink, parents").Do()
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func (s *DriveFileService) FindManyByIDs(IDs []string) ([]*drive.File, error) {
 }
 
 func (s *DriveFileService) CreateOne(newFile *drive.File, lyrics string, key string, BPM string, time string) (*drive.File, error) {
-	newFile, err := s.driveRepository.Files.
+	newFile, err := s.driveClient.Files.
 		Create(newFile).
 		Fields("id, name, modifiedTime, webViewLink, parents").
 		Do()
@@ -146,7 +146,7 @@ func (s *DriveFileService) CreateOne(newFile *drive.File, lyrics string, key str
 
 	if len(newFile.Parents) > 0 {
 		// TODO: use pagination here.
-		folderPermissionsList, err := s.driveRepository.Permissions.
+		folderPermissionsList, err := s.driveClient.Permissions.
 			List(newFile.Parents[0]).
 			Fields("*").
 			PageSize(100).Do()
@@ -170,7 +170,7 @@ func (s *DriveFileService) CreateOne(newFile *drive.File, lyrics string, key str
 				PendingOwner: true,
 				Type:         "user",
 			}
-			s.driveRepository.Permissions.
+			s.driveClient.Permissions.
 				Create(newFile.Id, permission).
 				TransferOwnership(false).Do()
 			//if err != nil {
@@ -256,7 +256,7 @@ func (s *DriveFileService) CreateOne(newFile *drive.File, lyrics string, key str
 }
 
 func (s *DriveFileService) CloneOne(fileToCloneID string, newFile *drive.File) (*drive.File, error) {
-	newFile, err := s.driveRepository.Files.
+	newFile, err := s.driveClient.Files.
 		Copy(fileToCloneID, newFile).
 		Fields("id, name, modifiedTime, webViewLink, parents").
 		Do()
@@ -269,7 +269,7 @@ func (s *DriveFileService) CloneOne(fileToCloneID string, newFile *drive.File) (
 	}
 
 	// TODO: use pagination here.
-	folderPermissionsList, err := s.driveRepository.Permissions.
+	folderPermissionsList, err := s.driveClient.Permissions.
 		List(newFile.Parents[0]).
 		Fields("*").
 		PageSize(100).Do()
@@ -290,7 +290,7 @@ func (s *DriveFileService) CloneOne(fileToCloneID string, newFile *drive.File) (
 			Role:         "owner",
 			Type:         "user",
 		}
-		_, err = s.driveRepository.Permissions.
+		_, err = s.driveClient.Permissions.
 			Create(newFile.Id, permission).
 			TransferOwnership(true).Do()
 		if err != nil {
@@ -306,7 +306,7 @@ func (s *DriveFileService) DownloadOneByID(ID string) (*io.Reader, error) {
 
 	var reader io.Reader
 	err := retrier.Run(func() error {
-		res, err := s.driveRepository.Files.Export(ID, "application/pdf").Download()
+		res, err := s.driveClient.Files.Export(ID, "application/pdf").Download()
 		if err != nil {
 			return err
 		}
@@ -379,12 +379,12 @@ func (s *DriveFileService) AddLyricsPage(ID string) (*drive.File, error) {
 }
 
 func (s *DriveFileService) Rename(ID string, newName string) error {
-	_, err := s.driveRepository.Files.Update(ID, &drive.File{Name: newName}).Do()
+	_, err := s.driveClient.Files.Update(ID, &drive.File{Name: newName}).Do()
 	return err
 }
 
 func (s *DriveFileService) ReplaceAllTextByRegex(ID string, regex *regexp.Regexp, replaceText string) (int64, error) {
-	res, err := s.driveRepository.Files.Export(ID, "text/plain").Download()
+	res, err := s.driveClient.Files.Export(ID, "text/plain").Download()
 	if err != nil {
 		return 0, err
 	}
@@ -578,7 +578,7 @@ func (s *DriveFileService) GetMetadata(ID string) (string, string, string) {
 
 	var reader io.Reader
 	err := retrier.Run(func() error {
-		res, err := s.driveRepository.Files.Export(ID, "text/plain").Download()
+		res, err := s.driveClient.Files.Export(ID, "text/plain").Download()
 		if err != nil {
 			return err
 		}
@@ -1076,30 +1076,58 @@ func composeCloneWithoutChordsRequests(content []*docs.StructuralElement, index 
 	return requests
 }
 
-func (s *DriveFileService) GetText(ID string) string {
+//func (s *DriveFileService) GetText(ID string) string {
+//
+//	doc, err := s.docsRepository.Documents.Get(ID).Do()
+//	if err != nil {
+//		return ""
+//	}
+//
+//	var sb strings.Builder
+//
+//	for _, item := range doc.Body.Content {
+//		if item.SectionBreak != nil && item.SectionBreak.SectionStyle != nil && item.SectionBreak.SectionStyle.SectionType == "NEXT_PAGE" {
+//			break
+//		}
+//
+//		if item.Paragraph != nil && item.Paragraph.Elements != nil {
+//			for _, element := range item.Paragraph.Elements {
+//				if element.TextRun != nil && element.TextRun.Content != "" {
+//					sb.WriteString(element.TextRun.Content)
+//				}
+//			}
+//		}
+//	}
+//
+//	return newLinesRegex.ReplaceAllString(sb.String(), "\n\n")
+//}
 
-	doc, err := s.docsRepository.Documents.Get(ID).Do()
+func (s *DriveFileService) GetText(ID string) io.Reader {
+
+	retrier := retry.NewRetrier(5, 100*time.Millisecond, time.Second)
+
+	var reader io.Reader
+	err := retrier.Run(func() error {
+		res, err := s.driveClient.Files.Export(ID, "text/html").Download()
+		if err != nil {
+			return err
+		}
+
+		reader = res.Body
+
+		return nil
+	})
 	if err != nil {
-		return ""
+		return nil
 	}
 
-	var sb strings.Builder
+	//var html string
+	//b, err := ioutil.ReadAll(reader)
+	//if err == nil {
+	//	html = string(b)
+	//}
 
-	for _, item := range doc.Body.Content {
-		if item.SectionBreak != nil && item.SectionBreak.SectionStyle != nil && item.SectionBreak.SectionStyle.SectionType == "NEXT_PAGE" {
-			break
-		}
-
-		if item.Paragraph != nil && item.Paragraph.Elements != nil {
-			for _, element := range item.Paragraph.Elements {
-				if element.TextRun != nil && element.TextRun.Content != "" {
-					sb.WriteString(element.TextRun.Content)
-				}
-			}
-		}
-	}
-
-	return newLinesRegex.ReplaceAllString(sb.String(), "\n\n")
+	return reader
 }
 
 var newLinesRegex = regexp.MustCompile(`\n{3,}`)

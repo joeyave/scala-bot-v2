@@ -118,8 +118,6 @@ class InstantSearch {
 
         url.searchParams.set(this.options.queryParam, query);
 
-        console.log(url)
-
         this.setLoading(true);
 
         return fetch(url, {
@@ -133,7 +131,6 @@ class InstantSearch {
                 return response.json();
             })
             .then((responseData) => {
-                console.log(responseData);
 
                 return this.options.responseParser(responseData);
             })

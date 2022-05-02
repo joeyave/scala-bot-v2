@@ -19,5 +19,10 @@
     <orderEntry type="library" name="tags" level="application" />
     <orderEntry type="library" name="autosize.js" level="application" />
     <orderEntry type="library" name="normalize.css" level="application" />
+    <orderEntry type="library" name="jquery" level="application" />
+    <orderEntry type="library" name="textfit" level="application" />
+    <orderEntry type="library" name="autosize.js" level="application" />
+    <orderEntry type="library" name="Sortable" level="application" />
+    <orderEntry type="library" name="font-awesome" level="application" />
   </component>
 </module>

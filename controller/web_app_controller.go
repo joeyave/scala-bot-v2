@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/gin-gonic/gin"
@@ -9,6 +11,9 @@ import (
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/net/html"
+	"html/template"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -194,7 +199,6 @@ func (h *WebAppController) CreateSong(ctx *gin.Context) {
 func (h *WebAppController) EditSong(ctx *gin.Context) {
 
 	hex := ctx.Param("id")
-	fmt.Print(hex)
 	songID, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
 		return
@@ -243,6 +247,18 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 
 	lyrics := h.DriveFileService.GetText(song.DriveFileID)
 
+	start := time.Now()
+	doc, err := html.Parse(lyrics)
+	if err != nil {
+		return
+	}
+
+	bn, err := Body(doc)
+	if err != nil {
+		return
+	}
+	body := renderNode(bn)
+	fmt.Println(time.Since(start).String())
 	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
 		"MessageID": messageID,
 		"ChatID":    chatID,
@@ -252,13 +268,54 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		"BPMs":   valuesForSelect(strings.TrimSpace(song.PDF.BPM), bpms, "BPM"),
 		"Times":  valuesForSelect(strings.TrimSpace(song.PDF.Time), times, "Time"),
 		"Tags":   songTags,
-		"Lyrics": lyrics,
+		"Lyrics": template.HTML(body),
 
 		"Song":   song,
 		"SongJS": string(songJsonBytes),
 
 		"Action": "edit",
 	})
+}
+
+var fontSizeRegex = regexp.MustCompile("font-size:.*?;")
+
+func Body(doc *html.Node) (*html.Node, error) {
+	var body *html.Node
+	var crawler func(*html.Node)
+	crawler = func(node *html.Node) {
+		if node.Type == html.ElementNode && node.Data == "body" {
+			body = node
+			//return
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			//for i, attribute := range child.Attr {
+			//	if attribute.Key == "style" {
+			//		child.Attr[i].Val = fontSizeRegex.ReplaceAllString(attribute.Val, "font-size:1em;")
+			//	}
+			//}
+			crawler(child)
+		}
+	}
+	crawler(doc)
+
+	if body == nil {
+		return nil, errors.New("Missing <body> in the node tree")
+	}
+
+	if body.FirstChild != nil && body.FirstChild.Data == "div" {
+		body.RemoveChild(body.FirstChild)
+	}
+	body.Data = "div"
+	body.Attr = []html.Attribute{{Key: "style", Val: "font-size:1em;"}}
+
+	return body, nil
+}
+
+func renderNode(n *html.Node) string {
+	var buf bytes.Buffer
+	w := io.Writer(&buf)
+	html.Render(w, n)
+	return buf.String()
 }
 
 type EditSongData struct {
@@ -319,6 +376,7 @@ func (h *WebAppController) EditSongConfirm(ctx *gin.Context) {
 		song.PDF.Name = data.Name
 	}
 
+	// todo
 	if song.PDF.Key != data.Key {
 		_, err := h.DriveFileService.ReplaceAllTextByRegex(song.DriveFileID, keyRegex, fmt.Sprintf("KEY: %s;", data.Key))
 		if err != nil {

@@ -46,7 +46,6 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     // overlayElement.style.display = "none";
 
                     let songs = document.getElementById("songs").getElementsByTagName("span")
-                    console.log(songs)
 
                     let exists = false
                     for (let i = 0; i < songs.length; i++) {

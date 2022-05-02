@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JavaScriptLibraryMappings">
-    <file url="PROJECT" libraries="{@yaireo, @yaireo/tagify, Sortable, algoliasearch, autosize.js, bootstrap, font-awesome, instantsearch.js, normalize.css, tags, telegram-web-app, tinymce}" />
+    <file url="PROJECT" libraries="{Sortable, autosize.js, bootstrap, font-awesome, jquery, telegram-web-app, textfit}" />
   </component>
 </project>
