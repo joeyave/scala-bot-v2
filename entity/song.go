@@ -25,17 +25,17 @@ type Song struct {
 }
 
 type PDF struct {
-	ModifiedTime string `bson:"modifiedTime,omitempty"`
+	ModifiedTime string `bson:"modifiedTime,omitempty" json:"modifiedTime,omitempty"`
 
-	TgFileID           string `bson:"tgFileId,omitempty"`
-	TgChannelMessageID int    `bson:"tgChannelMessageId,omitempty"`
+	TgFileID           string `bson:"tgFileId,omitempty" json:"tgFileId,omitempty"`
+	TgChannelMessageID int    `bson:"tgChannelMessageId,omitempty" json:"tgChannelMessageId,omitempty"`
 
-	Name string `bson:"name,omitempty"`
-	Key  string `bson:"key,omitempty"`
-	BPM  string `bson:"bpm,omitempty"`
-	Time string `bson:"time,omitempty"`
+	Name string `bson:"name,omitempty" json:"name,omitempty"`
+	Key  string `bson:"key,omitempty" json:"key,omitempty"`
+	BPM  string `bson:"bpm,omitempty" json:"bpm,omitempty"`
+	Time string `bson:"time,omitempty" json:"time,omitempty"`
 
-	WebViewLink string `bson:"webViewLink,omitempty"`
+	WebViewLink string `bson:"webViewLink,omitempty" json:"web_view_link,omitempty"`
 }
 
 func (s *Song) Meta() string {

@@ -13,41 +13,10 @@ window.addEventListener('DOMContentLoaded', (e) => {
     let lyrics = document.getElementById("lyrics")
     autosize(lyrics)
 
-    // let lyricsContainer = document.getElementById("lyrics-container")
-
-    // let fontSize = 12;
-    // while (lyrics.offsetWidth < lyricsContainer.offsetWidth-10) {
-    //     fontSize += 1;
-    //     lyrics.style.fontSize = fontSize+"px";
-    // }
-
     form.addEventListener("submit", (e) => e.preventDefault())
     form.addEventListener('input', function (event) {
         Telegram.WebApp.MainButton.show()
     })
-
-    key.onfocus = (e) => {
-        console.log("set old val " + e.target.value)
-        e.target.setAttribute("data-old-value", e.target.value)
-    }
-
-    key.onchange = (e) => {
-        const oldKey = e.target.getAttribute("data-old-value")
-        console.log("old key " + oldKey)
-        e.target.setAttribute("data-old-value", e.target.value)
-
-        let walker = document.createTreeWalker(
-            lyrics,
-            NodeFilter.SHOW_TEXT,
-            null
-        )
-
-        while (walker.nextNode()) {
-            walker.currentNode.nodeValue = Transposer
-                .transpose(walker.currentNode.nodeValue)
-                .fromKey(oldKey).toKey(e.target.value).toString()
-        }
-    }
 
     Telegram.WebApp.ready()
 
@@ -65,6 +34,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 form.reportValidity()
                 return
             }
+            Telegram.WebApp.MainButton.showProgress()
 
             let data = JSON.stringify({
                 "name": name.value,
@@ -85,20 +55,95 @@ window.addEventListener('DOMContentLoaded', (e) => {
     }
 
     function editSong() {
-        lyrics.disabled = true;
+        let lyricsContainer = document.getElementById("lyrics-container")
+        let lyricsDiv = document.getElementById("lyrics")
+
+        // console.log (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
+        //  if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0 || (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) > 0) {
+        //      let fontSize = 24
+        //      for (let i = 0; i < 20; i++) {
+        //          console.log(lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
+        //          if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0) {
+        //              break
+        //          }
+        //          fontSize -= 1
+        //          lyricsDiv.style.fontSize = fontSize + "px !important"
+        //      }
+        //  }
+
+        // lyricsDiv.style.fontSize = "10px";
+        // let fontSize = 10
+        // console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
+        // console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
+        // while (lyricsDiv.offsetWidth < lyricsContainer.offsetWidth) {
+        //     console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
+        //     console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
+        //     lyrics.style.fontSize = fontSize + "px";
+        //     fontSize += 1;
+        // }
+        // while (lyricsDiv.offsetWidth >= lyricsContainer.offsetWidth) {
+        //     console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
+        //     console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
+        //     fontSize -= 1;
+        //     lyrics.style.fontSize = fontSize + "px";
+        // }
+
+
+        key.onfocus = (e) => {
+            e.target.setAttribute("data-old-value", e.target.value)
+        }
+
+        key.onchange = (e) => {
+
+            console.log(song.pdf.key);
+            console.log(e.target.value);
+            if (e.target.value !== song.pdf.key) {
+                document.getElementById("transpose-opts").classList.remove("visually-hidden")
+            } else {
+                document.getElementById("transpose-opts").classList.add("visually-hidden")
+            }
+
+            const oldKey = e.target.getAttribute("data-old-value")
+            e.target.setAttribute("data-old-value", e.target.value)
+
+            let walker = document.createTreeWalker(
+                lyricsDiv,
+                NodeFilter.SHOW_TEXT,
+                null
+            )
+
+            while (walker.nextNode()) {
+                if (oldKey !== "?") {
+                    walker.currentNode.nodeValue = Transposer
+                        .transpose(walker.currentNode.nodeValue)
+                        .fromKey(oldKey).toKey(e.target.value).toString()
+                } else {
+                    walker.currentNode.nodeValue = Transposer
+                        .transpose(walker.currentNode.nodeValue)
+                        .toKey(e.target.value).toString()
+                }
+            }
+
+            // lyricsDiv.innerText = Transposer.transpose(lyricsDiv.innerText).fromKey(oldKey).toKey(e.target.value).toString()
+        }
 
         Telegram.WebApp.MainButton.setText("Сохранить")
 
         Telegram.WebApp.MainButton.onClick(async function () {
+
+                let transposeSection = document.getElementById("transpose-section")
 
                 if (form.checkValidity() === false) {
                     form.reportValidity()
                     return
                 }
 
+                Telegram.WebApp.MainButton.showProgress()
+
                 let data = JSON.stringify({
                     "name": name.value,
                     "key": key.value,
+                    "transposeSection": transposeSection.value,
                     "bpm": bpm.value,
                     "time": time.value,
                     "tags": Array.from(tags.selectedOptions)

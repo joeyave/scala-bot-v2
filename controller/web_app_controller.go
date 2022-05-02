@@ -12,7 +12,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/net/html"
-	"html/template"
 	"io"
 	"net/http"
 	"regexp"
@@ -198,6 +197,7 @@ func (h *WebAppController) CreateSong(ctx *gin.Context) {
 
 func (h *WebAppController) EditSong(ctx *gin.Context) {
 
+	fmt.Println(ctx.Request.RequestURI)
 	hex := ctx.Param("id")
 	songID, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
@@ -248,27 +248,39 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 	lyrics := h.DriveFileService.GetText(song.DriveFileID)
 
 	start := time.Now()
-	doc, err := html.Parse(lyrics)
+	//doc, err := html.Parse(lyrics)
+	//if err != nil {
+	//	return
+	//}
+
+	//bn, err := Body(doc)
+	//if err != nil {
+	//	return
+	//}
+	//body := renderNode(bn)
+
+	sectionsNumber, err := h.DriveFileService.GetSectionsNumber(song.DriveFileID)
 	if err != nil {
 		return
 	}
 
-	bn, err := Body(doc)
-	if err != nil {
-		return
+	sectionsSelect := []*SelectEntity{{Name: "В конец документа", Value: "-1", IsSelected: true}}
+	for i := 0; i < sectionsNumber; i++ {
+		sectionsSelect = append(sectionsSelect, &SelectEntity{Name: fmt.Sprintf("Вместо %d секции", i+1), Value: fmt.Sprint(i)})
 	}
-	body := renderNode(bn)
+
 	fmt.Println(time.Since(start).String())
 	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
 		"MessageID": messageID,
 		"ChatID":    chatID,
 		"UserID":    userID,
 
-		"Keys":   valuesForSelect(strings.TrimSpace(song.PDF.Key), keys, "Key"),
-		"BPMs":   valuesForSelect(strings.TrimSpace(song.PDF.BPM), bpms, "BPM"),
-		"Times":  valuesForSelect(strings.TrimSpace(song.PDF.Time), times, "Time"),
-		"Tags":   songTags,
-		"Lyrics": template.HTML(body),
+		"Keys":     valuesForSelect(strings.TrimSpace(song.PDF.Key), keys, "Key"),
+		"Sections": sectionsSelect,
+		"BPMs":     valuesForSelect(strings.TrimSpace(song.PDF.BPM), bpms, "BPM"),
+		"Times":    valuesForSelect(strings.TrimSpace(song.PDF.Time), times, "Time"),
+		"Tags":     songTags,
+		"Lyrics":   lyrics,
 
 		"Song":   song,
 		"SongJS": string(songJsonBytes),
@@ -288,11 +300,11 @@ func Body(doc *html.Node) (*html.Node, error) {
 			//return
 		}
 		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			//for i, attribute := range child.Attr {
-			//	if attribute.Key == "style" {
-			//		child.Attr[i].Val = fontSizeRegex.ReplaceAllString(attribute.Val, "font-size:1em;")
-			//	}
-			//}
+			for i, attribute := range child.Attr {
+				if attribute.Key == "style" {
+					child.Attr[i].Val = fontSizeRegex.ReplaceAllString(attribute.Val, "font-size:1em;")
+				}
+			}
 			crawler(child)
 		}
 	}
@@ -319,11 +331,12 @@ func renderNode(n *html.Node) string {
 }
 
 type EditSongData struct {
-	Name string   `json:"name"`
-	Key  string   `json:"key"`
-	BPM  string   `json:"bpm"`
-	Time string   `json:"time"`
-	Tags []string `json:"tags"`
+	TransposeSection string   `json:"transposeSection"`
+	Name             string   `json:"name"`
+	Key              string   `json:"key"`
+	BPM              string   `json:"bpm"`
+	Time             string   `json:"time"`
+	Tags             []string `json:"tags"`
 }
 
 var keyRegex = regexp.MustCompile(`(?i)key:(.*?);`)
@@ -378,11 +391,18 @@ func (h *WebAppController) EditSongConfirm(ctx *gin.Context) {
 
 	// todo
 	if song.PDF.Key != data.Key {
-		_, err := h.DriveFileService.ReplaceAllTextByRegex(song.DriveFileID, keyRegex, fmt.Sprintf("KEY: %s;", data.Key))
+		//_, err := h.DriveFileService.ReplaceAllTextByRegex(song.DriveFileID, keyRegex, fmt.Sprintf("KEY: %s;", data.Key))
+		//if err != nil {
+		//	return
+		//}
+
+		section, err := strconv.Atoi(data.TransposeSection)
 		if err != nil {
 			return
 		}
-		song.PDF.Key = data.Key
+		_, err = h.DriveFileService.TransposeOne(song.DriveFileID, data.Key, section)
+
+		//song.PDF.Key = data.Key
 	}
 
 	if song.PDF.BPM != data.BPM {

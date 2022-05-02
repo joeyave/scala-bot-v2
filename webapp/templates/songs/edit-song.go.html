@@ -48,13 +48,23 @@
                 {{ end }}
             </select>
         </div>
+        <div id="transpose-opts" class="mb-3 visually-hidden">
+            <select id="transpose-section">
+                {{ range $i, $tag := .Sections }}
+                    {{ if $tag.IsSelected}}
+                        <option value="{{ $tag.Value }}" selected>{{$tag.Name}}</option>
+                    {{else}}
+                        <option value="{{ $tag.Value }}">{{$tag.Name}}</option>
+                    {{end}}
+                {{ end }}
+            </select>
+        </div>
+
         <div id="lyrics-container">
             {{ if eq .Action "create" }}
                 <textarea id="lyrics" class="form-control lyrics-input">{{ .Lyrics }}</textarea>
             {{ else }}
-                <div id="lyrics" class="lyrics-div">
-                    {{ .Lyrics }}
-                </div>
+                <pre id="lyrics" class="lyrics-div">{{ .Lyrics }}</pre>
             {{ end }}
         </div>
     </form>

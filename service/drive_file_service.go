@@ -1076,33 +1076,33 @@ func composeCloneWithoutChordsRequests(content []*docs.StructuralElement, index 
 	return requests
 }
 
-//func (s *DriveFileService) GetText(ID string) string {
-//
-//	doc, err := s.docsRepository.Documents.Get(ID).Do()
-//	if err != nil {
-//		return ""
-//	}
-//
-//	var sb strings.Builder
-//
-//	for _, item := range doc.Body.Content {
-//		if item.SectionBreak != nil && item.SectionBreak.SectionStyle != nil && item.SectionBreak.SectionStyle.SectionType == "NEXT_PAGE" {
-//			break
-//		}
-//
-//		if item.Paragraph != nil && item.Paragraph.Elements != nil {
-//			for _, element := range item.Paragraph.Elements {
-//				if element.TextRun != nil && element.TextRun.Content != "" {
-//					sb.WriteString(element.TextRun.Content)
-//				}
-//			}
-//		}
-//	}
-//
-//	return newLinesRegex.ReplaceAllString(sb.String(), "\n\n")
-//}
+func (s *DriveFileService) GetText(ID string) string {
 
-func (s *DriveFileService) GetText(ID string) io.Reader {
+	doc, err := s.docsRepository.Documents.Get(ID).Do()
+	if err != nil {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	for _, item := range doc.Body.Content {
+		if item.SectionBreak != nil && item.SectionBreak.SectionStyle != nil && item.SectionBreak.SectionStyle.SectionType == "NEXT_PAGE" {
+			break
+		}
+
+		if item.Paragraph != nil && item.Paragraph.Elements != nil {
+			for _, element := range item.Paragraph.Elements {
+				if element.TextRun != nil && element.TextRun.Content != "" {
+					sb.WriteString(element.TextRun.Content)
+				}
+			}
+		}
+	}
+
+	return strings.TrimSpace(newLinesRegex.ReplaceAllString(sb.String(), "\n\n"))
+}
+
+func (s *DriveFileService) GetTextAsHTML(ID string) io.Reader {
 
 	retrier := retry.NewRetrier(5, 100*time.Millisecond, time.Second)
 

@@ -33,16 +33,18 @@
     font-family: "Roboto Mono", monospace;
 }
 
-/*.lyrics-div {*/
-/*    width: fit-content;*/
-/*}*/
-
-.lyrics-div * {
-    font-family: "Roboto Mono", monospace !important;
-    /*white-space: nowrap;*/
-    font-size: 18px !important;
-    line-height: 1.1;
+.lyrics-div {
+    font-size: 1.1rem;
+    line-height: 1.4rem;
+    white-space: pre-wrap;
 }
+
+/*.lyrics-div * {*/
+/*    font-family: "Roboto Mono", monospace !important;*/
+/*    !*white-space: nowrap;*!*/
+/*    !*font-size: 18px !important;*!*/
+/*    line-height: 1.1;*/
+/*}*/
 
 /*.lyrics-div * {*/
 /*    !*font-size: calc(20px + 6 * ((100vw - 320px) / 680)) !important;*!*/

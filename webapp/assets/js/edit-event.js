@@ -117,6 +117,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 form.reportValidity()
                 return
             }
+            Telegram.WebApp.MainButton.showProgress()
 
             let songIds = []
             let items = songsElement.getElementsByTagName("span")
@@ -154,6 +155,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 form.reportValidity()
                 return
             }
+            Telegram.WebApp.MainButton.showProgress()
 
             let songIds = []
             let items = songsElement.getElementsByTagName("span")
