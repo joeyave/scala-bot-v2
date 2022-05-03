@@ -57,6 +57,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
     function editSong() {
         let lyricsContainer = document.getElementById("lyrics-container")
         let lyricsDiv = document.getElementById("lyrics")
+        let initLyricsDiv = lyricsDiv.cloneNode(true)
 
         // console.log (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
         //  if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0 || (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) > 0) {
@@ -95,38 +96,45 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
         key.onchange = (e) => {
 
-            console.log(song.pdf.key);
-            console.log(e.target.value);
             if (e.target.value !== song.pdf.key) {
                 document.getElementById("transpose-opts").classList.remove("visually-hidden")
             } else {
                 document.getElementById("transpose-opts").classList.add("visually-hidden")
             }
 
-            const oldKey = e.target.getAttribute("data-old-value")
-            e.target.setAttribute("data-old-value", e.target.value)
+            if (e.target.value === song.pdf.key) {
+                lyricsDiv.innerHTML = lyricsHTML
+                return
+            }
 
+            let originalKey
+            try {
+                originalKey = new Transposer(song.pdf.key).getKey()
+            } catch (err) {
+                originalKey = song.pdf.key
+            }
+            let newKey
+            try {
+                newKey = new Transposer(e.target.value).getKey().majorKey
+            } catch (err) {
+                newKey = e.target.value
+            }
+
+           let clone = initLyricsDiv.cloneNode(true)
             let walker = document.createTreeWalker(
-                lyricsDiv,
+               clone ,
                 NodeFilter.SHOW_TEXT,
                 null
             )
 
             while (walker.nextNode()) {
-                try {
-                    walker.currentNode.nodeValue = Transposer
-                        .transpose(walker.currentNode.nodeValue)
-                        .fromKey(oldKey).toKey(e.target.value).toString()
-                } catch (err) {
-                    let newKey = new Transposer(e.target.value).getKey().majorKey
-                    walker.currentNode.nodeValue = Transposer
-                        .transpose(walker.currentNode.nodeValue)
-                        .fromKey(new Transposer(oldKey).getKey())
-                        .toKey(newKey).toString()
-                }
+                walker.currentNode.nodeValue = Transposer
+                    .transpose(walker.currentNode.nodeValue)
+                    .fromKey(originalKey)
+                    .toKey(newKey).toString()
             }
 
-            // lyricsDiv.innerText = Transposer.transpose(lyricsDiv.innerText).fromKey(oldKey).toKey(e.target.value).toString()
+            lyricsDiv.innerHTML = clone.innerHTML
         }
 
         Telegram.WebApp.MainButton.setText("Сохранить")
