@@ -113,14 +113,16 @@ window.addEventListener('DOMContentLoaded', (e) => {
             )
 
             while (walker.nextNode()) {
-                if (oldKey !== "?") {
+                try {
                     walker.currentNode.nodeValue = Transposer
                         .transpose(walker.currentNode.nodeValue)
                         .fromKey(oldKey).toKey(e.target.value).toString()
-                } else {
+                } catch (err) {
+                    let newKey = new Transposer(e.target.value).getKey().majorKey
                     walker.currentNode.nodeValue = Transposer
                         .transpose(walker.currentNode.nodeValue)
-                        .toKey(e.target.value).toString()
+                        .fromKey(new Transposer(oldKey).getKey())
+                        .toKey(newKey).toString()
                 }
             }
 
