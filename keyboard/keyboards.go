@@ -129,10 +129,11 @@ func SongEdit(song *entity.Song, user *entity.User, chatID, messageID int64, lan
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
 			{Text: txt.Get("button.edit", lang), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/songs/%s/edit?userId=%d&messageId=%d&chatId=%d", os.Getenv("HOST"), song.ID.Hex(), user.ID, messageID, chatID)}},
+			{Text: txt.Get("button.style", lang), CallbackData: "todo"},
 		},
 		{
 			//{Text: txt.Get("button.transpose", lang), CallbackData: "todo"},
-			{Text: txt.Get("button.style", lang), CallbackData: "todo"},
+			//{Text: txt.Get("button.style", lang), CallbackData: "todo"},
 		},
 		{
 			{Text: txt.Get("button.docLink", lang), Url: song.PDF.WebViewLink},

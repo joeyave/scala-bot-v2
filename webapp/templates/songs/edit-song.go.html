@@ -38,7 +38,6 @@
                 {{ end }}
             </select>
             <select id="tags" multiple>
-                <option selected disabled hidden>Теги</option>
                 {{ range $i, $tag := .Tags }}
                     {{ if $tag.IsSelected}}
                         <option value="{{ $tag.Name }}" selected>{{$tag.Name}}</option>
@@ -47,6 +46,7 @@
                     {{end}}
                 {{ end }}
             </select>
+            <button>Добавить тег</button>
         </div>
         <div id="transpose-opts" class="mb-3 visually-hidden">
             <select id="transpose-section">
@@ -83,7 +83,15 @@
 </div>
 
 <script type="text/javascript">
-        const lyricsHTML = {{ .Lyrics }};
+    // var settings = {
+    //     plugins: ['remove_button', 'input_autogrow'],
+    //     create: true,
+    //     // createFilter: /^\p{Lu}\p{Ll}+( \p{L}+)*$/gmu,
+    //     placeholder: "Добавить тег"
+    // };
+    // new TomSelect('#tags',settings);
+
+    const lyricsHTML = {{ .Lyrics }};
     const action = {{ .Action }};
 
     const messageId = {{ .MessageID }};
