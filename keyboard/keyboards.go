@@ -60,11 +60,11 @@ func EventInit(event *entity.Event, user *entity.User, lang string) [][]gotgbot.
 	return keyboard
 }
 
-func EventEdit(event *entity.Event, user *entity.User, chatID int64, messageID int64, lang string) [][]gotgbot.InlineKeyboardButton {
+func EventEdit(event *entity.Event, user *entity.User, chatID, messageID int64, lang string) [][]gotgbot.InlineKeyboardButton {
 
 	keyboard := [][]gotgbot.InlineKeyboardButton{
 		{
-			{Text: txt.Get("button.setlist", lang), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/events/%s/edit?messageId=%d&chatId=%d", os.Getenv("HOST"), event.ID.Hex(), messageID, chatID)}},
+			{Text: txt.Get("button.setlist", lang), WebApp: &gotgbot.WebAppInfo{Url: fmt.Sprintf("%s/web-app/events/%s/edit?messageId=%d&chatId=%d&userId=%d", os.Getenv("HOST"), event.ID.Hex(), messageID, chatID, user.ID)}},
 			{Text: txt.Get("button.members", lang), CallbackData: util.CallbackData(state.EventMembers, event.ID.Hex())},
 		},
 		//{

@@ -1,15 +1,18 @@
 import InstantSearch from "../components/instant_search/InstantSearch.js";
 
 window.addEventListener('DOMContentLoaded', (e) => {
+
     Telegram.WebApp.expand()
 
-    const songsElement = document.querySelector(".sortable-list");
-    const searchElement = document.querySelector("#search");
-    const overlayElement = document.querySelector(".overlay")
-    const addSongButton = document.querySelector("#add-song-button")
-    let form = document.getElementById('event-form');
+    let form = document.getElementById('form')
+    let name = document.getElementById("name")
+    let date = document.getElementById("date")
+    let search = document.getElementById("search")
+    let songs = document.getElementById("songs")
+    let notes = document.getElementById("notes")
+    autosize(notes)
 
-    new Sortable(songsElement, {
+    new Sortable(songs, {
         delay: 150,
         delayOnTouchOnly: true,
         animation: 100,
@@ -18,7 +21,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         },
     });
 
-    new InstantSearch(searchElement, {
+    new InstantSearch(search, {
         searchUrl: new URL(`/api/drive-files/search?driveFolderId=${event.band.driveFolderId}`, window.location.origin),
         queryParam: "q",
         responseParser: (responseData) => {
@@ -33,7 +36,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         resultEventListener: (result) => {
             return [
                 "click", async () => {
-                    // overlayElement.classList.add("overlay--hidden")
+                    document.getElementById("song-search-input").focus()
 
                     let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
                         method: "get",
@@ -43,54 +46,56 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     let data = await resp.json()
 
                     Telegram.WebApp.MainButton.show()
-                    // overlayElement.style.display = "none";
 
-                    let songs = document.getElementById("songs").getElementsByTagName("span")
+                    let spans = document.getElementById("songs").getElementsByTagName("span")
 
                     let exists = false
-                    for (let i = 0; i < songs.length; i++) {
-                        let songId = songs[i].getAttribute("data-song-id")
+                    for (let i = 0; i < spans.length; i++) {
+                        let songId = spans[i].getAttribute("data-song-id")
                         if (songId === data.song.id) {
                             exists = true
                             break
                         }
                     }
                     if (!exists) {
-                        songsElement.insertAdjacentHTML("beforeend",
+                        songs.insertAdjacentHTML("beforeend",
                             `<div class="item">
                             <span class="text" data-song-id=${data.song.id}>${result.name}</span>
                             <i id="delete-song-icon" class="fas fa-trash-alt"></i>
                         </div>`
                         );
                     }
-                }
+             }
             ]
         }
     });
 
     Telegram.WebApp.ready()
 
-    let name = document.getElementById("name")
-    let date = document.getElementById("date")
-    let notes = document.getElementById("notes")
+    Array.from(form.elements).forEach((element) => {
+        element.initValue = element.value
+    });
 
-    if (action === "create") {
-        createEvent()
-    } else {
-        editEvent(event)
-    }
+    form.addEventListener("submit", (e) => e.preventDefault())
+    form.addEventListener('input', (e) => {
 
-    // Adding listeners.
-    // overlayElement.onclick = (e) => {
-    //     if (e.target !== overlayElement) return
-    //     overlayElement.classList.add("overlay--hidden")
-    // }
+        if (e.target.id === "song-search-input") {
+            return
+        }
 
-    // addSongButton.addEventListener("click", () => {
-    //     console.log("click")
-    //     overlayElement.classList.remove("overlay--hidden")
-    //     document.getElementById("song-search-input").focus()
-    // })
+        let hide = []
+        Array.from(form.elements).forEach((element) => {
+            hide.push(element.initValue === element.value)
+        });
+
+        if (!hide.includes(false)) {
+            Telegram.WebApp.MainButton.hide()
+            console.log("MainButton hidden")
+        } else {
+            Telegram.WebApp.MainButton.show()
+            console.log("MainButton shown")
+        }
+    })
 
     document.addEventListener("click", (e) => {
         if (e.target.id === "delete-song-icon") {
@@ -99,17 +104,15 @@ window.addEventListener('DOMContentLoaded', (e) => {
         }
     })
 
-    form.addEventListener('input', function (event) {
-        Telegram.WebApp.MainButton.show()
-    })
+    if (action === "create") {
+        createEvent()
+    } else {
+        editEvent(event)
+    }
 
 
     function editEvent(event) {
         Telegram.WebApp.MainButton.setText("Сохранить")
-
-        name.value = event.name;
-        date.value = new Date(event.time).toISOString().substring(0, 10);
-        notes.value = event.notes;
 
         Telegram.WebApp.MainButton.onClick(async function () {
 
@@ -120,7 +123,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
             Telegram.WebApp.MainButton.showProgress()
 
             let songIds = []
-            let items = songsElement.getElementsByTagName("span")
+            let items = songs.getElementsByTagName("span")
             for (let i = 0; i < items.length; i++) {
                 let songId = items[i].getAttribute("data-song-id")
                 songIds.push(songId)
@@ -134,7 +137,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 "notes": notes.value
             })
 
-            await fetch(`/web-app/events/${event.id}/edit/confirm?queryId=${Telegram.WebApp.initDataUnsafe.query_id}&messageId=${messageId}&chatId=${chatId}`, {
+            await fetch(`/web-app/events/${event.id}/edit/confirm?queryId=${Telegram.WebApp.initDataUnsafe.query_id}&messageId=${messageId}&chatId=${chatId}&userId=${userId}`, {
                 method: "POST",
                 headers: {'Content-Type': 'application/json'},
                 body: data,
@@ -147,7 +150,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
     function createEvent() {
         Telegram.WebApp.MainButton.setText("Создать")
 
-        date.value = new Date().toISOString().substring(0, 10);
+        // date.value = new Date().toISOString().substring(0, 10);
 
         Telegram.WebApp.MainButton.onClick(function () {
 
@@ -158,7 +161,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
             Telegram.WebApp.MainButton.showProgress()
 
             let songIds = []
-            let items = songsElement.getElementsByTagName("span")
+            let items = songs.getElementsByTagName("span")
             for (let i = 0; i < items.length; i++) {
                 let songId = items[i].getAttribute("data-song-id")
                 songIds.push(songId)

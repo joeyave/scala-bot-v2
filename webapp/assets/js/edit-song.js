@@ -29,9 +29,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
         }
     });
 
-    form.addEventListener("submit", (e) => {
-        e.preventDefault()
-    })
+    form.addEventListener("submit", (e) => e.preventDefault())
     form.addEventListener('input', (e) => {
 
         let hide = []

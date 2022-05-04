@@ -68,6 +68,8 @@ func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 
 func (h *WebAppController) EditEvent(ctx *gin.Context) {
 
+	fmt.Println(ctx.Request.RequestURI)
+
 	hex := ctx.Param("id")
 	eventID, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
@@ -76,6 +78,7 @@ func (h *WebAppController) EditEvent(ctx *gin.Context) {
 
 	messageID := ctx.Query("messageId")
 	chatID := ctx.Query("chatId")
+	userID := ctx.Query("userId")
 
 	event, err := h.EventService.FindOneByID(eventID)
 	if err != nil {
@@ -95,6 +98,7 @@ func (h *WebAppController) EditEvent(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "event.go.html", gin.H{
 		"MessageID":  messageID,
 		"ChatID":     chatID,
+		"UserID":     userID,
 		"EventNames": eventNames,
 		"Event":      event,
 		"EventJS":    string(eventJsonBytes),
@@ -120,6 +124,11 @@ func (h *WebAppController) EditEventConfirm(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
+	userIDStr := ctx.Query("userId")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		return
+	}
 
 	var event *entity.Event
 	err = ctx.ShouldBindJSON(&event)
@@ -138,7 +147,7 @@ func (h *WebAppController) EditEventConfirm(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.UserService.FindOneByID(chatID)
+	user, err := h.UserService.FindOneByID(userID)
 	if err != nil {
 		return
 	}

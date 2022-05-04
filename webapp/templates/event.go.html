@@ -5,20 +5,11 @@
 <body>
 <div class="container">
 
-    {{/*    <div id="search-overlay" class="overlay overlay--hidden">*/}}
-    {{/*        <div id="search" class="instant-search">*/}}
-    {{/*            <div class="instant-search__input-container">*/}}
-    {{/*                <input id="song-search-input" class="instant-search__input" type="text" spellcheck="false"*/}}
-    {{/*                       placeholder="Добавить песню">*/}}
-    {{/*                <i class="material-icons instant-search__icon">search</i>*/}}
-    {{/*            </div>*/}}
-    {{/*        </div>*/}}
-    {{/*    </div>*/}}
-
-    <form id="event-form">
+    <form id="form">
 
         <div class=" mt-2">
-            <input type="text" class="form-control header-input" id="name" list="suggestions" placeholder="Название"
+            <input type="text" class="form-control header-input" id="name" value="{{ .Event.Name }}" list="suggestions"
+                   placeholder="Название"
                    required>
 
             <datalist id="suggestions">
@@ -29,7 +20,7 @@
         </div>
 
         <div class="d-flex flex-row mb-3">
-            <input type="date" id="date" required>
+            <input type="date" id="date" value="{{ .Event.Time.Format "2006-01-02" }}" required>
         </div>
 
         <div class="mb-3">
@@ -65,7 +56,7 @@
         <div class="mb-3">
             <label for="notes">Заметки</label>
             <div class="grow-wrap">
-                <textarea type="text" class="form-control" id="notes"></textarea>
+                <textarea type="text" class="form-control" id="notes">{{ .Event.Notes }}</textarea>
             </div>
         </div>
     </form>
