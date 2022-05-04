@@ -4,21 +4,47 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
     Telegram.WebApp.expand()
 
-    let form = document.getElementById('form');
-    let name = document.getElementById('name');
-    let key = document.getElementById('key');
-    let bpm = document.getElementById('bpm');
-    let time = document.getElementById('time');
+    let form = document.getElementById('form')
+    let name = document.getElementById('name')
+    let key = document.getElementById('key')
+    let bpm = document.getElementById('bpm')
+    let time = document.getElementById('time')
     let tags = document.getElementById("tags")
-    let lyrics = document.getElementById("lyrics")
-    autosize(lyrics)
-
-    form.addEventListener("submit", (e) => e.preventDefault())
-    form.addEventListener('input', function (event) {
-        Telegram.WebApp.MainButton.show()
-    })
 
     Telegram.WebApp.ready()
+
+    Array.from(form.elements).forEach((element) => {
+        if (element.tagName === "SELECT" && element.multiple) {
+            element.initValue = Array.from(element.selectedOptions).map(({value}) => value)
+        } else {
+            element.initValue = element.value
+        }
+    });
+
+    form.addEventListener("submit", (e) => {
+        e.preventDefault()
+    })
+    form.addEventListener('input', (e) => {
+
+        let hide = []
+        Array.from(form.elements).forEach((element) => {
+            if (element.tagName === "SELECT" && element.multiple) {
+                let opts = Array.from(element.selectedOptions).map(({value}) => value)
+                hide.push(opts.every((item) => item === "label" || element.initValue.includes(item)))
+            } else {
+                hide.push(element.initValue === element.value)
+            }
+            console.log(hide)
+        });
+
+        if (!hide.includes(false)) {
+            Telegram.WebApp.MainButton.hide()
+            console.log("MainButton hidden")
+        } else {
+            Telegram.WebApp.MainButton.show()
+            console.log("MainButton shown")
+        }
+    })
 
     if (action === "create") {
         createSong()
@@ -27,7 +53,11 @@ window.addEventListener('DOMContentLoaded', (e) => {
     }
 
     function createSong() {
+        let lyrics = document.getElementById("lyrics")
+        autosize(lyrics)
+
         Telegram.WebApp.MainButton.setText("Создать")
+
         Telegram.WebApp.MainButton.onClick(function () {
 
             if (form.checkValidity() === false) {
@@ -43,11 +73,6 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 "time": time.value,
                 "tags": Array.from(tags.selectedOptions)
                     .map(({value}) => value)
-                    .filter((s, i) => {
-                        if (i !== 0) {
-                            return s;
-                        }
-                    })
             })
 
             Telegram.WebApp.sendData(data)
@@ -55,44 +80,10 @@ window.addEventListener('DOMContentLoaded', (e) => {
     }
 
     function editSong() {
-        let lyricsContainer = document.getElementById("lyrics-container")
+        Telegram.WebApp.MainButton.setText("Сохранить")
+
         let lyricsDiv = document.getElementById("lyrics")
         let initLyricsDiv = lyricsDiv.cloneNode(true)
-
-        // console.log (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
-        //  if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0 || (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) > 0) {
-        //      let fontSize = 24
-        //      for (let i = 0; i < 20; i++) {
-        //          console.log(lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
-        //          if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0) {
-        //              break
-        //          }
-        //          fontSize -= 1
-        //          lyricsDiv.style.fontSize = fontSize + "px !important"
-        //      }
-        //  }
-
-        // lyricsDiv.style.fontSize = "10px";
-        // let fontSize = 10
-        // console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
-        // console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
-        // while (lyricsDiv.offsetWidth < lyricsContainer.offsetWidth) {
-        //     console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
-        //     console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
-        //     lyrics.style.fontSize = fontSize + "px";
-        //     fontSize += 1;
-        // }
-        // while (lyricsDiv.offsetWidth >= lyricsContainer.offsetWidth) {
-        //     console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
-        //     console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
-        //     fontSize -= 1;
-        //     lyrics.style.fontSize = fontSize + "px";
-        // }
-
-
-        key.onfocus = (e) => {
-            e.target.setAttribute("data-old-value", e.target.value)
-        }
 
         key.onchange = (e) => {
 
@@ -103,7 +94,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
             }
 
             if (e.target.value === song.pdf.key) {
-                lyricsDiv.innerHTML = lyricsHTML
+                lyricsDiv.innerHTML = initLyricsDiv.innerHTML
                 return
             }
 
@@ -111,8 +102,9 @@ window.addEventListener('DOMContentLoaded', (e) => {
             try {
                 originalKey = new Transposer(song.pdf.key).getKey()
             } catch (err) {
-                originalKey = song.pdf.key
+                console.log(err)
             }
+
             let newKey
             try {
                 newKey = new Transposer(e.target.value).getKey().majorKey
@@ -120,24 +112,28 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 newKey = e.target.value
             }
 
-           let clone = initLyricsDiv.cloneNode(true)
+            let clone = initLyricsDiv.cloneNode(true)
             let walker = document.createTreeWalker(
-               clone ,
+                clone,
                 NodeFilter.SHOW_TEXT,
                 null
             )
 
             while (walker.nextNode()) {
-                walker.currentNode.nodeValue = Transposer
-                    .transpose(walker.currentNode.nodeValue)
-                    .fromKey(originalKey)
-                    .toKey(newKey).toString()
+                if (originalKey) {
+                    walker.currentNode.nodeValue = Transposer
+                        .transpose(walker.currentNode.nodeValue)
+                        .fromKey(originalKey)
+                        .toKey(newKey).toString()
+                } else {
+                    walker.currentNode.nodeValue = Transposer
+                        .transpose(walker.currentNode.nodeValue)
+                        .toKey(newKey).toString()
+                }
             }
 
             lyricsDiv.innerHTML = clone.innerHTML
         }
-
-        Telegram.WebApp.MainButton.setText("Сохранить")
 
         Telegram.WebApp.MainButton.onClick(async function () {
 
@@ -158,11 +154,6 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     "time": time.value,
                     "tags": Array.from(tags.selectedOptions)
                         .map(({value}) => value)
-                        .filter((s, i) => {
-                            if (i !== 0) {
-                                return s;
-                            }
-                        })
                 })
 
                 await fetch(`/web-app/songs/${song.id}/edit/confirm?queryId=${Telegram.WebApp.initDataUnsafe.query_id}&messageId=${messageId}&chatId=${chatId}&userId=${userId}`, {
@@ -177,3 +168,33 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
     }
 })
+
+// console.log (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
+//  if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0 || (lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) > 0) {
+//      let fontSize = 24
+//      for (let i = 0; i < 20; i++) {
+//          console.log(lyricsContainer.offsetWidth - lyricsDiv.offsetWidth)
+//          if ((lyricsContainer.offsetWidth - lyricsDiv.offsetWidth) < 0) {
+//              break
+//          }
+//          fontSize -= 1
+//          lyricsDiv.style.fontSize = fontSize + "px !important"
+//      }
+//  }
+
+// lyricsDiv.style.fontSize = "10px";
+// let fontSize = 10
+// console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
+// console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
+// while (lyricsDiv.offsetWidth < lyricsContainer.offsetWidth) {
+//     console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
+//     console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
+//     lyrics.style.fontSize = fontSize + "px";
+//     fontSize += 1;
+// }
+// while (lyricsDiv.offsetWidth >= lyricsContainer.offsetWidth) {
+//     console.log("lyricsDiv.offsetWidth " + lyricsDiv.offsetWidth)
+//     console.log(" lyricsContainer.offsetWidth " + lyricsContainer.offsetWidth)
+//     fontSize -= 1;
+//     lyrics.style.fontSize = fontSize + "px";
+// }
