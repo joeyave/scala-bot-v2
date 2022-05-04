@@ -11,6 +11,13 @@ window.addEventListener('DOMContentLoaded', (e) => {
     let time = document.getElementById('time')
     let tags = document.getElementById("tags")
 
+    new TomSelect('#tags', {
+        plugins: ['remove_button', 'input_autogrow'],
+        create: true,
+        // createFilter: /^\p{Lu}\p{Ll}+( \p{L}+)*$/gmu,
+        placeholder: "Добавить тег"
+    });
+
     Telegram.WebApp.ready()
 
     Array.from(form.elements).forEach((element) => {
@@ -29,12 +36,14 @@ window.addEventListener('DOMContentLoaded', (e) => {
         let hide = []
         Array.from(form.elements).forEach((element) => {
             if (element.tagName === "SELECT" && element.multiple) {
+                console.log(element.initValue)
                 let opts = Array.from(element.selectedOptions).map(({value}) => value)
-                hide.push(opts.every((item) => item === "label" || element.initValue.includes(item)))
+                console.log(opts)
+                hide.push(JSON.stringify(opts) === JSON.stringify(element.initValue))
+                console.log(hide);
             } else {
                 hide.push(element.initValue === element.value)
             }
-            console.log(hide)
         });
 
         if (!hide.includes(false)) {

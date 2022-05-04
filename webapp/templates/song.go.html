@@ -10,6 +10,15 @@
             <input type="text" class="form-control header-input" id="name" list="suggestions" placeholder="Название"
                    value="{{ .Song.PDF.Name }}"
                    autocomplete="off" required>
+            <select class="mb-2" id="tags" multiple>
+                {{ range $i, $tag := .Tags }}
+                    {{ if $tag.IsSelected}}
+                        <option value="{{ $tag.Name }}" selected>{{$tag.Name}}</option>
+                    {{else}}
+                        <option value="{{ $tag.Name }}">{{$tag.Name}}</option>
+                    {{end}}
+                {{ end }}
+            </select>
             <select id="key">
                 {{ range $i, $key := .Keys }}
                     {{ if $key.IsSelected }}
@@ -37,17 +46,8 @@
                     {{ end }}
                 {{ end }}
             </select>
-            <select id="tags" multiple>
-                {{ range $i, $tag := .Tags }}
-                    {{ if $tag.IsSelected}}
-                        <option value="{{ $tag.Name }}" selected>{{$tag.Name}}</option>
-                    {{else}}
-                        <option value="{{ $tag.Name }}">{{$tag.Name}}</option>
-                    {{end}}
-                {{ end }}
-            </select>
-            <button>Добавить тег</button>
         </div>
+
         <div id="transpose-opts" class="mb-3 visually-hidden">
             <select id="transpose-section">
                 {{ range $i, $tag := .Sections }}
@@ -83,14 +83,6 @@
 </div>
 
 <script type="text/javascript">
-    // var settings = {
-    //     plugins: ['remove_button', 'input_autogrow'],
-    //     create: true,
-    //     // createFilter: /^\p{Lu}\p{Ll}+( \p{L}+)*$/gmu,
-    //     placeholder: "Добавить тег"
-    // };
-    // new TomSelect('#tags',settings);
-
     const lyricsHTML = {{ .Lyrics }};
     const action = {{ .Action }};
 

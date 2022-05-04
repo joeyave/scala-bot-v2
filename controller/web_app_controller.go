@@ -59,7 +59,7 @@ func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 		return
 	}
 
-	ctx.HTML(http.StatusOK, "edit-event.go.html", gin.H{
+	ctx.HTML(http.StatusOK, "event.go.html", gin.H{
 		"EventNames": eventNames,
 		"EventJS":    string(eventJsonBytes),
 		"Action":     "create",
@@ -92,7 +92,7 @@ func (h *WebAppController) EditEvent(ctx *gin.Context) {
 		return
 	}
 
-	ctx.HTML(http.StatusOK, "edit-event.go.html", gin.H{
+	ctx.HTML(http.StatusOK, "event.go.html", gin.H{
 		"MessageID":  messageID,
 		"ChatID":     chatID,
 		"EventNames": eventNames,
@@ -186,7 +186,7 @@ func (h *WebAppController) CreateSong(ctx *gin.Context) {
 		songTags = append(songTags, &SelectEntity{Name: tag, IsSelected: false})
 	}
 
-	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
+	ctx.HTML(http.StatusOK, "song.go.html", gin.H{
 		"Keys":   valuesForSelect("?", keys, "Key"),
 		"BPMs":   valuesForSelect("?", bpms, "BPM"),
 		"Times":  valuesForSelect("?", times, "Time"),
@@ -270,7 +270,7 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 	}
 
 	fmt.Println(time.Since(start).String())
-	ctx.HTML(http.StatusOK, "edit-song.go.html", gin.H{
+	ctx.HTML(http.StatusOK, "song.go.html", gin.H{
 		"MessageID": messageID,
 		"ChatID":    chatID,
 		"UserID":    userID,
