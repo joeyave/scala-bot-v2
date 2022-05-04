@@ -43,7 +43,7 @@ func (s *Song) Meta() string {
 }
 
 func (s *Song) Caption() string {
-	caption := fmt.Sprintf("%s, %s", s.Meta(), strings.Join(s.Tags, ","))
+	caption := fmt.Sprintf("%s, %s", s.Meta(), strings.Join(s.Tags, ", "))
 	return strings.Trim(caption, ", ")
 }
 
