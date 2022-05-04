@@ -23,7 +23,12 @@ $default-box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
   border-radius: 0;
   padding: 0;
   border: none;
-  font-size: 20pt;
+  font-size: 1.5rem;
+
+  &:focus {
+    box-shadow: none;
+    outline: none;
+  }
 }
 
 .notes-input {
@@ -99,10 +104,14 @@ $default-box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.05);
 }
 
-.ts-dropdown, .ts-control, .ts-control {
-  font-size: 1rem;
+.ts-control {
+  //border: none;
 
   input {
     font-size: 1rem;
   }
+}
+
+.ts-dropdown {
+  font-size: 1rem;
 }

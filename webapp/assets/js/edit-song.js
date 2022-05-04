@@ -6,6 +6,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
     let form = document.getElementById('form')
     let name = document.getElementById('name')
+    autosize(name)
     let key = document.getElementById('key')
     let bpm = document.getElementById('bpm')
     let time = document.getElementById('time')

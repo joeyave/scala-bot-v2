@@ -7,9 +7,8 @@
 <div class="container">
     <form id="form">
         <div class="mt-2 mb-2">
-            <input type="text" class="form-control header-input" id="name" list="suggestions" placeholder="Название"
-                   value="{{ .Song.PDF.Name }}"
-                   autocomplete="off" required>
+            <textarea rows='1' type="text" class="header-input" id="name" list="suggestions" placeholder="Название"
+                      autocomplete="off" required>{{ .Song.PDF.Name }}</textarea>
             <select class="mb-2" id="tags" multiple>
                 {{ range $i, $tag := .Tags }}
                     {{ if $tag.IsSelected}}
@@ -60,16 +59,16 @@
             </select>
         </div>
 
-        <div class="mb-2 d-flex justify-content-end">
-            <div class="form-check form-check-inline form-switch">
-                <input type="checkbox" class="form-check-input" role="switch" id="showLyrics" checked>
-                <label for="scales">Слова</label>
-            </div>
-            <div class="form-check form-check-inline form-switch">
-                <input type="checkbox" class="form-check-input" role="switch" id="showChords" checked>
-                <label for="horns">Аккорды</label>
-            </div>
-        </div>
+{{/*        <div class="mb-2 d-flex justify-content-end">*/}}
+{{/*            <div class="form-check form-check-inline form-switch">*/}}
+{{/*                <input type="checkbox" class="form-check-input" role="switch" id="showLyrics" checked>*/}}
+{{/*                <label for="scales">Слова</label>*/}}
+{{/*            </div>*/}}
+{{/*            <div class="form-check form-check-inline form-switch">*/}}
+{{/*                <input type="checkbox" class="form-check-input" role="switch" id="showChords" checked>*/}}
+{{/*                <label for="horns">Аккорды</label>*/}}
+{{/*            </div>*/}}
+{{/*        </div>*/}}
 
         <div id="lyrics-container">
             {{ if eq .Action "create" }}
