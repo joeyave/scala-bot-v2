@@ -1,7 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
 
+$default-border-radius: 10px;
+$default-box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+
 .form-control {
-  border-radius: 10px;
+  border-radius: $default-border-radius;
   /*font-size: 18px;*/
 }
 
@@ -34,7 +37,7 @@
 }
 
 .lyrics-div {
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1.4rem;
   white-space: pre-wrap;
 }
@@ -62,64 +65,30 @@
   display: none !important;
 }
 
-/*.header-input input::-webkit-list-button{*/
-/*    display: none;*/
-/*}*/
-/** {*/
-/*font-size: 18 px;*/
-/*}*/
-
-/*.overlay {*/
-/*  background: rgb(100, 100, 100, 0.8);*/
-/*  height: 100%;*/
-/*  width: 100%;*/
-/*  display: block;*/
-/*  position: fixed;*/
-/*  z-index: 100;*/
-/*  top: 0;*/
-/*  left: 0;*/
-/*  transition: visibility 0s, opacity 0.1s linear;*/
-/*}*/
-
-/*.overlay--hidden {*/
-/*  visibility: hidden;*/
-/*  opacity: 0;*/
-/*}*/
-
-/*.instant-search {*/
-/*  position: relative;*/
-/*  top: 20px;*/
-/*  width: 90%;*/
-/*  margin: auto;*/
-/*}*/
-
 .sortable-list {
   width: 100%;
-}
 
-.sortable-list .item {
-  display: flex;
-  margin-bottom: 8px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
-  align-items: center;
-  justify-content: space-between;
-}
+  .item {
+    display: flex;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    border-radius: $default-border-radius;
+    box-shadow: $default-box-shadow;
+    align-items: center;
+    justify-content: space-between;
 
-.sortable-list .item i {
-  font-size: 16px;
-  cursor: pointer;
+    i {
+      font-size: 16px;
+      cursor: pointer;
 
-  /*Increasing touch area */
-  display: inline-block;
-  position: relative;
-  z-index: 1;
-  padding: 12px 14px 12px 14px;
-  margin: -12px -14px -12px -14px;
-}
-
-.sortable-list .item i:after {
+      /*Increasing touch area */
+      display: inline-block;
+      position: relative;
+      z-index: 1;
+      padding: 12px 14px 12px 14px;
+      margin: -12px -14px -12px -14px;
+    }
+  }
 }
 
 .sortable-ghost {
