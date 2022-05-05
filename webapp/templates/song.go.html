@@ -7,7 +7,7 @@
 <div class="container">
     <form id="form">
         <div class="mt-2 mb-2">
-            <textarea rows='1' type="text" class="header-input" id="name" list="suggestions" placeholder="Название"
+            <textarea rows='1' type="text" class="header-input w-100" id="name" list="suggestions" placeholder="Название"
                       autocomplete="off" required>{{ .Song.PDF.Name }}</textarea>
             <select class="mb-2" id="tags" multiple>
                 {{ range $i, $tag := .Tags }}
