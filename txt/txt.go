@@ -167,6 +167,12 @@ var locales = map[string]map[string]string{
 	"text.chooseNewMember": {
 		"ru": "Выбери нового участника на роль %s:",
 	},
+	"text.chooseBand": {
+		"ru": "Выбери группу или создай свою.",
+	},
+	"text.addedToBand": {
+		"ru": "Ты добавлен в группу %s.",
+	},
 	"text.nothingFound": {
 		"ru": "Ничего не найдено. Попробуй еще раз.",
 	},

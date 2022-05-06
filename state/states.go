@@ -39,4 +39,6 @@ const (
 	SongVoice
 	SongVoiceDeleteConfirm
 	SongVoiceDelete
+
+	ChooseBand
 )

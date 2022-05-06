@@ -173,6 +173,8 @@ func main() {
 	}, botController.CreateSong), 1)
 
 	// Inline keyboard.
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.ChooseBand), botController.ChooseBand), 1)
+
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventCB), botController.EventCB), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistDocs), botController.EventSetlistDocs), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistMetronome), botController.EventSetlistMetronome), 1)
@@ -196,6 +198,7 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix(fmt.Sprintf("%d:", state.ChooseBand)), botController.UpdateUser), 2)
 
 	//go handler.NotifyUser() // todo
 

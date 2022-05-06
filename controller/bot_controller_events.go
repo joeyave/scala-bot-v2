@@ -349,42 +349,40 @@ func (c *BotController) EventSetlistDocs(bot *gotgbot.Bot, ctx *ext.Context) err
 }
 
 func (c *BotController) EventSetlistMetronome(bot *gotgbot.Bot, ctx *ext.Context) error {
-	{
 
-		eventIDHex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	eventIDHex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
 
-		eventID, err := primitive.ObjectIDFromHex(eventIDHex)
-		if err != nil {
-			return err
-		}
-		event, err := c.EventService.GetEventWithSongs(eventID)
-		if err != nil {
-			return err
-		}
-
-		var bigAlbum []gotgbot.InputMedia
-
-		for _, song := range event.Songs {
-			audio := &gotgbot.InputMediaAudio{
-				Media:   metronome.GetMetronomeTrackFileID(song.PDF.BPM, song.PDF.Time),
-				Caption: "↑ " + song.PDF.Name,
-			}
-
-			bigAlbum = append(bigAlbum, audio)
-		}
-
-		chunks := chunkAlbum(bigAlbum, 10)
-
-		for _, album := range chunks {
-			_, err := bot.SendMediaGroup(ctx.EffectiveChat.Id, album, nil)
-			if err != nil {
-				return err
-			}
-		}
-
-		ctx.CallbackQuery.Answer(bot, nil)
-		return nil
+	eventID, err := primitive.ObjectIDFromHex(eventIDHex)
+	if err != nil {
+		return err
 	}
+	event, err := c.EventService.GetEventWithSongs(eventID)
+	if err != nil {
+		return err
+	}
+
+	var bigAlbum []gotgbot.InputMedia
+
+	for _, song := range event.Songs {
+		audio := &gotgbot.InputMediaAudio{
+			Media:   metronome.GetMetronomeTrackFileID(song.PDF.BPM, song.PDF.Time),
+			Caption: "↑ " + song.PDF.Name,
+		}
+
+		bigAlbum = append(bigAlbum, audio)
+	}
+
+	chunks := chunkAlbum(bigAlbum, 10)
+
+	for _, album := range chunks {
+		_, err := bot.SendMediaGroup(ctx.EffectiveChat.Id, album, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+	return nil
 }
 
 func (c *BotController) EventCB(bot *gotgbot.Bot, ctx *ext.Context) error {
