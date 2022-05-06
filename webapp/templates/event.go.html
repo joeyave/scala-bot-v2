@@ -45,7 +45,7 @@
                     {{ range $i, $song := .Event.Songs }}
                         <div class="item">
                             <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
-                            <i id="delete-song-icon" data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
+                            <i class="fas fa-trash-alt song-remove"></i>
                         </div>
                     {{ end }}
                 </div>
