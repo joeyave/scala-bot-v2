@@ -1,9 +1,7 @@
 package controller
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/gin-gonic/gin"
@@ -11,8 +9,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"golang.org/x/net/html"
-	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -85,24 +81,21 @@ func (h *WebAppController) EditEvent(ctx *gin.Context) {
 		return
 	}
 
-	eventJsonBytes, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-
 	eventNames, err := h.EventService.GetMostFrequentEventNames(event.BandID, 4)
 	if err != nil {
 		return
 	}
 
 	ctx.HTML(http.StatusOK, "event.go.html", gin.H{
-		"MessageID":  messageID,
-		"ChatID":     chatID,
-		"UserID":     userID,
+		"Action": "edit",
+
+		"MessageID": messageID,
+		"ChatID":    chatID,
+		"UserID":    userID,
+
+		"Event": event,
+
 		"EventNames": eventNames,
-		"Event":      event,
-		"EventJS":    string(eventJsonBytes),
-		"Action":     "edit",
 	})
 }
 
@@ -196,11 +189,11 @@ func (h *WebAppController) CreateSong(ctx *gin.Context) {
 	}
 
 	ctx.HTML(http.StatusOK, "song.go.html", gin.H{
+		"Action": "create",
 		"Keys":   valuesForSelect("?", keys, "Key"),
 		"BPMs":   valuesForSelect("?", bpms, "BPM"),
 		"Times":  valuesForSelect("?", times, "Time"),
 		"Tags":   songTags,
-		"Action": "create",
 	})
 }
 
@@ -232,11 +225,6 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		return
 	}
 
-	songJsonBytes, err := json.Marshal(song)
-	if err != nil {
-		return
-	}
-
 	allTags, err := h.SongService.GetTags(user.BandID)
 	if err != nil {
 		return
@@ -257,16 +245,6 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 	lyrics := h.DriveFileService.GetText(song.DriveFileID)
 
 	start := time.Now()
-	//doc, err := html.Parse(lyrics)
-	//if err != nil {
-	//	return
-	//}
-
-	//bn, err := Body(doc)
-	//if err != nil {
-	//	return
-	//}
-	//body := renderNode(bn)
 
 	sectionsNumber, err := h.DriveFileService.GetSectionsNumber(song.DriveFileID)
 	if err != nil {
@@ -280,6 +258,8 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 
 	fmt.Println(time.Since(start).String())
 	ctx.HTML(http.StatusOK, "song.go.html", gin.H{
+		"Action": "edit",
+
 		"MessageID": messageID,
 		"ChatID":    chatID,
 		"UserID":    userID,
@@ -291,52 +271,8 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		"Tags":     songTags,
 		"Lyrics":   lyrics,
 
-		"Song":   song,
-		"SongJS": string(songJsonBytes),
-
-		"Action": "edit",
+		"Song": song,
 	})
-}
-
-var fontSizeRegex = regexp.MustCompile("font-size:.*?;")
-
-func Body(doc *html.Node) (*html.Node, error) {
-	var body *html.Node
-	var crawler func(*html.Node)
-	crawler = func(node *html.Node) {
-		if node.Type == html.ElementNode && node.Data == "body" {
-			body = node
-			//return
-		}
-		for child := node.FirstChild; child != nil; child = child.NextSibling {
-			for i, attribute := range child.Attr {
-				if attribute.Key == "style" {
-					child.Attr[i].Val = fontSizeRegex.ReplaceAllString(attribute.Val, "font-size:1em;")
-				}
-			}
-			crawler(child)
-		}
-	}
-	crawler(doc)
-
-	if body == nil {
-		return nil, errors.New("Missing <body> in the node tree")
-	}
-
-	if body.FirstChild != nil && body.FirstChild.Data == "div" {
-		body.RemoveChild(body.FirstChild)
-	}
-	body.Data = "div"
-	body.Attr = []html.Attribute{{Key: "style", Val: "font-size:1em;"}}
-
-	return body, nil
-}
-
-func renderNode(n *html.Node) string {
-	var buf bytes.Buffer
-	w := io.Writer(&buf)
-	html.Render(w, n)
-	return buf.String()
 }
 
 type EditSongData struct {
@@ -411,7 +347,7 @@ func (h *WebAppController) EditSongConfirm(ctx *gin.Context) {
 		}
 		_, err = h.DriveFileService.TransposeOne(song.DriveFileID, data.Key, section)
 
-		//song.PDF.Key = data.Key
+		song.PDF.Key = data.Key
 	}
 
 	if song.PDF.BPM != data.BPM {

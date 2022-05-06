@@ -40,5 +40,10 @@ const (
 	SongVoiceDeleteConfirm
 	SongVoiceDelete
 
-	ChooseBand
+	SettingsCB
+	SettingsBands
+	SettingsChooseBand
+
+	SettingsBandMembers
+	SettingsBandAddAdmin
 )

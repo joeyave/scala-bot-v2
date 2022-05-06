@@ -78,7 +78,7 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 		if ctx.CallbackQuery != nil {
 			parsedData := strings.Split(ctx.CallbackQuery.Data, ":")
-			if parsedData[0] == strconv.Itoa(state.ChooseBand) {
+			if parsedData[0] == strconv.Itoa(state.SettingsChooseBand) {
 				return nil
 			}
 		}
@@ -90,7 +90,7 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 			return err
 		}
 		for _, band := range bands {
-			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: band.Name, CallbackData: util.CallbackData(state.ChooseBand, band.ID.Hex())}})
+			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: band.Name, CallbackData: util.CallbackData(state.SettingsChooseBand, band.ID.Hex())}})
 		}
 
 		_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseBand", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
@@ -141,32 +141,6 @@ func (c *BotController) UpdateUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 
 	_, err := c.UserService.UpdateOne(*user)
 	return err
-}
-
-func (c *BotController) ChooseBand(bot *gotgbot.Bot, ctx *ext.Context) error {
-
-	user := ctx.Data["user"].(*entity.User)
-
-	hex := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
-	bandID, err := primitive.ObjectIDFromHex(hex)
-	if err != nil {
-		return err
-	}
-
-	band, err := c.BandService.FindOneByID(bandID)
-
-	user.BandID = bandID
-
-	_, _, err = bot.EditMessageText(fmt.Sprintf(txt.Get("text.addedToBand", ctx.EffectiveUser.LanguageCode), band.Name), &gotgbot.EditMessageTextOpts{
-		ChatId:    ctx.EffectiveChat.Id,
-		MessageId: ctx.EffectiveMessage.MessageId,
-		//ReplyMarkup: gotgbot.InlineKeyboardMarkup{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return c.Menu(bot, ctx)
 }
 
 func (c *BotController) search(index int) handlers.Response {

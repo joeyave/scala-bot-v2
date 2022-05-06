@@ -64,12 +64,12 @@
 
 <script type="text/javascript">
     const action = {{ .Action }};
-    let event = JSON.parse("{{ .EventJS }}");
+    let event = JSON.parse({{ json .Event }});
 
     const messageId = {{ .MessageID }};
     const chatId = {{ .ChatID }};
     const userId = {{ .UserID }};
 </script>
-<script type="module" src="/webapp/assets/js/edit-event.js"></script>
+<script type="text/javascript" src="/webapp/assets/js/edit-event.js"></script>
 </body>
 </html>

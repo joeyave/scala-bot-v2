@@ -4,39 +4,18 @@ const SongsPageSize = 50
 const EventsPageSize = 25
 
 const (
-	SearchSongState = iota
-	SetlistState
-	SongActionsState
-	GetVoicesState
-	AddSongTagState
+	SongActionsState = iota
 	UploadVoiceState
-	DeleteVoiceState
 	MainMenuState
 	TransposeSongState
 	StyleSongState
 	AddLyricsPageState
-	ChangeSongBPMState
-	ChooseBandState
 	CreateBandState
 	CopySongState
-	CreateSongState
 	DeleteSongState
 	AddBandAdminState
-	GetEventsState
-	CreateEventState
-	EventActionsState
 	CreateRoleState
-	AddEventSongState
 	DeleteEventState
-	ChangeSongOrderState
-	AddEventMemberState
-	ChangeEventDateState
-	ChangeEventNotesState
-	DeleteEventMemberState
-	DeleteEventSongState
-	GetSongsFromMongoState
-	EditInlineKeyboardState
-	SettingsState
 )
 
 // Buttons constants.

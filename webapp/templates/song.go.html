@@ -7,7 +7,8 @@
 <div class="container">
     <form id="form">
         <div class="mt-2 mb-2">
-            <textarea rows='1' type="text" class="header-input w-100" id="name" list="suggestions" placeholder="Название"
+            <textarea rows='1' type="text" class="header-input w-100" id="name" list="suggestions"
+                      placeholder="Название"
                       autocomplete="off" required>{{ .Song.PDF.Name }}</textarea>
             <select class="mb-2" id="tags" multiple>
                 {{ range $i, $tag := .Tags }}
@@ -59,16 +60,16 @@
             </select>
         </div>
 
-{{/*        <div class="mb-2 d-flex justify-content-end">*/}}
-{{/*            <div class="form-check form-check-inline form-switch">*/}}
-{{/*                <input type="checkbox" class="form-check-input" role="switch" id="showLyrics" checked>*/}}
-{{/*                <label for="scales">Слова</label>*/}}
-{{/*            </div>*/}}
-{{/*            <div class="form-check form-check-inline form-switch">*/}}
-{{/*                <input type="checkbox" class="form-check-input" role="switch" id="showChords" checked>*/}}
-{{/*                <label for="horns">Аккорды</label>*/}}
-{{/*            </div>*/}}
-{{/*        </div>*/}}
+        {{/*        <div class="mb-2 d-flex justify-content-end">*/}}
+        {{/*            <div class="form-check form-check-inline form-switch">*/}}
+        {{/*                <input type="checkbox" class="form-check-input" role="switch" id="showLyrics" checked>*/}}
+        {{/*                <label for="scales">Слова</label>*/}}
+        {{/*            </div>*/}}
+        {{/*            <div class="form-check form-check-inline form-switch">*/}}
+        {{/*                <input type="checkbox" class="form-check-input" role="switch" id="showChords" checked>*/}}
+        {{/*                <label for="horns">Аккорды</label>*/}}
+        {{/*            </div>*/}}
+        {{/*        </div>*/}}
 
         <div id="lyrics-container">
             {{ if eq .Action "create" }}
@@ -82,14 +83,15 @@
 </div>
 
 <script type="text/javascript">
-    const lyricsHTML = {{ .Lyrics }};
     const action = {{ .Action }};
+
+    const lyricsHTML = {{ .Lyrics }};
 
     const messageId = {{ .MessageID }};
     const chatId = {{ .ChatID }};
     const userId = {{ .UserID }};
 
-    const song = JSON.parse("{{ .SongJS }}");
+    const song = JSON.parse("{{ json .Song }}");
 </script>
 <script type="module" src="/webapp/assets/js/edit-song.js"></script>
 </body>
