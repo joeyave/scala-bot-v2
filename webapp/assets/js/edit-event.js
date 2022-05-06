@@ -150,8 +150,6 @@ window.addEventListener('DOMContentLoaded', (e) => {
     function createEvent() {
         Telegram.WebApp.MainButton.setText("Создать")
 
-        // date.value = new Date().toISOString().substring(0, 10);
-
         Telegram.WebApp.MainButton.onClick(function () {
 
             if (form.checkValidity() === false) {

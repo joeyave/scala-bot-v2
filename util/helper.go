@@ -28,3 +28,26 @@ func File(bot *gotgbot.Bot, file *gotgbot.File) (io.ReadCloser, error) {
 
 	return resp.Body, nil
 }
+
+func SplitKeyboardToColumns(k [][]gotgbot.InlineKeyboardButton, colNum int) [][]gotgbot.InlineKeyboardButton {
+
+	var newK [][]gotgbot.InlineKeyboardButton
+	//var newRow []gotgbot.InlineKeyboardButton
+	var i int
+
+	for _, row := range k {
+		for _, button := range row {
+			if i == 0 {
+				newK = append(newK, []gotgbot.InlineKeyboardButton{button})
+			} else if i < colNum {
+				newK[len(newK)-1] = append(newK[len(newK)-1], button)
+			} else if i == colNum {
+				i = 0
+				continue
+			}
+			i++
+		}
+	}
+
+	return newK
+}

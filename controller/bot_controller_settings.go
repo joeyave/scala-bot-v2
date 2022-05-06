@@ -73,6 +73,9 @@ func (c *BotController) SettingsCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 	if err != nil {
 		return err
 	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+
 	return nil
 }
 
@@ -98,6 +101,9 @@ func (c *BotController) SettingsBands(bot *gotgbot.Bot, ctx *ext.Context) error 
 	if err != nil {
 		return err
 	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+
 	return nil
 }
 
@@ -134,6 +140,9 @@ func (c *BotController) settingsBandMembers(bot *gotgbot.Bot, ctx *ext.Context, 
 			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: text, CallbackData: util.CallbackData(state.SettingsBandAddAdmin, fmt.Sprintf("%s:%d:add", bandID.Hex(), member.ID))}})
 		}
 	}
+
+	markup.InlineKeyboard = util.SplitKeyboardToColumns(markup.InlineKeyboard, 2)
+
 	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SettingsCB, "")}})
 
 	text := txt.Get("text.chooseMemberToMakeAdmin", ctx.EffectiveUser.LanguageCode)
@@ -143,6 +152,9 @@ func (c *BotController) settingsBandMembers(bot *gotgbot.Bot, ctx *ext.Context, 
 	if err != nil {
 		return err
 	}
+
+	ctx.CallbackQuery.Answer(bot, nil)
+
 	return nil
 }
 

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/gin-gonic/gin"
@@ -30,6 +29,7 @@ type WebAppController struct {
 
 func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 
+	fmt.Println(ctx.Request.URL.String())
 	hex := ctx.Query("bandId")
 	bandID, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
@@ -42,14 +42,10 @@ func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 	}
 
 	event := &entity.Event{
+		Time:   time.Now(),
 		BandID: bandID,
 		Band:   band,
 	}
-	eventJsonBytes, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-
 	eventNames, err := h.EventService.GetMostFrequentEventNames(bandID, 4)
 	if err != nil {
 		return
@@ -57,7 +53,7 @@ func (h *WebAppController) CreateEvent(ctx *gin.Context) {
 
 	ctx.HTML(http.StatusOK, "event.go.html", gin.H{
 		"EventNames": eventNames,
-		"EventJS":    string(eventJsonBytes),
+		"Event":      event,
 		"Action":     "create",
 	})
 }
