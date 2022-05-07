@@ -247,7 +247,10 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		return
 	}
 
-	sectionsSelect := []*SelectEntity{{Name: "В конец документа", Value: "-1", IsSelected: true}}
+	sectionsSelect := []*SelectEntity{
+		{Name: "Куда вставить?", Value: "", IsSelected: false},
+		{Name: "В конец документа", Value: "-1", IsSelected: false},
+	}
 	for i := 0; i < sectionsNumber; i++ {
 		sectionsSelect = append(sectionsSelect, &SelectEntity{Name: fmt.Sprintf("Вместо %d секции", i+1), Value: fmt.Sprint(i)})
 	}
@@ -343,7 +346,7 @@ func (h *WebAppController) EditSongConfirm(ctx *gin.Context) {
 		}
 		_, err = h.DriveFileService.TransposeOne(song.DriveFileID, data.Key, section)
 
-		song.PDF.Key = data.Key
+		//song.PDF.Key = data.Key
 	}
 
 	if song.PDF.BPM != data.BPM {

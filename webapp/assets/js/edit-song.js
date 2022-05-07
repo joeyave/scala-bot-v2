@@ -96,9 +96,9 @@ window.addEventListener('DOMContentLoaded', (e) => {
         key.onchange = (e) => {
 
             if (e.target.value !== song.pdf.key) {
-                document.getElementById("transpose-opts").classList.remove("visually-hidden")
+                document.getElementById("transpose-section").classList.remove("visually-hidden")
             } else {
-                document.getElementById("transpose-opts").classList.add("visually-hidden")
+                document.getElementById("transpose-section").classList.add("visually-hidden")
             }
 
             if (e.target.value === song.pdf.key) {
