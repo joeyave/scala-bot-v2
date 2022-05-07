@@ -21,6 +21,20 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
     Telegram.WebApp.ready()
 
+    if (Array.from(key.options).find(o => o.value === song.pdf.key)) {
+        key.value = song.pdf.key;
+    } else {
+        try {
+            new Transposer(song.pdf.key).getKey()
+            const o = new Option(song.pdf.key, song.pdf.key)
+            console.log(o)
+            key.add(o, 0)
+            key.value = song.pdf.key
+        } catch (err) {
+            key.value = "?"
+        }
+    }
+
     Array.from(form.elements).forEach((element) => {
         if (element.tagName === "SELECT" && element.multiple) {
             element.initValue = Array.from(element.selectedOptions).map(({value}) => value)
@@ -35,12 +49,12 @@ window.addEventListener('DOMContentLoaded', (e) => {
         let hide = []
         Array.from(form.elements).forEach((element) => {
             if (element.tagName === "SELECT" && element.multiple) {
-                console.log(element.initValue)
                 let opts = Array.from(element.selectedOptions).map(({value}) => value)
-                console.log(opts)
                 hide.push(JSON.stringify(opts) === JSON.stringify(element.initValue))
-                console.log(hide);
             } else {
+                console.log(element)
+                console.log("init " + element.initValue)
+                console.log("curr " + element.value)
                 hide.push(element.initValue === element.value)
             }
         });
@@ -93,12 +107,15 @@ window.addEventListener('DOMContentLoaded', (e) => {
         let lyricsDiv = document.getElementById("lyrics")
         let initLyricsDiv = lyricsDiv.cloneNode(true)
 
+        let transposeSection = document.getElementById("transpose-section")
         key.onchange = (e) => {
 
             if (e.target.value !== song.pdf.key) {
-                document.getElementById("transpose-section").classList.remove("visually-hidden")
+                transposeSection.classList.remove("visually-hidden")
+                transposeSection.disabled = false
             } else {
-                document.getElementById("transpose-section").classList.add("visually-hidden")
+                transposeSection.classList.add("visually-hidden")
+                transposeSection.disabled = true
             }
 
             if (e.target.value === song.pdf.key) {

@@ -186,7 +186,6 @@ func (h *WebAppController) CreateSong(ctx *gin.Context) {
 
 	ctx.HTML(http.StatusOK, "song.go.html", gin.H{
 		"Action": "create",
-		"Keys":   valuesForSelect("?", keys, "Key"),
 		"BPMs":   valuesForSelect("?", bpms, "BPM"),
 		"Times":  valuesForSelect("?", times, "Time"),
 		"Tags":   songTags,
@@ -247,10 +246,7 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		return
 	}
 
-	sectionsSelect := []*SelectEntity{
-		{Name: "Куда вставить?", Value: "", IsSelected: false},
-		{Name: "В конец документа", Value: "-1", IsSelected: false},
-	}
+	var sectionsSelect []*SelectEntity
 	for i := 0; i < sectionsNumber; i++ {
 		sectionsSelect = append(sectionsSelect, &SelectEntity{Name: fmt.Sprintf("Вместо %d секции", i+1), Value: fmt.Sprint(i)})
 	}
@@ -263,7 +259,6 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		"ChatID":    chatID,
 		"UserID":    userID,
 
-		"Keys":     valuesForSelect(strings.TrimSpace(song.PDF.Key), keys, "Key"),
 		"Sections": sectionsSelect,
 		"BPMs":     valuesForSelect(strings.TrimSpace(song.PDF.BPM), bpms, "BPM"),
 		"Times":    valuesForSelect(strings.TrimSpace(song.PDF.Time), times, "Time"),
