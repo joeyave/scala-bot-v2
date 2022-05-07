@@ -65,9 +65,13 @@ window.addEventListener('DOMContentLoaded', (e) => {
 <!--            <p class="instant-search__paragraph">${result.occupation}</p>-->
         `;
         },
-        resultEventListener: (result) => {
+        resultEventListener: (result, search) => {
             return [
                 "click", async () => {
+
+                    search.setLoading(true)
+                    // Notiflix.Block.dots('.sortable-list');
+
                     document.getElementById("song-search-input").focus()
 
                     let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
@@ -87,6 +91,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                             break
                         }
                     }
+
                     if (!exists) {
                         songs.insertAdjacentHTML("beforeend",
                             `<div class="item">
@@ -103,6 +108,9 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     } else {
                         Notiflix.Notify.warning('Песня уже есть в списке.');
                     }
+
+                    search.setLoading(false)
+                    // Notiflix.Block.remove('.sortable-list');
                 }
             ]
         }

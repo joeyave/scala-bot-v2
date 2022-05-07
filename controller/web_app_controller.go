@@ -215,11 +215,14 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 	messageID := ctx.Query("messageId")
 	chatID := ctx.Query("chatId")
 
+	start := time.Now()
 	song, err := h.SongService.FindOneByID(songID)
 	if err != nil {
 		return
 	}
+	fmt.Println(time.Since(start).String())
 
+	start = time.Now()
 	allTags, err := h.SongService.GetTags(user.BandID)
 	if err != nil {
 		return
@@ -236,22 +239,17 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		}
 		songTags = append(songTags, &SelectEntity{Name: tag, IsSelected: isSelected})
 	}
+	fmt.Println(time.Since(start).String())
 
-	lyrics := h.DriveFileService.GetText(song.DriveFileID)
-
-	start := time.Now()
-
-	sectionsNumber, err := h.DriveFileService.GetSectionsNumber(song.DriveFileID)
-	if err != nil {
-		return
-	}
+	start = time.Now()
+	lyrics, sectionsNumber := h.DriveFileService.GetTextWithSectionsNumber(song.DriveFileID)
 
 	var sectionsSelect []*SelectEntity
 	for i := 0; i < sectionsNumber; i++ {
 		sectionsSelect = append(sectionsSelect, &SelectEntity{Name: fmt.Sprintf("Вместо %d секции", i+1), Value: fmt.Sprint(i)})
 	}
-
 	fmt.Println(time.Since(start).String())
+
 	ctx.HTML(http.StatusOK, "song.go.html", gin.H{
 		"Action": "edit",
 

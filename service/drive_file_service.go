@@ -1076,11 +1076,11 @@ func composeCloneWithoutChordsRequests(content []*docs.StructuralElement, index 
 	return requests
 }
 
-func (s *DriveFileService) GetText(ID string) string {
+func (s *DriveFileService) GetTextWithSectionsNumber(ID string) (string, int) {
 
 	doc, err := s.docsRepository.Documents.Get(ID).Do()
 	if err != nil {
-		return ""
+		return "", 0
 	}
 
 	var sb strings.Builder
@@ -1099,7 +1099,7 @@ func (s *DriveFileService) GetText(ID string) string {
 		}
 	}
 
-	return strings.TrimSpace(newLinesRegex.ReplaceAllString(sb.String(), "\n\n"))
+	return strings.TrimSpace(newLinesRegex.ReplaceAllString(sb.String(), "\n\n")), len(s.getSections(doc))
 }
 
 func (s *DriveFileService) GetTextAsHTML(ID string) io.Reader {
