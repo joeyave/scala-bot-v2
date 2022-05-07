@@ -95,9 +95,13 @@ window.addEventListener('DOMContentLoaded', (e) => {
                         </div>`
                         );
 
+                        Notiflix.Notify.success('Песня добавлена в список!');
+
                         // sortableInit = JSON.stringify(sortable.toArray())
                         Telegram.WebApp.MainButton.show()
                         console.log("show")
+                    } else {
+                        Notiflix.Notify.warning('Песня уже есть в списке.');
                     }
                 }
             ]
