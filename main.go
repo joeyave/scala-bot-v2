@@ -165,6 +165,12 @@ func main() {
 		return msg.Text == txt.Get("button.songs", msg.From.LanguageCode)
 	}, botController.GetSongs(0)), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Text == txt.Get("button.stats", msg.From.LanguageCode)
+	}, func(bot *gotgbot.Bot, ctx *ext.Context) error {
+		ctx.EffectiveChat.SendMessage(bot, "Статистика временно не доступна.", nil)
+		return nil
+	}), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Text == txt.Get("button.settings", msg.From.LanguageCode)
 	}, botController.Settings), 1)
 
@@ -177,6 +183,8 @@ func main() {
 	}, botController.CreateSong), 1)
 
 	// Inline keyboard.
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.BandCreate_AskForName), botController.BandCreate_AskForName), 1)
+
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsCB), botController.SettingsCB), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsBands), botController.SettingsBands), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsChooseBand), botController.SettingsChooseBand), 1)

@@ -57,6 +57,7 @@ type Cache struct {
 	DriveFileIDs  []string           `bson:"drive_file_ids,omitempty"`
 	Voice         *Voice             `bson:"voice,omitempty"`
 	SongID        primitive.ObjectID `bson:"song_id,omitempty"`
+	Band          *Band              `bson:"band,omitempty"`
 }
 
 type CallbackCache struct {

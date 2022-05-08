@@ -50,6 +50,8 @@ func (c *BotController) ChooseHandlerOrSearch(bot *gotgbot.Bot, ctx *ext.Context
 		return c.searchSetlist(user.State.Index)(bot, ctx)
 	case state.SongVoicesCreateVoice:
 		return c.SongVoicesCreateVoice(user.State.Index)(bot, ctx)
+	case state.BandCreate:
+		return c.BandCreate(user.State.Index)(bot, ctx)
 	}
 
 	return c.search(user.State.Index)(bot, ctx)
@@ -74,13 +76,15 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 	//		Name: helpers.ChooseBandState,
 	//	}
 	//}
-	if user.BandID == primitive.NilObjectID {
+	if user.BandID == primitive.NilObjectID || user.Band == nil {
 
 		if ctx.CallbackQuery != nil {
 			parsedData := strings.Split(ctx.CallbackQuery.Data, ":")
-			if parsedData[0] == strconv.Itoa(state.SettingsChooseBand) {
+			if parsedData[0] == strconv.Itoa(state.SettingsChooseBand) || parsedData[0] == strconv.Itoa(state.BandCreate_AskForName) {
 				return nil
 			}
+		} else if user.State.Name == (state.BandCreate) {
+			return nil
 		}
 
 		markup := gotgbot.InlineKeyboardMarkup{}
@@ -92,6 +96,7 @@ func (c *BotController) RegisterUser(bot *gotgbot.Bot, ctx *ext.Context) error {
 		for _, band := range bands {
 			markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: band.Name, CallbackData: util.CallbackData(state.SettingsChooseBand, band.ID.Hex())}})
 		}
+		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.createBand", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.BandCreate_AskForName, "")}})
 
 		_, err = ctx.EffectiveChat.SendMessage(bot, txt.Get("text.chooseBand", ctx.EffectiveUser.LanguageCode), &gotgbot.SendMessageOpts{
 			ReplyMarkup: markup,

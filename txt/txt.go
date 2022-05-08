@@ -60,6 +60,9 @@ var locales = map[string]map[string]string{
 	"button.createDoc": {
 		"ru": "➕ Создать документ",
 	},
+	"button.createBand": {
+		"ru": "➕ Создать группу",
+	},
 	"button.createEvent": {
 		"ru": "➕ Добавить собрание",
 	},
@@ -199,6 +202,9 @@ var locales = map[string]map[string]string{
 	},
 	"text.sendTagName": {
 		"ru": "Введи название тега:",
+	},
+	"text.sendBandName": {
+		"ru": "Введи название группы:",
 	},
 	"text.voiceDeleteConfirm": {
 		"ru": "Удалить эту партию?",

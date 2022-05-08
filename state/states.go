@@ -12,6 +12,8 @@ const (
 	FilterSongs
 
 	SongVoicesCreateVoice
+
+	BandCreate
 )
 
 // Inline states.
@@ -56,4 +58,6 @@ const (
 	SongCopyToMyBand
 	SongStyle
 	SongAddLyricsPage
+
+	BandCreate_AskForName
 )
