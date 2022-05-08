@@ -205,8 +205,14 @@ var locales = map[string]map[string]string{
 	"text.eventDeleteConfirm": {
 		"ru": "Удалить это собрание?",
 	},
+	"text.songDeleteConfirm": {
+		"ru": "Удалить эту песню?",
+	},
 	"text.eventDeleted": {
 		"ru": "Собрание удалено.",
+	},
+	"text.songDeleted": {
+		"ru": "Песня удалена.",
 	},
 }
 

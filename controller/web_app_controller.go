@@ -164,6 +164,7 @@ func (h *WebAppController) EditEventConfirm(ctx *gin.Context) {
 
 func (h *WebAppController) CreateSong(ctx *gin.Context) {
 
+	fmt.Println(ctx.Request.URL.String())
 	hex := ctx.Query("userId")
 	userID, err := strconv.ParseInt(hex, 10, 64)
 	if err != nil {

@@ -43,10 +43,15 @@ const (
 	SongVoiceDeleteConfirm
 	SongVoiceDelete
 
+	SongDeleteConfirm
+	SongDelete
+
 	SettingsCB
 	SettingsBands
 	SettingsChooseBand
 
 	SettingsBandMembers
 	SettingsBandAddAdmin
+
+	SongCopyToMyBand
 )

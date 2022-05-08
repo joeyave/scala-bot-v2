@@ -30,6 +30,8 @@ type CreateSongData struct {
 
 func (c *BotController) CreateSong(bot *gotgbot.Bot, ctx *ext.Context) error {
 
+	ctx.EffectiveChat.SendAction(bot, "upload_document")
+
 	var data *CreateSongData
 	err := json.Unmarshal([]byte(ctx.EffectiveMessage.WebAppData.Data), &data)
 	if err != nil {
@@ -828,4 +830,100 @@ func (c *BotController) SongVoiceDelete(bot *gotgbot.Bot, ctx *ext.Context) erro
 	}
 
 	return c.songVoices(bot, ctx, songID)
+}
+
+func (c *BotController) SongDeleteConfirm(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	songID, err := primitive.ObjectIDFromHex(payload)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	markup.InlineKeyboard = [][]gotgbot.InlineKeyboardButton{
+		{
+			{Text: txt.Get("button.cancel", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongCB, songID.Hex()+":edit")},
+			{Text: txt.Get("button.yes", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongDelete, songID.Hex())},
+		},
+	}
+
+	text := user.CallbackCache.AddToText(txt.Get("text.songDeleteConfirm", ctx.EffectiveUser.LanguageCode))
+
+	_, _, err = ctx.EffectiveMessage.EditCaption(bot, &gotgbot.EditMessageCaptionOpts{
+		Caption:     text,
+		ParseMode:   "HTML",
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *BotController) SongDelete(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	songID, err := primitive.ObjectIDFromHex(payload)
+	if err != nil {
+		return err
+	}
+
+	song, err := c.SongService.FindOneByID(songID)
+	if err != nil {
+		return err
+	}
+
+	err = c.SongService.DeleteOneByDriveFileID(song.DriveFileID)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = ctx.EffectiveMessage.EditCaption(bot, &gotgbot.EditMessageCaptionOpts{
+		Caption:   txt.Get("text.songDeleted", ctx.EffectiveUser.LanguageCode),
+		ParseMode: "HTML",
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *BotController) SongCopyToMyBand(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	//ctx.EffectiveChat.SendAction(bot, "typing")
+
+	driveFileID := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	file, err := c.DriveFileService.FindOneByID(driveFileID)
+	if err != nil {
+		return err
+	}
+
+	file = &drive.File{
+		Name:    file.Name,
+		Parents: []string{user.Band.DriveFolderID},
+	}
+
+	copiedSong, err := c.DriveFileService.CloneOne(driveFileID, file)
+	if err != nil {
+		return err
+	}
+
+	song, _, err := c.SongService.FindOrCreateOneByDriveFileID(copiedSong.Id)
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Data = util.CallbackData(state.SongCB, song.ID.Hex()+":init")
+	return c.SongCB(bot, ctx)
 }

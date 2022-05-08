@@ -287,12 +287,13 @@ func (s *DriveFileService) CloneOne(fileToCloneID string, newFile *drive.File) (
 	if folderOwnerPermission != nil {
 		permission := &drive.Permission{
 			EmailAddress: folderOwnerPermission.EmailAddress,
-			Role:         "owner",
+			Role:         "writer",
+			PendingOwner: true,
 			Type:         "user",
 		}
 		_, err = s.driveClient.Permissions.
 			Create(newFile.Id, permission).
-			TransferOwnership(true).Do()
+			TransferOwnership(false).Do()
 		if err != nil {
 			return nil, err
 		}

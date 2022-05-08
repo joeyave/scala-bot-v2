@@ -949,7 +949,10 @@ func (c *BotController) EventDelete(bot *gotgbot.Bot, ctx *ext.Context) error {
 		return err
 	}
 
-	ctx.EffectiveMessage.EditText(bot, txt.Get("text.eventDeleted", ctx.EffectiveUser.LanguageCode), nil)
+	_, _, err = ctx.EffectiveMessage.EditText(bot, txt.Get("text.eventDeleted", ctx.EffectiveUser.LanguageCode), nil)
+	if err != nil {
+		return err
+	}
 
 	return c.GetEvents(0)(bot, ctx)
 }

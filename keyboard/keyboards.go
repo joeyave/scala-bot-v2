@@ -100,11 +100,7 @@ func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 	var keyboard [][]gotgbot.InlineKeyboardButton
 
 	if song.BandID == user.BandID {
-		keyboard = [][]gotgbot.InlineKeyboardButton{
-			{
-				{Text: txt.Get("button.more", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")},
-			},
-		}
+		keyboard = [][]gotgbot.InlineKeyboardButton{{{Text: txt.Get("button.more", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")}}}
 
 		liked := false
 		for _, userID := range song.Likes {
@@ -126,8 +122,12 @@ func SongInit(song *entity.Song, user *entity.User, lang string) [][]gotgbot.Inl
 
 	} else {
 		keyboard = [][]gotgbot.InlineKeyboardButton{
-			{{Text: txt.Get("button.copyToMyBand", lang), CallbackData: ""}},
-			{{Text: txt.Get("button.voices", lang), CallbackData: ""}},
+			{{Text: txt.Get("button.copyToMyBand", lang), CallbackData: util.CallbackData(state.SongCopyToMyBand, song.DriveFileID)}},
+			//{{Text: txt.Get("button.voices", lang), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())}}, // todo: enable
+		}
+
+		if user.ID == 195295372 { // todo: remove
+			keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.more", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")}})
 		}
 	}
 
@@ -156,10 +156,18 @@ func SongEdit(song *entity.Song, user *entity.User, chatID, messageID int64, lan
 		//	{Text: txt.Get("button.changeBpm", lang), CallbackData: "todo"},
 		//	{Text: txt.Get("button.lyrics", lang), CallbackData: "todo"},
 		//},
-		{
-			{Text: txt.Get("button.back", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":init")},
-		},
+		//{
+		//	{Text: txt.Get("button.delete", lang), CallbackData: util.CallbackData(state.SongDeleteConfirm, song.ID.Hex())},
+		//},
+
 	}
+
+	// todo: allow for Admins
+	if user.ID == 195295372 {
+		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.delete", lang), CallbackData: util.CallbackData(state.SongDeleteConfirm, song.ID.Hex())}})
+	}
+
+	keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", lang), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":init")}})
 
 	return keyboard
 }

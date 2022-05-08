@@ -21,17 +21,19 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
     Telegram.WebApp.ready()
 
-    if (Array.from(key.options).find(o => o.value === song.pdf.key)) {
-        key.value = song.pdf.key;
-    } else {
-        try {
-            new Transposer(song.pdf.key).getKey()
-            const o = new Option(song.pdf.key, song.pdf.key)
-            console.log(o)
-            key.add(o, 0)
-            key.value = song.pdf.key
-        } catch (err) {
-            key.value = "?"
+    if (action === "edit") {
+        if (Array.from(key.options).find(o => o.value === song.pdf.key)) {
+            key.value = song.pdf.key;
+        } else {
+            try {
+                new Transposer(song.pdf.key).getKey()
+                const o = new Option(song.pdf.key, song.pdf.key)
+                console.log(o)
+                key.add(o, 0)
+                key.value = song.pdf.key
+            } catch (err) {
+                key.value = "?"
+            }
         }
     }
 
@@ -52,19 +54,19 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 let opts = Array.from(element.selectedOptions).map(({value}) => value)
                 hide.push(JSON.stringify(opts) === JSON.stringify(element.initValue))
             } else {
-                console.log(element)
-                console.log("init " + element.initValue)
-                console.log("curr " + element.value)
+                // console.log(element)
+                // console.log("init " + element.initValue)
+                // console.log("curr " + element.value)
                 hide.push(element.initValue === element.value)
             }
         });
 
         if (!hide.includes(false)) {
             Telegram.WebApp.MainButton.hide()
-            console.log("MainButton hidden")
+            console.log("hide")
         } else {
             Telegram.WebApp.MainButton.show()
-            console.log("MainButton shown")
+            console.log("show")
         }
     })
 
