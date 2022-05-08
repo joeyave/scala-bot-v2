@@ -32,5 +32,7 @@
     <orderEntry type="library" name="autosize.js" level="application" />
     <orderEntry type="library" name="tom-select" level="application" />
     <orderEntry type="library" name="chord-transposer" level="application" />
+    <orderEntry type="library" name="notiflix-3.2.5" level="application" />
+    <orderEntry type="library" name="notiflix" level="application" />
   </component>
 </module>

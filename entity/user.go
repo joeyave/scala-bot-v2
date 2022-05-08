@@ -15,7 +15,7 @@ import (
 type User struct {
 	ID   int64  `bson:"_id,omitempty" json:"id,omitempty"`
 	Name string `bson:"name,omitempty" json:"name,omitempty"`
-	Role string `bson:"role,omitempty" json:"role,omitempty"`
+	Role string `bson:"role" json:"role,omitempty"`
 
 	State         State         `bson:"state,omitempty" json:"state"`
 	Cache         Cache         `bson:"cache" json:"-"`

@@ -138,9 +138,14 @@ var locales = map[string]map[string]string{
 	"button.createTag": {
 		"ru": "➕ Создать тег",
 	},
-
 	"button.addVoice": {
 		"ru": "➕ Добавить партию",
+	},
+	"button.changeBand": {
+		"ru": "Изменить группу",
+	},
+	"button.addAdmin": {
+		"ru": "Добавить админа",
 	},
 
 	"text.defaultPlaceholder": {
@@ -166,6 +171,9 @@ var locales = map[string]map[string]string{
 	},
 	"text.chooseNewMember": {
 		"ru": "Выбери нового участника на роль %s:",
+	},
+	"text.chooseMemberToMakeAdmin": {
+		"ru": "Выбери пользователя, которого ты хочешь сделать администратором:",
 	},
 	"text.chooseBand": {
 		"ru": "Выбери группу или создай свою.",

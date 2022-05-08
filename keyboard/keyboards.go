@@ -18,6 +18,16 @@ func Menu(lang string) [][]gotgbot.KeyboardButton {
 	}
 }
 
+func Settings(user *entity.User, lang string) [][]gotgbot.InlineKeyboardButton {
+	keyboard := [][]gotgbot.InlineKeyboardButton{
+		{{Text: txt.Get("button.changeBand", lang), CallbackData: util.CallbackData(state.SettingsBands, "")}},
+	}
+	if user.IsAdmin() {
+		keyboard = append(keyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addAdmin", lang), CallbackData: util.CallbackData(state.SettingsBandMembers, user.BandID.Hex())}})
+	}
+	return keyboard
+}
+
 func NavigationByToken(nextPageToken *entity.NextPageToken, lang string) [][]gotgbot.KeyboardButton {
 
 	var keyboard [][]gotgbot.KeyboardButton

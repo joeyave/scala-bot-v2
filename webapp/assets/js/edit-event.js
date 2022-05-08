@@ -12,14 +12,46 @@ window.addEventListener('DOMContentLoaded', (e) => {
     let notes = document.getElementById("notes")
     autosize(notes)
 
-    new Sortable(songs, {
+    let sortable = new Sortable(songs, {
+        group: "songs",
         delay: 150,
         delayOnTouchOnly: true,
         animation: 100,
-        onUpdate: function (/**Event*/evt) {
-            Telegram.WebApp.MainButton.show()
+        onUpdate: function (/**Event*/e) {
+            // if (currOrder === order) {
+            //     Telegram.WebApp.MainButton.hide()
+            //     console.log("hide")
+            // } else {
+            //     Telegram.WebApp.MainButton.show()
+            //     console.log("show")
+            // }
+
+            let hide = []
+            Array.from(form.elements).forEach((element) => {
+                hide.push(element.initValue === element.value)
+            });
+
+            if (!hide.includes(false) && sortableInit === JSON.stringify(sortable.toArray())) {
+                Telegram.WebApp.MainButton.hide()
+                console.log("hide")
+            } else {
+                Telegram.WebApp.MainButton.show()
+                console.log("show")
+            }
+        },
+
+        filter: ".song-remove",
+        onFilter: function (e) {
+            if (Sortable.utils.is(e.target, ".song-remove")) {
+                e.item.parentNode.removeChild(e.item);
+                // sortableInit = JSON.stringify(sortable.toArray())
+                Telegram.WebApp.MainButton.show()
+                console.log("show")
+            }
         },
     });
+
+    let sortableInit = JSON.stringify(sortable.toArray());
 
     new InstantSearch(search, {
         searchUrl: new URL(`/api/drive-files/search?driveFolderId=${event.band.driveFolderId}`, window.location.origin),
@@ -33,9 +65,13 @@ window.addEventListener('DOMContentLoaded', (e) => {
 <!--            <p class="instant-search__paragraph">${result.occupation}</p>-->
         `;
         },
-        resultEventListener: (result) => {
+        resultEventListener: (result, search) => {
             return [
                 "click", async () => {
+
+                    search.setLoading(true)
+                    // Notiflix.Block.dots('.sortable-list');
+
                     document.getElementById("song-search-input").focus()
 
                     let resp = await fetch(`/api/songs/find-by-drive-file-id?driveFileId=${result.id}`, {
@@ -44,8 +80,6 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     })
 
                     let data = await resp.json()
-
-                    Telegram.WebApp.MainButton.show()
 
                     let spans = document.getElementById("songs").getElementsByTagName("span")
 
@@ -57,15 +91,27 @@ window.addEventListener('DOMContentLoaded', (e) => {
                             break
                         }
                     }
+
                     if (!exists) {
                         songs.insertAdjacentHTML("beforeend",
                             `<div class="item">
                             <span class="text" data-song-id=${data.song.id}>${result.name}</span>
-                            <i id="delete-song-icon" class="fas fa-trash-alt"></i>
+                            <i class="fas fa-trash-alt song-remove"></i>
                         </div>`
                         );
+
+                        Notiflix.Notify.success('Песня добавлена в список!');
+
+                        // sortableInit = JSON.stringify(sortable.toArray())
+                        Telegram.WebApp.MainButton.show()
+                        console.log("show")
+                    } else {
+                        Notiflix.Notify.warning('Песня уже есть в списке.');
                     }
-             }
+
+                    search.setLoading(false)
+                    // Notiflix.Block.remove('.sortable-list');
+                }
             ]
         }
     });
@@ -88,21 +134,21 @@ window.addEventListener('DOMContentLoaded', (e) => {
             hide.push(element.initValue === element.value)
         });
 
-        if (!hide.includes(false)) {
+        if (!hide.includes(false) && sortableInit === JSON.stringify(sortable.toArray())) {
             Telegram.WebApp.MainButton.hide()
-            console.log("MainButton hidden")
+            console.log("hide")
         } else {
             Telegram.WebApp.MainButton.show()
-            console.log("MainButton shown")
+            console.log("show")
         }
     })
 
-    document.addEventListener("click", (e) => {
-        if (e.target.id === "delete-song-icon") {
-            e.target.parentElement.remove()
-            Telegram.WebApp.MainButton.show()
-        }
-    })
+    // document.addEventListener("click", (e) => {
+    //     if (e.target.id === "delete-song-icon") {
+    //         e.target.parentElement.remove()
+    //         // Telegram.WebApp.MainButton.show()
+    //     }
+    // })
 
     if (action === "create") {
         createEvent()
@@ -149,8 +195,6 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
     function createEvent() {
         Telegram.WebApp.MainButton.setText("Создать")
-
-        // date.value = new Date().toISOString().substring(0, 10);
 
         Telegram.WebApp.MainButton.onClick(function () {
 

@@ -37,7 +37,8 @@
                         <input id="song-search-input" class="instant-search__input" type="text"
                                spellcheck="false"
                                placeholder="Добавить песню">
-                        <i class="fa fa-search"></i>
+                        <i class="instant-search__icon fa fa-search"></i>
+                        {{/*                        <i class="loader"></i>*/}}
                     </div>
                 </div>
 
@@ -45,7 +46,7 @@
                     {{ range $i, $song := .Event.Songs }}
                         <div class="item">
                             <span class="text" data-song-id="{{ hex $song.ID }}">{{ $song.PDF.Name }}</span>
-                            <i id="delete-song-icon" data-song-id="{{ hex $song.ID }}" class="fas fa-trash-alt"></i>
+                            <i class="fas fa-trash-alt song-remove"></i>
                         </div>
                     {{ end }}
                 </div>
@@ -64,7 +65,8 @@
 
 <script type="text/javascript">
     const action = {{ .Action }};
-    let event = JSON.parse("{{ .EventJS }}");
+
+    let event = JSON.parse({{ json .Event }});
 
     const messageId = {{ .MessageID }};
     const chatId = {{ .ChatID }};

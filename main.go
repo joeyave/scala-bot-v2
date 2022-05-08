@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
@@ -163,6 +164,9 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
 		return msg.Text == txt.Get("button.songs", msg.From.LanguageCode)
 	}, botController.GetSongs(0)), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
+		return msg.Text == txt.Get("button.settings", msg.From.LanguageCode)
+	}, botController.Settings), 1)
 
 	// Web app.
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(func(msg *gotgbot.Message) bool {
@@ -173,7 +177,11 @@ func main() {
 	}, botController.CreateSong), 1)
 
 	// Inline keyboard.
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.ChooseBand), botController.ChooseBand), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsCB), botController.SettingsCB), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsBands), botController.SettingsBands), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsChooseBand), botController.SettingsChooseBand), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsBandMembers), botController.SettingsBandMembers), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsBandAddAdmin), botController.SettingsBandAddAdmin), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventCB), botController.EventCB), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.EventSetlistDocs), botController.EventSetlistDocs), 1)
@@ -198,7 +206,7 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.ChooseHandlerOrSearch), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)
-	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix(fmt.Sprintf("%d:", state.ChooseBand)), botController.UpdateUser), 2)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix(fmt.Sprintf("%d:", state.SettingsChooseBand)), botController.UpdateUser), 2)
 
 	//go handler.NotifyUser() // todo
 
@@ -207,12 +215,12 @@ func main() {
 		"hex": func(id primitive.ObjectID) string {
 			return id.Hex()
 		},
-		"seq": func(from, to int) []int {
-			var items []int
-			for i := from; i < to; i++ {
-				items = append(items, i)
+		"json": func(s interface{}) string {
+			jsonBytes, err := json.Marshal(s)
+			if err != nil {
+				return ""
 			}
-			return items
+			return string(jsonBytes)
 		},
 	})
 

@@ -10,6 +10,7 @@ class InstantSearch {
         this.elements = {
             main: instantSearch,
             input: instantSearch.querySelector(".instant-search__input"),
+            icon: instantSearch.querySelector(".instant-search__icon"),
             resultsContainer: document.createElement("div")
         };
 
@@ -97,7 +98,7 @@ class InstantSearch {
             this.elements.input.value = "";
             this.populateResults([]);
         })
-        anchorElement.addEventListener(...this.options.resultEventListener(result))
+        anchorElement.addEventListener(...this.options.resultEventListener(result, this))
 
         // // If provided, add a link for the result
         // if ("href" in result) {
@@ -152,7 +153,7 @@ class InstantSearch {
      * @param {boolean} b True will show the loading indicator, false will not
      */
     setLoading(b) {
-        this.elements.main.classList.toggle("instant-search--loading", b);
+        this.elements.icon.classList.toggle("loader", b);
     }
 }
 
