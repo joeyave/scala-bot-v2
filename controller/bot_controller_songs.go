@@ -983,6 +983,60 @@ func (c *BotController) SongStyle(bot *gotgbot.Bot, ctx *ext.Context) error {
 	})
 
 	return nil
-	//ctx.CallbackQuery.Data = util.CallbackData(state.SongCB, song.ID.Hex()+":init")
-	//return c.SongCB(bot, ctx)
+}
+
+func (c *BotController) SongAddLyricsPage(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	driveFileID := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	driveFile, err := c.DriveFileService.AddLyricsPage(driveFileID)
+	if err != nil {
+		return err
+	}
+
+	song, err := c.SongService.FindOneByDriveFileID(driveFile.Id)
+	if err != nil {
+		return err
+	}
+
+	fakeTime, _ := time.Parse("2006", "2006")
+	song.PDF.ModifiedTime = fakeTime.Format(time.RFC3339)
+
+	_, err = c.SongService.UpdateOne(*song)
+	if err != nil {
+		return err
+	}
+
+	reader, err := c.DriveFileService.DownloadOneByID(song.DriveFileID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: keyboard.SongEdit(song, user, ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageId, ctx.EffectiveUser.LanguageCode),
+	}
+
+	caption := user.CallbackCache.AddToText(song.Caption())
+
+	_, _, err = ctx.EffectiveMessage.EditMedia(bot, gotgbot.InputMediaDocument{
+		Media: gotgbot.NamedFile{
+			File:     *reader,
+			FileName: fmt.Sprintf("%s.pdf", song.PDF.Name),
+		},
+		Caption:   caption,
+		ParseMode: "HTML",
+	}, &gotgbot.EditMessageMediaOpts{
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, &gotgbot.AnswerCallbackQueryOpts{
+		Text: txt.Get("text.addedLyricsPage", ctx.EffectiveUser.LanguageCode),
+	})
+
+	return nil
 }

@@ -55,4 +55,5 @@ const (
 
 	SongCopyToMyBand
 	SongStyle
+	SongAddLyricsPage
 )

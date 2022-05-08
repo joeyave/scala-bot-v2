@@ -218,6 +218,9 @@ var locales = map[string]map[string]string{
 	"text.styled": {
 		"ru": "Стилизация закончена. Аккорды выделены и покрашены.",
 	},
+	"text.addedLyricsPage": {
+		"ru": "На вторую страницу добавлены слова без аккордов.",
+	},
 }
 
 func init() {

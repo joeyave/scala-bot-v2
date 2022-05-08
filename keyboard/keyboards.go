@@ -150,7 +150,7 @@ func SongEdit(song *entity.Song, user *entity.User, chatID, messageID int64, lan
 		},
 		{
 			{Text: txt.Get("button.style", lang), CallbackData: util.CallbackData(state.SongStyle, song.DriveFileID)},
-			{Text: txt.Get("button.lyrics", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.lyrics", lang), CallbackData: util.CallbackData(state.SongAddLyricsPage, song.DriveFileID)},
 		},
 		//{
 		//	{Text: txt.Get("button.voices", lang), CallbackData: util.CallbackData(state.SongVoices, song.ID.Hex())},

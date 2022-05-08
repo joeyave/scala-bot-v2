@@ -180,39 +180,6 @@ func createBandHandler() (int, []HandlerFunc) {
 	return helpers.CreateBandState, handlerFunc
 }
 
-func addLyricsPageHandler() (int, []HandlerFunc) {
-	handlerFunc := make([]HandlerFunc, 0)
-
-	// Print list of found songs.
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
-
-		driveFile, err := h.driveFileService.AddLyricsPage(driveFileID)
-		if err != nil {
-			return err
-		}
-
-		song, err := h.songService.FindOneByDriveFileID(driveFile.Id)
-		if err != nil {
-			return err
-		}
-
-		fakeTime, _ := time.Parse("2006", "2006")
-		song.PDF.ModifiedTime = fakeTime.Format(time.RFC3339)
-
-		_, err = h.songService.UpdateOne(*song)
-		if err != nil {
-			return err
-		}
-
-		// c.CallbackQuery.Answer(h.bot, nil)
-		c.CallbackQuery.Data = helpers.AggregateCallbackData(helpers.SongActionsState, 0, "")
-		return h.enterInlineHandler(c, user)
-	})
-	return helpers.AddLyricsPageState, handlerFunc
-}
-
 func uploadVoiceHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
