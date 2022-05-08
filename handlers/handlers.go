@@ -113,44 +113,6 @@ func createRoleHandler() (int, []HandlerFunc) {
 	return helpers.CreateRoleState, handlerFuncs
 }
 
-func deleteEventHandler() (int, []HandlerFunc) {
-	handlerFuncs := make([]HandlerFunc, 0)
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		markup := gotgbot.InlineKeyboardMarkup{}
-		markup.InlineKeyboard = helpers.ConfirmDeletingEventKeyboard
-		msg := helpers.AddCallbackData(fmt.Sprintf("<b>%s</b>\n\nТы уверен, что хочешь удалить это собрание?", user.State.CallbackData.Query().Get("eventAlias")),
-			user.State.CallbackData.String())
-		_, _, err := c.EffectiveMessage.EditText(h.bot, msg, &gotgbot.EditMessageTextOpts{
-			ReplyMarkup: markup,
-			ParseMode:   "HTML",
-		})
-		return err
-
-	})
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		eventID, err := primitive.ObjectIDFromHex(user.State.CallbackData.Query().Get("eventId"))
-		if err != nil {
-			return err
-		}
-		err = h.eventService.DeleteOneByID(eventID)
-		if err != nil {
-			return err
-		}
-
-		_, _, err = c.EffectiveMessage.EditText(h.bot, "Удаление завершено.", nil)
-		if err != nil {
-			return err
-		}
-		return err
-	})
-
-	return helpers.DeleteEventState, handlerFuncs
-}
-
 func createBandHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 

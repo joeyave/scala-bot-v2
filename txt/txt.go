@@ -202,6 +202,12 @@ var locales = map[string]map[string]string{
 	"text.voiceDeleteConfirm": {
 		"ru": "Удалить эту партию?",
 	},
+	"text.eventDeleteConfirm": {
+		"ru": "Удалить это собрание?",
+	},
+	"text.eventDeleted": {
+		"ru": "Собрание удалено.",
+	},
 }
 
 func init() {

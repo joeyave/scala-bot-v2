@@ -85,7 +85,7 @@ func EventEdit(event *entity.Event, user *entity.User, chatID, messageID int64, 
 		//},
 		{
 			//{Text: txt.Get("button.editDate", lang), CallbackData: "todo"},
-			{Text: txt.Get("button.delete", lang), CallbackData: "todo"},
+			{Text: txt.Get("button.delete", lang), CallbackData: util.CallbackData(state.EventDeleteConfirm, event.ID.Hex())},
 		},
 		{
 			{Text: txt.Get("button.back", lang), CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")},

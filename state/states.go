@@ -31,6 +31,9 @@ const (
 	EventMembersAddMember
 	EventMembersDeleteMember
 
+	EventDeleteConfirm
+	EventDelete
+
 	SongCB
 	SongLike
 

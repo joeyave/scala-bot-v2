@@ -901,3 +901,55 @@ func (c *BotController) EventMembersDeleteMember(bot *gotgbot.Bot, ctx *ext.Cont
 
 	return c.eventMembersAddMemberChooseUser(bot, ctx, eventID, roleID, false)
 }
+
+func (c *BotController) EventDeleteConfirm(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+	eventID, err := primitive.ObjectIDFromHex(payload)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{}
+
+	markup.InlineKeyboard = [][]gotgbot.InlineKeyboardButton{
+		{
+			{Text: txt.Get("button.cancel", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventCB, eventID.Hex()+":edit")},
+			{Text: txt.Get("button.yes", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventDelete, eventID.Hex())},
+		},
+	}
+
+	text := user.CallbackCache.AddToText(txt.Get("text.eventDeleteConfirm", ctx.EffectiveUser.LanguageCode))
+
+	_, _, err = ctx.EffectiveMessage.EditText(bot, text, &gotgbot.EditMessageTextOpts{
+		ParseMode:   "HTML",
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *BotController) EventDelete(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	//user := ctx.Data["user"].(*entity.User)
+
+	payload := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	eventID, err := primitive.ObjectIDFromHex(payload)
+	if err != nil {
+		return err
+	}
+
+	err = c.EventService.DeleteOneByID(eventID)
+	if err != nil {
+		return err
+	}
+
+	ctx.EffectiveMessage.EditText(bot, txt.Get("text.eventDeleted", ctx.EffectiveUser.LanguageCode), nil)
+
+	return c.GetEvents(0)(bot, ctx)
+}
