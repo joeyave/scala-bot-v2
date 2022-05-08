@@ -54,4 +54,5 @@ const (
 	SettingsBandAddAdmin
 
 	SongCopyToMyBand
+	SongStyle
 )

@@ -17,6 +17,7 @@ import (
 	"google.golang.org/api/drive/v3"
 	"os"
 	"strings"
+	"time"
 )
 
 type CreateSongData struct {
@@ -88,7 +89,7 @@ func (c *BotController) song(bot *gotgbot.Bot, ctx *ext.Context, driveFileID str
 	}
 
 	markup := gotgbot.InlineKeyboardMarkup{
-		InlineKeyboard: keyboard.SongInit(song, user, ctx.EffectiveUser.LanguageCode),
+		InlineKeyboard: keyboard.SongInit(song, user, 0, 0, ctx.EffectiveUser.LanguageCode),
 	}
 
 	sendDocumentByReader := func() (*gotgbot.Message, error) {
@@ -462,7 +463,7 @@ func (c *BotController) SongCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 		case "edit":
 			markup.InlineKeyboard = keyboard.SongEdit(song, user, user.CallbackCache.ChatID, user.CallbackCache.MessageID, ctx.EffectiveUser.LanguageCode)
 		default:
-			markup.InlineKeyboard = keyboard.SongInit(song, user, ctx.EffectiveUser.LanguageCode)
+			markup.InlineKeyboard = keyboard.SongInit(song, user, 0, 0, ctx.EffectiveUser.LanguageCode)
 		}
 	}
 
@@ -508,7 +509,7 @@ func (c *BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	markup := gotgbot.InlineKeyboardMarkup{}
-	markup.InlineKeyboard = keyboard.SongInit(song, user, ctx.EffectiveUser.LanguageCode)
+	markup.InlineKeyboard = keyboard.SongInit(song, user, 0, 0, ctx.EffectiveUser.LanguageCode)
 
 	_, _, err = ctx.EffectiveMessage.EditReplyMarkup(bot, &gotgbot.EditMessageReplyMarkupOpts{
 		ReplyMarkup: markup,
@@ -926,4 +927,62 @@ func (c *BotController) SongCopyToMyBand(bot *gotgbot.Bot, ctx *ext.Context) err
 
 	ctx.CallbackQuery.Data = util.CallbackData(state.SongCB, song.ID.Hex()+":init")
 	return c.SongCB(bot, ctx)
+}
+
+func (c *BotController) SongStyle(bot *gotgbot.Bot, ctx *ext.Context) error {
+
+	user := ctx.Data["user"].(*entity.User)
+
+	driveFileID := util.ParseCallbackPayload(ctx.CallbackQuery.Data)
+
+	driveFile, err := c.DriveFileService.StyleOne(driveFileID)
+	if err != nil {
+		return err
+	}
+
+	song, err := c.SongService.FindOneByDriveFileID(driveFile.Id)
+	if err != nil {
+		return err
+	}
+
+	fakeTime, _ := time.Parse("2006", "2006")
+	song.PDF.ModifiedTime = fakeTime.Format(time.RFC3339)
+
+	_, err = c.SongService.UpdateOne(*song)
+	if err != nil {
+		return err
+	}
+
+	reader, err := c.DriveFileService.DownloadOneByID(song.DriveFileID)
+	if err != nil {
+		return err
+	}
+
+	markup := gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: keyboard.SongEdit(song, user, ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageId, ctx.EffectiveUser.LanguageCode),
+	}
+
+	caption := user.CallbackCache.AddToText(song.Caption())
+
+	_, _, err = ctx.EffectiveMessage.EditMedia(bot, gotgbot.InputMediaDocument{
+		Media: gotgbot.NamedFile{
+			File:     *reader,
+			FileName: fmt.Sprintf("%s.pdf", song.PDF.Name),
+		},
+		Caption:   caption,
+		ParseMode: "HTML",
+	}, &gotgbot.EditMessageMediaOpts{
+		ReplyMarkup: markup,
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx.CallbackQuery.Answer(bot, &gotgbot.AnswerCallbackQueryOpts{
+		Text: txt.Get("text.styled", ctx.EffectiveUser.LanguageCode),
+	})
+
+	return nil
+	//ctx.CallbackQuery.Data = util.CallbackData(state.SongCB, song.ID.Hex()+":init")
+	//return c.SongCB(bot, ctx)
 }

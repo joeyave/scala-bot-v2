@@ -180,39 +180,6 @@ func createBandHandler() (int, []HandlerFunc) {
 	return helpers.CreateBandState, handlerFunc
 }
 
-func styleSongHandler() (int, []HandlerFunc) {
-	handlerFunc := make([]HandlerFunc, 0)
-
-	// Print list of found songs.
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
-
-		driveFile, err := h.driveFileService.StyleOne(driveFileID)
-		if err != nil {
-			return err
-		}
-
-		song, err := h.songService.FindOneByDriveFileID(driveFile.Id)
-		if err != nil {
-			return err
-		}
-
-		fakeTime, _ := time.Parse("2006", "2006")
-		song.PDF.ModifiedTime = fakeTime.Format(time.RFC3339)
-
-		_, err = h.songService.UpdateOne(*song)
-		if err != nil {
-			return err
-		}
-
-		// c.CallbackQuery.Answer(h.bot, nil)
-		c.CallbackQuery.Data = helpers.AggregateCallbackData(helpers.SongActionsState, 0, "")
-		return h.enterInlineHandler(c, user)
-	})
-	return helpers.StyleSongState, handlerFunc
-}
-
 func addLyricsPageHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
 
@@ -244,54 +211,6 @@ func addLyricsPageHandler() (int, []HandlerFunc) {
 		return h.enterInlineHandler(c, user)
 	})
 	return helpers.AddLyricsPageState, handlerFunc
-}
-
-func copySongHandler() (int, []HandlerFunc) {
-	handlerFunc := make([]HandlerFunc, 0)
-
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		driveFileID := user.State.CallbackData.Query().Get("driveFileId")
-
-		c.EffectiveChat.SendAction(h.bot, "typing")
-
-		file, err := h.driveFileService.FindOneByID(driveFileID)
-		if err != nil {
-			return err
-		}
-
-		file = &drive.File{
-			Name:    file.Name,
-			Parents: []string{user.Band.DriveFolderID},
-		}
-
-		copiedSong, err := h.driveFileService.CloneOne(driveFileID, file)
-		if err != nil {
-			return err
-		}
-
-		song, _, err := h.songService.FindOrCreateOneByDriveFileID(copiedSong.Id)
-		if err != nil {
-			return err
-		}
-
-		q := user.State.CallbackData.Query()
-		q.Set("driveFileId", copiedSong.Id)
-		user.State.CallbackData.RawQuery = q.Encode()
-
-		markup := gotgbot.InlineKeyboardMarkup{
-			InlineKeyboard: helpers.GetSongInitKeyboard(user, song),
-		}
-		c.EffectiveMessage.EditCaption(h.bot, &gotgbot.EditMessageCaptionOpts{
-			Caption:     helpers.AddCallbackData("Скопировано", user.State.CallbackData.String()),
-			ParseMode:   "HTML",
-			ReplyMarkup: markup,
-		})
-		c.CallbackQuery.Answer(h.bot, nil)
-		return nil
-	})
-
-	return helpers.CopySongState, handlerFunc
 }
 
 func uploadVoiceHandler() (int, []HandlerFunc) {

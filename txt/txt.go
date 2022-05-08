@@ -106,7 +106,7 @@ var locales = map[string]map[string]string{
 		"ru": "👩‍👧‍👦 Загрузить еще",
 	},
 	"button.docLink": {
-		"ru": "📎 Ссылка",
+		"ru": "📎 Ссылка на Google Doc",
 	},
 	"button.voices": {
 		"ru": "🎤 Партии",
@@ -115,7 +115,8 @@ var locales = map[string]map[string]string{
 		"ru": "🔖 Теги",
 	},
 	"button.more": {
-		"ru": "ℹ️ Подробнее",
+		//"ru": "💬",
+		"ru": "•••",
 	},
 	"button.transpose": {
 		"ru": "🎛 Транспонировать",
@@ -213,6 +214,9 @@ var locales = map[string]map[string]string{
 	},
 	"text.songDeleted": {
 		"ru": "Песня удалена.",
+	},
+	"text.styled": {
+		"ru": "Стилизация закончена. Аккорды выделены и покрашены.",
 	},
 }
 
