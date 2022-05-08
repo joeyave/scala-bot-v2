@@ -1083,6 +1083,10 @@ func (s *DriveFileService) GetTextWithSectionsNumber(ID string) (string, int) {
 		return "", 0
 	}
 
+	return docToHTML(doc), len(s.getSections(doc))
+}
+
+func docToHTML(doc *docs.Document) string {
 	var sb strings.Builder
 
 	for _, item := range doc.Body.Content {
@@ -1093,13 +1097,28 @@ func (s *DriveFileService) GetTextWithSectionsNumber(ID string) (string, int) {
 		if item.Paragraph != nil && item.Paragraph.Elements != nil {
 			for _, element := range item.Paragraph.Elements {
 				if element.TextRun != nil && element.TextRun.Content != "" {
-					sb.WriteString(element.TextRun.Content)
+					style := element.TextRun.TextStyle
+					text := element.TextRun.Content
+
+					if style != nil {
+						if style.Bold {
+							text = fmt.Sprintf("<b>%s</b>", text)
+						}
+						if style.Italic {
+							text = fmt.Sprintf("<i>%s</i>", text)
+						}
+						if style.ForegroundColor != nil && style.ForegroundColor.Color != nil && style.ForegroundColor.Color.RgbColor != nil {
+							text = fmt.Sprintf(`<span style="color: rgb(%d%%, %d%%, %d%%)">%s</span>`, int(style.ForegroundColor.Color.RgbColor.Red*100), int(style.ForegroundColor.Color.RgbColor.Green*100), int(style.ForegroundColor.Color.RgbColor.Blue*100), text)
+						}
+					}
+
+					sb.WriteString(text)
 				}
 			}
 		}
 	}
 
-	return strings.TrimSpace(newLinesRegex.ReplaceAllString(sb.String(), "\n\n")), len(s.getSections(doc))
+	return strings.TrimSpace(newLinesRegex.ReplaceAllString(sb.String(), "\n\n"))
 }
 
 func (s *DriveFileService) GetTextAsHTML(ID string) io.Reader {

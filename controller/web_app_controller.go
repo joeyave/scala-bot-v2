@@ -8,6 +8,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/keyboard"
 	"github.com/joeyave/scala-bot-v2/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"html/template"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -261,7 +262,7 @@ func (h *WebAppController) EditSong(ctx *gin.Context) {
 		"BPMs":     valuesForSelect(strings.TrimSpace(song.PDF.BPM), bpms, "BPM"),
 		"Times":    valuesForSelect(strings.TrimSpace(song.PDF.Time), times, "Time"),
 		"Tags":     songTags,
-		"Lyrics":   lyrics,
+		"Lyrics":   template.HTML(lyrics),
 
 		"Song": song,
 	})
