@@ -89,7 +89,7 @@ func (c *BotController) song(bot *gotgbot.Bot, ctx *ext.Context, driveFileID str
 	}
 
 	markup := gotgbot.InlineKeyboardMarkup{
-		InlineKeyboard: keyboard.SongInit(song, user, 0, 0, ctx.EffectiveUser.LanguageCode),
+		InlineKeyboard: keyboard.SongInit(song, user, ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageId, ctx.EffectiveUser.LanguageCode),
 	}
 
 	sendDocumentByReader := func() (*gotgbot.Message, error) {
@@ -463,7 +463,7 @@ func (c *BotController) SongCB(bot *gotgbot.Bot, ctx *ext.Context) error {
 		case "edit":
 			markup.InlineKeyboard = keyboard.SongEdit(song, user, user.CallbackCache.ChatID, user.CallbackCache.MessageID, ctx.EffectiveUser.LanguageCode)
 		default:
-			markup.InlineKeyboard = keyboard.SongInit(song, user, 0, 0, ctx.EffectiveUser.LanguageCode)
+			markup.InlineKeyboard = keyboard.SongInit(song, user, ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageId, ctx.EffectiveUser.LanguageCode)
 		}
 	}
 
@@ -509,7 +509,7 @@ func (c *BotController) SongLike(bot *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	markup := gotgbot.InlineKeyboardMarkup{}
-	markup.InlineKeyboard = keyboard.SongInit(song, user, 0, 0, ctx.EffectiveUser.LanguageCode)
+	markup.InlineKeyboard = keyboard.SongInit(song, user, ctx.EffectiveChat.Id, ctx.EffectiveMessage.MessageId, ctx.EffectiveUser.LanguageCode)
 
 	_, _, err = ctx.EffectiveMessage.EditReplyMarkup(bot, &gotgbot.EditMessageReplyMarkupOpts{
 		ReplyMarkup: markup,
@@ -555,7 +555,7 @@ func (c *BotController) songVoices(bot *gotgbot.Bot, ctx *ext.Context, songID pr
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: voice.Name, CallbackData: util.CallbackData(state.SongVoice, song.ID.Hex()+":"+voice.ID.Hex())}})
 	}
 	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.addVoice", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongVoicesCreateVoiceAskForAudio, song.ID.Hex())}})
-	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":edit")}})
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.SongCB, song.ID.Hex()+":init")}})
 
 	caption := user.CallbackCache.AddToText(txt.Get("text.chooseVoice", ctx.EffectiveUser.LanguageCode))
 

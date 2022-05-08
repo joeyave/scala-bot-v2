@@ -1119,7 +1119,8 @@ func docToHTML(doc *docs.Document) string {
 		}
 	}
 
-	return strings.TrimSpace(newLinesRegex.ReplaceAllString(sb.String(), "\n\n"))
+	text := newLinesRegex.ReplaceAllString(sb.String(), "\n\n")
+	return strings.TrimSpace(text)
 }
 
 func (s *DriveFileService) GetTextAsHTML(ID string) io.Reader {
