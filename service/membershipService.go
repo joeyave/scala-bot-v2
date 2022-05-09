@@ -27,6 +27,14 @@ func (s *MembershipService) FindMultipleByEventID(ID primitive.ObjectID) ([]*ent
 	return s.membershipRepository.FindMultipleByEventID(ID)
 }
 
+func (s *MembershipService) FindSimilar(m *entity.Membership) (*entity.Membership, error) {
+	memberships, err := s.membershipRepository.FindMultipleByUserIDAndEventIDAndRoleID(m.UserID, m.EventID, m.RoleID)
+	if err != nil {
+		return nil, err
+	}
+	return memberships[0], nil
+}
+
 func (s *MembershipService) UpdateOne(membership entity.Membership) (*entity.Membership, error) {
 	memberships, err := s.membershipRepository.FindMultipleByUserIDAndEventID(membership.UserID, membership.EventID)
 	if err == nil {

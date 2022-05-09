@@ -12,7 +12,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
-	"github.com/klauspost/lctime"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/drive/v3"
@@ -549,15 +548,13 @@ func (c *BotController) NotifyUsers(bot *gotgbot.Bot) {
 					}
 
 					markup := gotgbot.InlineKeyboardMarkup{
-						InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{{Text: "ℹ️ Подробнее", CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")}}}}
-
-					when, err := lctime.StrftimeLoc(util.IetfToIsoLangCode("ru"), "%A, %d.%m.%Y", event.Time)
-					if err != nil {
-						return
+						InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{{Text: "ℹ️ Подробнее", CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")}}},
 					}
-					text := fmt.Sprintf("Привет. Ты учавствуешь в собрании через несколько дней (%s)!", when)
+
+					text := fmt.Sprintf("Привет. Ты учавствуешь в собрании через несколько дней (%s)!", event.Alias("ru"))
 
 					_, err = bot.SendMessage(membership.UserID, text, &gotgbot.SendMessageOpts{
+						ParseMode:   "HTML",
 						ReplyMarkup: markup,
 					})
 					if err != nil {

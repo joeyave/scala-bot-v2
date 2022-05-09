@@ -659,10 +659,18 @@ func (c *BotController) EventMembersDeleteOrRecoverMember(bot *gotgbot.Bot, ctx 
 
 	switch split[2] {
 	case "delete":
+		membership, err := c.MembershipService.FindOneByID(membershipID)
+		if err != nil {
+			return err
+		}
+
+		// todo: return deleted membership
 		err = c.MembershipService.DeleteOneByID(membershipID)
 		if err != nil {
 			return err
 		}
+
+		go c.notifyDeleted(bot, user, membership)
 	case "recover":
 		var membershipToRecover *entity.Membership
 		for _, cachedMembership := range cachedMemberships {
@@ -672,10 +680,12 @@ func (c *BotController) EventMembersDeleteOrRecoverMember(bot *gotgbot.Bot, ctx 
 			}
 		}
 
-		_, err := c.MembershipService.UpdateOne(*membershipToRecover)
+		membership, err := c.MembershipService.UpdateOne(*membershipToRecover)
 		if err != nil {
 			return err
 		}
+
+		go c.notifyAdded(bot, user, membership)
 	}
 
 	event, err := c.EventService.FindOneByID(eventID)
@@ -861,7 +871,7 @@ func (c *BotController) EventMembersAddMember(bot *gotgbot.Bot, ctx *ext.Context
 		return err
 	}
 
-	_, err = c.MembershipService.UpdateOne(entity.Membership{
+	membership, err := c.MembershipService.UpdateOne(entity.Membership{
 		EventID: eventID,
 		UserID:  userID,
 		RoleID:  roleID,
@@ -869,6 +879,8 @@ func (c *BotController) EventMembersAddMember(bot *gotgbot.Bot, ctx *ext.Context
 	if err != nil {
 		return err
 	}
+
+	go c.notifyAdded(bot, user, membership)
 
 	return c.eventMembersAddMemberChooseUser(bot, ctx, eventID, roleID, false)
 }
@@ -895,10 +907,17 @@ func (c *BotController) EventMembersDeleteMember(bot *gotgbot.Bot, ctx *ext.Cont
 		return err
 	}
 
+	membership, err := c.MembershipService.FindOneByID(membershipID)
+	if err != nil {
+		return err
+	}
+
 	err = c.MembershipService.DeleteOneByID(membershipID)
 	if err != nil {
 		return err
 	}
+
+	go c.notifyDeleted(bot, user, membership)
 
 	return c.eventMembersAddMemberChooseUser(bot, ctx, eventID, roleID, false)
 }
@@ -956,4 +975,76 @@ func (c *BotController) EventDelete(bot *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	return c.GetEvents(0)(bot, ctx)
+}
+
+func (c *BotController) notifyAdded(bot *gotgbot.Bot, user *entity.User, membership *entity.Membership) {
+
+	if user.ID == membership.UserID {
+		return
+	}
+
+	// todo
+	//time.Sleep(5 * time.Second)
+	//
+	//_, err := c.MembershipService.FindOneByID(membership.ID)
+	//if err != nil {
+	//	return
+	//}
+
+	event, err := c.EventService.FindOneByID(membership.EventID)
+	if err != nil {
+		return
+	}
+
+	now := time.Now().Local()
+	if event.Time.After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {
+
+		markup := gotgbot.InlineKeyboardMarkup{
+			InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{{Text: "ℹ️ Подробнее", CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")}}},
+		}
+
+		text := fmt.Sprintf("Привет. %s только что добавил тебя как %s в собрание %s!",
+			user.Name, membership.Role.Name, event.Alias("ru"))
+
+		bot.SendMessage(user.ID, text, &gotgbot.SendMessageOpts{
+			ParseMode:   "HTML",
+			ReplyMarkup: markup,
+		})
+	}
+}
+
+func (c *BotController) notifyDeleted(bot *gotgbot.Bot, user *entity.User, membership *entity.Membership) {
+
+	if user.ID == membership.UserID {
+		return
+	}
+
+	// todo
+	//time.Sleep(5 * time.Second)
+	//
+	//_, err := c.MembershipService.FindSimilar(membership)
+	//if err == nil {
+	//	return
+	//}
+
+	event, err := c.EventService.FindOneByID(membership.EventID)
+	if err != nil {
+		return
+	}
+
+	now := time.Now().Local()
+	if event.Time.After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())) {
+
+		markup := gotgbot.InlineKeyboardMarkup{
+			InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{{Text: "ℹ️ Подробнее", CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")}}},
+		}
+
+		text := fmt.Sprintf("Привет. %s только что удалил тебя как %s из собрания %s ☹️",
+			user.Name, membership.Role.Name, event.Alias("ru"))
+
+		bot.SendMessage(user.ID, text, &gotgbot.SendMessageOpts{
+			ParseMode:   "HTML",
+			ReplyMarkup: markup,
+		})
+	}
 }

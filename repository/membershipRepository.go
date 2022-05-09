@@ -48,6 +48,15 @@ func (r *MembershipRepository) FindMultipleByUserIDAndEventID(userID int64, even
 	return memberships, nil
 }
 
+func (r *MembershipRepository) FindMultipleByUserIDAndEventIDAndRoleID(userID int64, eventID, roleID primitive.ObjectID) ([]*entity.Membership, error) {
+	memberships, err := r.find(bson.M{"userId": userID, "eventId": eventID, "roleId": roleID})
+	if err != nil {
+		return nil, err
+	}
+
+	return memberships, nil
+}
+
 func (r *MembershipRepository) FindMultipleByEventID(eventID primitive.ObjectID) ([]*entity.Membership, error) {
 	memberships, err := r.find(bson.M{"eventId": eventID})
 	if err != nil {
