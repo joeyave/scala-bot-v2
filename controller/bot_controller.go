@@ -12,6 +12,7 @@ import (
 	"github.com/joeyave/scala-bot-v2/state"
 	"github.com/joeyave/scala-bot-v2/txt"
 	"github.com/joeyave/scala-bot-v2/util"
+	"github.com/klauspost/lctime"
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/api/drive/v3"
@@ -19,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type BotController struct {
@@ -530,4 +532,42 @@ func chunkAlbum(items []gotgbot.InputMedia, chunkSize int) (chunks [][]gotgbot.I
 	}
 
 	return append(chunks, items)
+}
+
+func (c *BotController) NotifyUsers(bot *gotgbot.Bot) {
+	for range time.Tick(time.Second * 2) {
+		events, err := c.EventService.FindAllFromToday()
+		if err != nil {
+			return
+		}
+
+		for _, event := range events {
+			if event.Time.Add(time.Hour*8).Sub(time.Now()).Hours() < 48 {
+				for _, membership := range event.Memberships {
+					if membership.Notified == true {
+						continue
+					}
+
+					markup := gotgbot.InlineKeyboardMarkup{
+						InlineKeyboard: [][]gotgbot.InlineKeyboardButton{{{Text: "ℹ️ Подробнее", CallbackData: util.CallbackData(state.EventCB, event.ID.Hex()+":init")}}}}
+
+					when, err := lctime.StrftimeLoc(util.IetfToIsoLangCode("ru"), "%A, %d.%m.%Y", event.Time)
+					if err != nil {
+						return
+					}
+					text := fmt.Sprintf("Привет. Ты учавствуешь в собрании в %s!", when)
+
+					_, err = bot.SendMessage(membership.UserID, text, &gotgbot.SendMessageOpts{
+						ReplyMarkup: markup,
+					})
+					if err != nil {
+						continue
+					}
+
+					membership.Notified = true
+					//c.MembershipService.UpdateOne(*membership)
+				}
+			}
+		}
+	}
 }

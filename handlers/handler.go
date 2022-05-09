@@ -7,9 +7,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/service"
-	"net/url"
-	"regexp"
-
 	"time"
 )
 
@@ -214,72 +211,4 @@ func (h *Handler) NotifyUser() {
 			}
 		}
 	}
-}
-
-func (h *Handler) Enter(c *ext.Context, user *entity.User) error {
-
-	if user.State.CallbackData == nil {
-		user.State.CallbackData, _ = url.Parse("https://t.me/callbackData")
-	}
-
-	if c.CallbackQuery != nil {
-		return h.enterInlineHandler(c, user)
-	} else {
-		return h.enterReplyHandler(c, user)
-	}
-}
-
-func (h *Handler) enterInlineHandler(c *ext.Context, user *entity.User) error {
-
-	re := regexp.MustCompile(`t\.me/callbackData.*`)
-
-	for _, entity := range c.CallbackQuery.Message.CaptionEntities {
-		if entity.Type == "text_link" {
-			matches := re.FindStringSubmatch(entity.Url)
-
-			if len(matches) > 0 {
-				u, err := url.Parse(matches[0])
-				if err != nil {
-					return err
-				}
-
-				user.State.CallbackData = u
-				break
-			}
-		}
-	}
-
-	for _, entity := range c.CallbackQuery.Message.Entities {
-		if entity.Type == "text_link" {
-			matches := re.FindStringSubmatch(entity.Url)
-
-			if len(matches) > 0 {
-				u, err := url.Parse(matches[0])
-				if err != nil {
-					return err
-				}
-
-				user.State.CallbackData = u
-				break
-			}
-		}
-	}
-
-	state, index, _ := helpers.ParseCallbackData(c.CallbackQuery.Data)
-
-	// Handle error.
-	handlerFuncs, _ := handlers[state]
-
-	return handlerFuncs[index](h, c, user)
-}
-
-func (h *Handler) enterReplyHandler(c *ext.Context, user *entity.User) error {
-	handlerFuncs, ok := handlers[user.State.Name]
-
-	if ok == false || user.State.Index < 0 || user.State.Index >= len(handlerFuncs) {
-		user.State = entity.State{Name: helpers.MainMenuState}
-		handlerFuncs = handlers[user.State.Name]
-	}
-
-	return handlerFuncs[user.State.Index](h, c, user)
 }

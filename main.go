@@ -225,7 +225,7 @@ func main() {
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(message.All, botController.UpdateUser), 2)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(callbackquery.Prefix(fmt.Sprintf("%d:", state.SettingsChooseBand)), botController.UpdateUser), 2)
 
-	//go handler.NotifyUser() // todo
+	go botController.NotifyUsers(bot)
 
 	router := gin.New()
 	router.SetFuncMap(template.FuncMap{

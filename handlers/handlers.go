@@ -1,112 +1,12 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/txt"
 )
-
-func createRoleHandler() (int, []HandlerFunc) {
-
-	handlerFuncs := make([]HandlerFunc, 0)
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		markup := &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		}
-
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Отправь название новой роли. Например, лид-вокал, проповедник и т. д.", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-		if err != nil {
-			return err
-		}
-
-		user.State.Index++
-		return nil
-	})
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		user.State.Context.Role = &entity.Role{
-			Name: c.EffectiveMessage.Text,
-		}
-
-		markup := &gotgbot.ReplyKeyboardMarkup{
-			ResizeKeyboard: true,
-		}
-
-		if len(user.Band.Roles) == 0 {
-			user.State.Context.Role.Priority = 1
-			user.State.Index++
-			return h.Enter(c, user)
-		}
-
-		for _, role := range user.Band.Roles {
-			markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: role.Name}})
-		}
-		markup.Keyboard = append(markup.Keyboard, []gotgbot.KeyboardButton{{Text: helpers.Cancel}})
-
-		_, err := c.EffectiveChat.SendMessage(h.bot, "После какой роли должна быть эта роль?", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-		if err != nil {
-			return err
-		}
-
-		user.State.Index++
-		return nil
-	})
-
-	handlerFuncs = append(handlerFuncs, func(h *Handler, c *ext.Context, user *entity.User) error {
-
-		if user.State.Context.Role.Priority == 0 {
-
-			var foundRole *entity.Role
-			for _, role := range user.Band.Roles {
-				if c.EffectiveMessage.Text == role.Name {
-					foundRole = role
-					break
-				}
-			}
-
-			if foundRole == nil {
-				user.State.Index--
-				return h.Enter(c, user)
-			}
-
-			user.State.Context.Role.Priority = foundRole.Priority + 1
-
-			for _, role := range user.Band.Roles {
-				if role.Priority > foundRole.Priority {
-					role.Priority++
-					h.roleService.UpdateOne(*role)
-				}
-			}
-		}
-
-		role, err := h.roleService.UpdateOne(
-			entity.Role{
-				Name:     user.State.Context.Role.Name,
-				BandID:   user.BandID,
-				Priority: user.State.Context.Role.Priority,
-			})
-		if err != nil {
-			return err
-		}
-
-		_, err = c.EffectiveChat.SendMessage(h.bot, fmt.Sprintf("Добавлена новая роль: %s.", role.Name), nil)
-		if err != nil {
-			return err
-		}
-
-		user.State = entity.State{Name: helpers.MainMenuState}
-		return h.Enter(c, user)
-	})
-
-	return helpers.CreateRoleState, handlerFuncs
-}
 
 func uploadVoiceHandler() (int, []HandlerFunc) {
 	handlerFunc := make([]HandlerFunc, 0)
