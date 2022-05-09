@@ -1,6 +1,5 @@
 applications:
   - name: scala-bot-v2
-
     random-route: true
     memory: 256M
     instances: 1
