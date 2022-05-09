@@ -184,6 +184,8 @@ func main() {
 
 	// Inline keyboard.
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.BandCreate_AskForName), botController.BandCreate_AskForName), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.RoleCreate_AskForName), botController.RoleCreate_AskForName), 1)
+	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.RoleCreate), botController.RoleCreate), 1)
 
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsCB), botController.SettingsCB), 1)
 	dispatcher.AddHandlerToGroup(handlers.NewCallback(util.CallbackState(state.SettingsBands), botController.SettingsBands), 1)

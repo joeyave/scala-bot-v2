@@ -7,11 +7,6 @@ import (
 	"github.com/joeyave/scala-bot-v2/entity"
 	"github.com/joeyave/scala-bot-v2/helpers"
 	"github.com/joeyave/scala-bot-v2/txt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"google.golang.org/api/drive/v3"
-	"regexp"
-	"strconv"
-	"time"
 )
 
 func createRoleHandler() (int, []HandlerFunc) {
@@ -111,73 +106,6 @@ func createRoleHandler() (int, []HandlerFunc) {
 	})
 
 	return helpers.CreateRoleState, handlerFuncs
-}
-
-func createBandHandler() (int, []HandlerFunc) {
-	handlerFunc := make([]HandlerFunc, 0)
-
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
-		markup := &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		}
-
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Введи название своей группы:", &gotgbot.SendMessageOpts{ReplyMarkup: markup})
-		if err != nil {
-			return err
-		}
-
-		user.State.Index++
-		return nil
-	})
-
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
-		user.State.Context.Band = &entity.Band{
-			Name: c.EffectiveMessage.Text,
-		}
-
-		markup := &gotgbot.ReplyKeyboardMarkup{
-			Keyboard:       [][]gotgbot.KeyboardButton{{{Text: helpers.Cancel}}},
-			ResizeKeyboard: true,
-		}
-		_, err := c.EffectiveChat.SendMessage(h.bot, "Теперь добавь имейл scala-drive@scala-chords-bot.iam.gserviceaccount.com в папку на Гугл Диске как редактора. После этого отправь мне ссылку на эту папку.",
-			&gotgbot.SendMessageOpts{ReplyMarkup: markup})
-		if err != nil {
-			return err
-		}
-
-		user.State.Index++
-		return nil
-	})
-
-	handlerFunc = append(handlerFunc, func(h *Handler, c *ext.Context, user *entity.User) error {
-		re := regexp.MustCompile(`(/folders/|id=)(.*?)(/|\?|$)`)
-		matches := re.FindStringSubmatch(c.EffectiveMessage.Text)
-		if matches == nil || len(matches) < 3 {
-			user.State.Index--
-			return h.Enter(c, user)
-		}
-		user.State.Context.Band.DriveFolderID = matches[2]
-		user.Role = helpers.Admin
-		band, err := h.bandService.UpdateOne(*user.State.Context.Band)
-		if err != nil {
-			return err
-		}
-
-		user.BandID = band.ID
-
-		_, err = c.EffectiveChat.SendMessage(h.bot, fmt.Sprintf("Ты добавлен в группу \"%s\" как администратор.", band.Name), nil)
-		if err != nil {
-			return err
-		}
-
-		user.State = entity.State{
-			Name: helpers.MainMenuState,
-		}
-		return h.Enter(c, user)
-	})
-
-	return helpers.CreateBandState, handlerFunc
 }
 
 func uploadVoiceHandler() (int, []HandlerFunc) {

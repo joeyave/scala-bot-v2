@@ -14,6 +14,8 @@ const (
 	SongVoicesCreateVoice
 
 	BandCreate
+
+	RoleCreate_ChoosePosition
 )
 
 // Inline states.
@@ -60,4 +62,7 @@ const (
 	SongAddLyricsPage
 
 	BandCreate_AskForName
+
+	RoleCreate_AskForName
+	RoleCreate
 )

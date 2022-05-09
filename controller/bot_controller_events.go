@@ -707,6 +707,7 @@ func (c *BotController) EventMembersAddMemberChooseRole(bot *gotgbot.Bot, ctx *e
 	for _, role := range event.Band.Roles {
 		markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: role.Name, CallbackData: util.CallbackData(state.EventMembersAddMemberChooseUser, event.ID.Hex()+":"+role.ID.Hex())}})
 	}
+	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.createRole", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.RoleCreate_AskForName, user.Band.ID.Hex())}})
 	markup.InlineKeyboard = append(markup.InlineKeyboard, []gotgbot.InlineKeyboardButton{{Text: txt.Get("button.back", ctx.EffectiveUser.LanguageCode), CallbackData: util.CallbackData(state.EventMembers, event.ID.Hex())}})
 
 	var b strings.Builder

@@ -58,6 +58,7 @@ type Cache struct {
 	Voice         *Voice             `bson:"voice,omitempty"`
 	SongID        primitive.ObjectID `bson:"song_id,omitempty"`
 	Band          *Band              `bson:"band,omitempty"`
+	Role          *Role              `bson:"role,omitempty"`
 }
 
 type CallbackCache struct {
