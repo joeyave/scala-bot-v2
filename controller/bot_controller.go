@@ -513,12 +513,42 @@ func (c *BotController) songsAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFile
 	}
 	waitGroup.Wait()
 
-	chunks := chunkAlbum(bigAlbum, 10)
+	inputMediaChunks := chunkAlbum(bigAlbum, 10)
+	driveFileIDsChunks := chunk(driveFileIDs, 10)
 
-	for _, album := range chunks {
-		_, err := bot.SendMediaGroup(ctx.EffectiveChat.Id, album, nil)
+	for i := range inputMediaChunks {
+		_, err := bot.SendMediaGroup(ctx.EffectiveChat.Id, inputMediaChunks[i], nil)
 		if err != nil { // todo: try to download all
-			return err
+			var waitGroup sync.WaitGroup
+			waitGroup.Add(len(driveFileIDsChunks[i]))
+			inputMedia := make([]gotgbot.InputMedia, len(driveFileIDsChunks[i]))
+
+			for i := range driveFileIDsChunks[i] {
+				go func(i int) {
+					defer waitGroup.Done()
+
+					song, _, err := c.SongService.FindOrCreateOneByDriveFileID(driveFileIDs[i])
+					if err != nil {
+						return
+					}
+
+					reader, err := c.DriveFileService.DownloadOneByID(driveFileIDs[i])
+					if err != nil {
+						return
+					}
+
+					inputMedia[i] = gotgbot.InputMediaDocument{
+						Media:   gotgbot.NamedFile{File: *reader, FileName: fmt.Sprintf("%s.pdf", song.PDF.Name)},
+						Caption: song.Meta(),
+					}
+				}(i)
+			}
+			waitGroup.Wait()
+
+			_, err = bot.SendMediaGroup(ctx.EffectiveChat.Id, inputMedia, nil)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -526,6 +556,13 @@ func (c *BotController) songsAlbum(bot *gotgbot.Bot, ctx *ext.Context, driveFile
 }
 
 func chunkAlbum(items []gotgbot.InputMedia, chunkSize int) (chunks [][]gotgbot.InputMedia) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+
+	return append(chunks, items)
+}
+func chunk(items []string, chunkSize int) (chunks [][]string) {
 	for chunkSize < len(items) {
 		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
 	}
