@@ -535,7 +535,7 @@ func chunkAlbum(items []gotgbot.InputMedia, chunkSize int) (chunks [][]gotgbot.I
 }
 
 func (c *BotController) NotifyUsers(bot *gotgbot.Bot) {
-	for range time.Tick(time.Second * 2) {
+	for range time.Tick(time.Hour * 2) {
 		events, err := c.EventService.FindAllFromToday()
 		if err != nil {
 			return
@@ -555,7 +555,7 @@ func (c *BotController) NotifyUsers(bot *gotgbot.Bot) {
 					if err != nil {
 						return
 					}
-					text := fmt.Sprintf("Привет. Ты учавствуешь в собрании в %s!", when)
+					text := fmt.Sprintf("Привет. Ты учавствуешь в собрании через несколько дней (%s)!", when)
 
 					_, err = bot.SendMessage(membership.UserID, text, &gotgbot.SendMessageOpts{
 						ReplyMarkup: markup,
@@ -565,7 +565,7 @@ func (c *BotController) NotifyUsers(bot *gotgbot.Bot) {
 					}
 
 					membership.Notified = true
-					//c.MembershipService.UpdateOne(*membership)
+					c.MembershipService.UpdateOne(*membership)
 				}
 			}
 		}
